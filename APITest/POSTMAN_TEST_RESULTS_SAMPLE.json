@@ -1,0 +1,428 @@
+{
+  "testRunInfo": {
+    "projectName": "ZaloUTE - Edit Profile API",
+    "testDate": "2026-05-09",
+    "testTime": "14:30:00",
+    "testerName": "Developer Name",
+    "environment": "Development",
+    "baseUrl": "http://localhost:5000/api",
+    "totalTests": 14,
+    "passedTests": 12,
+    "failedTests": 2,
+    "skippedTests": 0,
+    "totalDuration": "2.45s"
+  },
+  "testResults": {
+    "authentication": {
+      "category": "Authentication",
+      "tests": [
+        {
+          "testName": "Get JWT Token (Mock)",
+          "method": "POST",
+          "url": "{{base_url}}/auth/login",
+          "status": "PASS",
+          "httpCode": 200,
+          "responseTime": "145ms",
+          "request": {
+            "headers": {
+              "Content-Type": "application/json"
+            },
+            "body": {
+              "username": "testuser",
+              "password": "password123"
+            }
+          },
+          "response": {
+            "success": true,
+            "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+            "user": {
+              "id": "507f1f77bcf86cd799439011",
+              "username": "testuser",
+              "email": "testuser@example.com"
+            }
+          },
+          "assertions": [
+            {
+              "assertion": "HTTP status code is 200",
+              "result": "PASS"
+            },
+            {
+              "assertion": "Response contains token",
+              "result": "PASS"
+            }
+          ]
+        }
+      ]
+    },
+    "getProfile": {
+      "category": "Get Profile",
+      "tests": [
+        {
+          "testName": "Get User Profile",
+          "method": "GET",
+          "url": "{{base_url}}/user/profile",
+          "status": "PASS",
+          "httpCode": 200,
+          "responseTime": "87ms",
+          "request": {
+            "headers": {
+              "Authorization": "Bearer {{jwt_token}}"
+            }
+          },
+          "response": {
+            "success": true,
+            "data": {
+              "id": "507f1f77bcf86cd799439011",
+              "fullName": "Nguyễn Văn A",
+              "email": "user@example.com",
+              "phone": "+84912345678",
+              "bio": "Software Developer",
+              "dateOfBirth": "1990-01-15",
+              "gender": "male",
+              "address": "Ho Chi Minh City",
+              "avatar": "https://example.com/avatar.jpg"
+            }
+          },
+          "assertions": [
+            {
+              "assertion": "HTTP status code is 200",
+              "result": "PASS"
+            },
+            {
+              "assertion": "Response has success flag true",
+              "result": "PASS"
+            }
+          ]
+        }
+      ]
+    },
+    "editProfileSuccess": {
+      "category": "Edit Profile - Success Cases",
+      "tests": [
+        {
+          "testName": "Update All Fields",
+          "method": "PUT",
+          "url": "{{base_url}}/user/profile",
+          "status": "PASS",
+          "httpCode": 200,
+          "responseTime": "156ms",
+          "request": {
+            "headers": {
+              "Authorization": "Bearer {{jwt_token}}",
+              "Content-Type": "application/json"
+            },
+            "body": {
+              "fullName": "Nguyễn Văn A Updated",
+              "email": "updated@example.com",
+              "phone": "+84912345678",
+              "bio": "Software Developer from Vietnam",
+              "dateOfBirth": "1990-01-15",
+              "gender": "male",
+              "address": "Ho Chi Minh City, Vietnam",
+              "avatar": "https://example.com/avatar.jpg"
+            }
+          },
+          "response": {
+            "success": true,
+            "message": "Profile updated successfully",
+            "data": {
+              "id": "507f1f77bcf86cd799439011",
+              "fullName": "Nguyễn Văn A Updated",
+              "email": "updated@example.com",
+              "phone": "+84912345678",
+              "bio": "Software Developer from Vietnam",
+              "dateOfBirth": "1990-01-15",
+              "gender": "male",
+              "address": "Ho Chi Minh City, Vietnam",
+              "avatar": "https://example.com/avatar.jpg",
+              "updatedAt": "2026-05-09T14:30:00.000Z"
+            }
+          },
+          "assertions": [
+            {
+              "assertion": "HTTP status code is 200",
+              "result": "PASS"
+            },
+            {
+              "assertion": "Response is successful",
+              "result": "PASS"
+            },
+            {
+              "assertion": "All fields updated correctly",
+              "result": "PASS"
+            }
+          ]
+        },
+        {
+          "testName": "Update Only Name",
+          "method": "PUT",
+          "url": "{{base_url}}/user/profile",
+          "status": "PASS",
+          "httpCode": 200,
+          "responseTime": "98ms",
+          "request": {
+            "headers": {
+              "Authorization": "Bearer {{jwt_token}}",
+              "Content-Type": "application/json"
+            },
+            "body": {
+              "fullName": "Nguyễn Văn B"
+            }
+          },
+          "response": {
+            "success": true,
+            "message": "Profile updated successfully",
+            "data": {
+              "id": "507f1f77bcf86cd799439011",
+              "fullName": "Nguyễn Văn B",
+              "email": "updated@example.com",
+              "updatedAt": "2026-05-09T14:30:15.000Z"
+            }
+          },
+          "assertions": [
+            {
+              "assertion": "HTTP status code is 200",
+              "result": "PASS"
+            },
+            {
+              "assertion": "Only name is updated",
+              "result": "PASS"
+            }
+          ]
+        },
+        {
+          "testName": "Update Only Email",
+          "method": "PUT",
+          "url": "{{base_url}}/user/profile",
+          "status": "PASS",
+          "httpCode": 200,
+          "responseTime": "112ms",
+          "request": {
+            "headers": {
+              "Authorization": "Bearer {{jwt_token}}",
+              "Content-Type": "application/json"
+            },
+            "body": {
+              "email": "newemail@example.com"
+            }
+          },
+          "response": {
+            "success": true,
+            "message": "Profile updated successfully",
+            "data": {
+              "id": "507f1f77bcf86cd799439011",
+              "email": "newemail@example.com"
+            }
+          },
+          "assertions": [
+            {
+              "assertion": "HTTP status code is 200",
+              "result": "PASS"
+            },
+            {
+              "assertion": "Email is updated",
+              "result": "PASS"
+            }
+          ]
+        }
+      ]
+    },
+    "editProfileValidationErrors": {
+      "category": "Edit Profile - Validation Errors (400)",
+      "tests": [
+        {
+          "testName": "Invalid Email Format",
+          "method": "PUT",
+          "url": "{{base_url}}/user/profile",
+          "status": "PASS",
+          "httpCode": 400,
+          "responseTime": "78ms",
+          "request": {
+            "headers": {
+              "Authorization": "Bearer {{jwt_token}}",
+              "Content-Type": "application/json"
+            },
+            "body": {
+              "email": "invalid-email"
+            }
+          },
+          "response": {
+            "success": false,
+            "code": "VALIDATION_ERROR",
+            "message": "Validation failed",
+            "errors": [
+              "Email must be a valid email address"
+            ]
+          },
+          "assertions": [
+            {
+              "assertion": "HTTP status code is 400",
+              "result": "PASS"
+            },
+            {
+              "assertion": "Error message is clear",
+              "result": "PASS"
+            }
+          ]
+        },
+        {
+          "testName": "No Update Fields",
+          "method": "PUT",
+          "url": "{{base_url}}/user/profile",
+          "status": "PASS",
+          "httpCode": 400,
+          "responseTime": "65ms",
+          "request": {
+            "headers": {
+              "Authorization": "Bearer {{jwt_token}}",
+              "Content-Type": "application/json"
+            },
+            "body": {}
+          },
+          "response": {
+            "success": false,
+            "code": "NO_UPDATE_DATA",
+            "message": "No fields to update provided"
+          },
+          "assertions": [
+            {
+              "assertion": "HTTP status code is 400",
+              "result": "PASS"
+            },
+            {
+              "assertion": "Error code is NO_UPDATE_DATA",
+              "result": "PASS"
+            }
+          ]
+        }
+      ]
+    },
+    "authenticationErrors": {
+      "category": "Authentication Errors (401/403)",
+      "tests": [
+        {
+          "testName": "Missing Token",
+          "method": "PUT",
+          "url": "{{base_url}}/user/profile",
+          "status": "FAIL",
+          "httpCode": 200,
+          "expectedCode": 401,
+          "responseTime": "54ms",
+          "request": {
+            "headers": {
+              "Content-Type": "application/json"
+            },
+            "body": {
+              "fullName": "Test User"
+            }
+          },
+          "response": {
+            "success": true,
+            "message": "Profile updated successfully"
+          },
+          "assertions": [
+            {
+              "assertion": "HTTP status code is 401",
+              "result": "FAIL",
+              "expected": 401,
+              "actual": 200,
+              "comment": "Auth middleware not validating missing token"
+            }
+          ],
+          "issues": [
+            "Authentication middleware should return 401 when token is missing"
+          ]
+        },
+        {
+          "testName": "Invalid Token",
+          "method": "PUT",
+          "url": "{{base_url}}/user/profile",
+          "status": "FAIL",
+          "httpCode": 200,
+          "expectedCode": 401,
+          "responseTime": "62ms",
+          "request": {
+            "headers": {
+              "Authorization": "Bearer invalid.token.here",
+              "Content-Type": "application/json"
+            },
+            "body": {
+              "fullName": "Test User"
+            }
+          },
+          "response": {
+            "success": true,
+            "message": "Profile updated successfully"
+          },
+          "assertions": [
+            {
+              "assertion": "HTTP status code is 401",
+              "result": "FAIL",
+              "expected": 401,
+              "actual": 200,
+              "comment": "Invalid token not being validated properly"
+            }
+          ],
+          "issues": [
+            "JWT validation should reject invalid tokens"
+          ]
+        }
+      ]
+    },
+    "healthCheck": {
+      "category": "Health Check",
+      "tests": [
+        {
+          "testName": "Server Health",
+          "method": "GET",
+          "url": "{{base_url}}/health",
+          "status": "PASS",
+          "httpCode": 200,
+          "responseTime": "8ms",
+          "request": {
+            "headers": {}
+          },
+          "response": {
+            "status": "Server is running"
+          },
+          "assertions": [
+            {
+              "assertion": "HTTP status code is 200",
+              "result": "PASS"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "summary": {
+    "totalCategories": 6,
+    "successRate": "85.71%",
+    "averageResponseTime": "98ms",
+    "issues": [
+      {
+        "severity": "HIGH",
+        "category": "Authentication",
+        "issue": "Missing Token validation",
+        "description": "API should return 401 when Authorization header is missing",
+        "affectedTests": [
+          "Missing Token",
+          "Invalid Token"
+        ]
+      }
+    ],
+    "recommendations": [
+      "Implement proper JWT token validation in authMiddleware",
+      "Add comprehensive error handling for all edge cases",
+      "Test rate limiting for multiple rapid requests",
+      "Consider adding request logging for debugging"
+    ]
+  },
+  "notes": "Initial test run completed. Some authentication validations need to be fixed. All business logic for profile updates is working correctly.",
+  "nextSteps": [
+    "Fix JWT token validation in authMiddleware",
+    "Run full test suite again after fixes",
+    "Test in staging environment",
+    "Deploy to production"
+  ]
+}
