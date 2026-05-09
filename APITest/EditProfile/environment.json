@@ -1,0 +1,21 @@
+{
+  "id": "zaloute-test-env",
+  "name": "ZaloUTE Test Environment",
+  "values": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000/api",
+      "enabled": true
+    },
+    {
+      "key": "jwt_token",
+      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjUwN2YxZjc3YmNmODZjZDc5OTQzOTAxMSIsImVtYWlsIjoidGVzdEBleGFtcGxlLmNvbSIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzc4MzEwNjk0LCJleHAiOjE3NzgzOTcwOTR9.NyQmNT4BfOuyRaKz1D-5E_fnDazkbERLlQK4iwVzD38",
+      "enabled": true
+    },
+    {
+      "key": "user_id",
+      "value": "507f1f77bcf86cd799439011",
+      "enabled": true
+    }
+  ]
+}
