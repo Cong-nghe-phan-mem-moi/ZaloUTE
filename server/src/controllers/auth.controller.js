@@ -2,8 +2,7 @@ const bcrypt = require("bcrypt");
 const User = require("../models/User");
 const Account = require("../models/Account");
 const { sendOTPEmail } = require("../config/mailer");
-const AuthService = require("../service/AuthService");
-const AuthRepository = require("../repo/AuthRepository");
+const AuthRepository = require("../repo/auth.repository");
 const jwt = require("jsonwebtoken");
 const authService = require("../service/auth.service");
 
@@ -146,7 +145,7 @@ const verifyOTP = async (req, res) => {
 const requestPasswordResetOTP = async (req, res) => {
   try {
     const { email } = req.body;
-    const result = await AuthService.requestPasswordResetOTP(email);
+    const result = await authService.requestPasswordResetOTP(email);
 
     res.status(200).json(result);
   } catch (error) {
@@ -161,7 +160,7 @@ const requestPasswordResetOTP = async (req, res) => {
 const verifyPasswordResetOTP = async (req, res) => {
   try {
     const { email, otp } = req.body;
-    const result = await AuthService.verifyPasswordResetOTP(email, otp);
+    const result = await authService.verifyPasswordResetOTP(email, otp);
 
     res.status(200).json(result);
   } catch (error) {
@@ -178,7 +177,7 @@ const resetPassword = async (req, res) => {
     const { newPassword } = req.body;
     const accountId = req.resetToken?.accountId;
 
-    const result = await AuthService.resetPassword(accountId, newPassword);
+    const result = await authService.resetPassword(accountId, newPassword);
 
     res.status(200).json(result);
   } catch (error) {
