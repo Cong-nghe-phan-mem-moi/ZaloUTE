@@ -2,11 +2,11 @@
   "collection": {
     "item": [
       {
-        "id": "fe846e3a-76f1-4837-a3a1-83a2f3adc494",
+        "id": "09e5f6f3-337a-412d-b534-b990c459c49e",
         "name": "1. Register - Success",
         "item": [
           {
-            "id": "a577dba7-644b-466c-be4d-a51ea60fbf35",
+            "id": "348303ad-a271-4b91-9abf-557bff986fe0",
             "name": "Register New Account",
             "request": {
               "url": {
@@ -37,7 +37,7 @@
               {
                 "listen": "test",
                 "script": {
-                  "id": "e3c69356-340b-417d-b650-b13a51c29908",
+                  "id": "35607037-33db-4ed9-afe5-abffe53ca003",
                   "type": "text/javascript",
                   "exec": [
                     "pm.test('Status is 201', function () {",
@@ -64,7 +64,7 @@
                     "  pm.expect(data.data.message).to.eql('OTP đã được gửi đến email của bạn');",
                     "});"
                   ],
-                  "_lastExecutionId": "7f7977f8-4fcb-4dae-a083-c2749fa017b1"
+                  "_lastExecutionId": "f404a8cb-1e9e-4271-bc7b-f8705af09a2b"
                 }
               }
             ]
@@ -74,23 +74,23 @@
           {
             "listen": "prerequest",
             "script": {
-              "id": "548b9744-b854-4dda-b7bf-8cfd9e24a17b",
+              "id": "c1dec508-7ece-4882-9a08-5b8a4be0b742",
               "type": "text/javascript",
               "exec": [
                 "const generatedEmail = `newuser_${Date.now()}@example.com`;",
                 "pm.environment.set('generated_register_email', generatedEmail);"
               ],
-              "_lastExecutionId": "6d89159d-0ac1-462c-b04a-9fcbb4283c90"
+              "_lastExecutionId": "9d025ee9-50ff-47af-97b9-35004ec5d4f0"
             }
           }
         ]
       },
       {
-        "id": "9165b86f-6ab3-477b-9723-350d9a3ce612",
+        "id": "6f9d340f-4b35-45d4-a4b3-4daa61fadb60",
         "name": "2. Register - Duplicate Email",
         "item": [
           {
-            "id": "38293263-a7d9-4b3a-9888-437bd9def0d7",
+            "id": "f38c3317-259f-4cfb-81c6-3c0ee185c865",
             "name": "Register Existing Account",
             "request": {
               "url": {
@@ -121,7 +121,7 @@
               {
                 "listen": "test",
                 "script": {
-                  "id": "3f786bf3-82fd-4eef-aad8-8aba74213a80",
+                  "id": "b246df1a-3545-40fc-b647-887744907063",
                   "type": "text/javascript",
                   "exec": [
                     "pm.test('Status is 400', function () {",
@@ -134,7 +134,7 @@
                     "  pm.expect(data.message).to.eql('Email này đã được đăng ký');",
                     "});"
                   ],
-                  "_lastExecutionId": "08257873-797e-4415-8438-90b4e1dc64bf"
+                  "_lastExecutionId": "fcc94109-6c8f-4b7a-bb8b-aa02cdeaae74"
                 }
               }
             ]
@@ -144,7 +144,7 @@
           {
             "listen": "prerequest",
             "script": {
-              "id": "7be60ea8-f96d-4b31-8f5f-c63e908dd81f",
+              "id": "f22061f2-030a-448a-b6ef-e16713c3609b",
               "type": "text/javascript",
               "exec": [
                 "const generatedEmail = pm.environment.get('generated_register_email');",
@@ -152,17 +152,17 @@
                 "  throw new Error('generated_register_email is missing. Run the success case first.');",
                 "}"
               ],
-              "_lastExecutionId": "084c2a6c-0da3-4c39-8f10-9cdf5a86ac28"
+              "_lastExecutionId": "986ca084-4bb2-462c-b42e-bccfaec0f19f"
             }
           }
         ]
       },
       {
-        "id": "da21d34f-6605-43ad-8f0e-c64fb052e048",
+        "id": "d89efb54-abb9-450e-b5b4-c3f39d53b85c",
         "name": "3. Register - Validation Errors",
         "item": [
           {
-            "id": "f0846188-fca5-41c1-8079-397ff6dd3d5a",
+            "id": "13a02751-dfe0-419f-b0db-fb3020dcad79",
             "name": "Invalid Email",
             "request": {
               "url": {
@@ -193,20 +193,20 @@
               {
                 "listen": "test",
                 "script": {
-                  "id": "9512c7df-372e-4bab-8960-fcc5b92a7e7c",
+                  "id": "9184b231-bde6-45d0-942e-39edfe20dff4",
                   "type": "text/javascript",
                   "exec": [
                     "pm.test('Status is 400', function () {",
                     "  pm.response.to.have.status(400);",
                     "});"
                   ],
-                  "_lastExecutionId": "8db531b3-e8a0-4e8e-a6ef-6217f514043d"
+                  "_lastExecutionId": "44cdf5c6-124e-4a77-a470-2dea6f7b3422"
                 }
               }
             ]
           },
           {
-            "id": "6092d4a3-11c6-4276-a441-833ee5034c7e",
+            "id": "95695a11-6186-4bd5-a0f2-105f5d05ec2a",
             "name": "Weak Password",
             "request": {
               "url": {
@@ -237,20 +237,20 @@
               {
                 "listen": "test",
                 "script": {
-                  "id": "8c67a714-e8bf-49b9-a4ac-e09b7d7e1555",
+                  "id": "144fd37a-31d0-465a-a543-36e443a3cdbe",
                   "type": "text/javascript",
                   "exec": [
                     "pm.test('Status is 400', function () {",
                     "  pm.response.to.have.status(400);",
                     "});"
                   ],
-                  "_lastExecutionId": "79c4fe78-76d5-41b1-a9f7-0d72c8ff21b6"
+                  "_lastExecutionId": "89f3f737-19ed-404f-93d3-d89d264677be"
                 }
               }
             ]
           },
           {
-            "id": "56bd54c8-d153-4b8f-8965-b92011411b1d",
+            "id": "91255308-ea61-49e1-836b-d4ef93cb71d5",
             "name": "Missing Full Name",
             "request": {
               "url": {
@@ -281,14 +281,14 @@
               {
                 "listen": "test",
                 "script": {
-                  "id": "6358c86d-464f-4647-b4fb-e3cf4719dd75",
+                  "id": "c9e08ac2-12dc-45ec-993b-03dc1b892d26",
                   "type": "text/javascript",
                   "exec": [
                     "pm.test('Status is 400', function () {",
                     "  pm.response.to.have.status(400);",
                     "});"
                   ],
-                  "_lastExecutionId": "b153b9ea-e3f6-4c4e-b3a0-6e2dc153dbb3"
+                  "_lastExecutionId": "fcf02aa6-846a-41a8-b230-cf47bac59e45"
                 }
               }
             ]
@@ -300,7 +300,7 @@
     "event": [],
     "variable": [],
     "info": {
-      "_postman_id": "aa99652d-605b-4497-af09-88e9345bfd7e",
+      "_postman_id": "a451d5a0-a816-4cc0-80d4-bc27e6e5d094",
       "name": "ZaloUTE - Register API",
       "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
       "description": {
@@ -335,13 +335,13 @@
       },
       {
         "type": "any",
-        "value": "newuser_1778394097079@example.com",
+        "value": "newuser_1778395558909@example.com",
         "key": "generated_register_email"
       }
     ]
   },
   "globals": {
-    "id": "2594c7a2-09e9-487c-b971-20f8a2fb871d",
+    "id": "c9e9fae6-82d0-4ec6-901c-7c67ae5b4994",
     "values": []
   },
   "run": {
@@ -393,10 +393,10 @@
       }
     },
     "timings": {
-      "responseAverage": 82.8,
-      "responseMin": 3,
-      "responseMax": 309,
-      "responseSd": 118.54180697121164,
+      "responseAverage": 81,
+      "responseMin": 4,
+      "responseMax": 323,
+      "responseSd": 123.5653673162509,
       "dnsAverage": 0,
       "dnsMin": 0,
       "dnsMax": 0,
@@ -405,8 +405,8 @@
       "firstByteMin": 0,
       "firstByteMax": 0,
       "firstByteSd": 0,
-      "started": 1778394097049,
-      "completed": 1778394097940
+      "started": 1778395558879,
+      "completed": 1778395559720
     },
     "executions": [
       {
@@ -419,11 +419,11 @@
           "eof": false,
           "bof": true,
           "cr": false,
-          "ref": "8480ffb6-8716-478c-a594-0faf2e648ef9",
-          "httpRequestId": "d402482b-1286-4223-81e8-6af66d27c38a"
+          "ref": "6045aa67-5e5d-484d-ac8a-0e2bbb66d5e8",
+          "httpRequestId": "f5163466-50ec-4bfb-96a5-3b16bf9d36d2"
         },
         "item": {
-          "id": "a577dba7-644b-466c-be4d-a51ea60fbf35",
+          "id": "348303ad-a271-4b91-9abf-557bff986fe0",
           "name": "Register New Account",
           "request": {
             "url": {
@@ -454,7 +454,7 @@
             {
               "listen": "test",
               "script": {
-                "id": "e3c69356-340b-417d-b650-b13a51c29908",
+                "id": "35607037-33db-4ed9-afe5-abffe53ca003",
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status is 201', function () {",
@@ -481,7 +481,7 @@
                   "  pm.expect(data.data.message).to.eql('OTP đã được gửi đến email của bạn');",
                   "});"
                 ],
-                "_lastExecutionId": "7f7977f8-4fcb-4dae-a083-c2749fa017b1"
+                "_lastExecutionId": "f404a8cb-1e9e-4271-bc7b-f8705af09a2b"
               }
             }
           ]
@@ -523,7 +523,7 @@
             },
             {
               "key": "Postman-Token",
-              "value": "92a13482-1cc1-4b9e-b860-f57a4c2315ba",
+              "value": "5e72a77a-3f84-41b8-a53d-e590b804f975",
               "system": true
             },
             {
@@ -550,11 +550,11 @@
           "method": "POST",
           "body": {
             "mode": "raw",
-            "raw": "{\n  \"fullName\": \"Vo An Thai\",\n  \"email\": \"newuser_1778394097079@example.com\",\n  \"password\": \"Password@123\"\n}"
+            "raw": "{\n  \"fullName\": \"Vo An Thai\",\n  \"email\": \"newuser_1778395558909@example.com\",\n  \"password\": \"Password@123\"\n}"
           }
         },
         "response": {
-          "id": "456b76d7-7f02-4687-a81b-b7357f47e3be",
+          "id": "7e1b5ce0-da50-47f6-abdf-a81cfe18d818",
           "status": "Created",
           "code": 201,
           "header": [
@@ -576,11 +576,11 @@
             },
             {
               "key": "RateLimit-Remaining",
-              "value": "4"
+              "value": "19"
             },
             {
               "key": "RateLimit-Reset",
-              "value": "724"
+              "value": "900"
             },
             {
               "key": "Content-Type",
@@ -592,11 +592,11 @@
             },
             {
               "key": "ETag",
-              "value": "W/\"c1-bFUCnI6cps5it7tfHt154NY8WvQ\""
+              "value": "W/\"c1-LTyzKpHB9gO98s9RvIdX28r/jLY\""
             },
             {
               "key": "Date",
-              "value": "Sun, 10 May 2026 06:21:37 GMT"
+              "value": "Sun, 10 May 2026 06:45:59 GMT"
             },
             {
               "key": "Connection",
@@ -720,12 +720,12 @@
               56,
               51,
               57,
-              52,
-              48,
+              53,
+              53,
+              53,
+              56,
               57,
-              55,
               48,
-              55,
               57,
               64,
               101,
@@ -806,10 +806,10 @@
             ]
           },
           "cookie": [],
-          "responseTime": 309,
+          "responseTime": 323,
           "responseSize": 193
         },
-        "id": "a577dba7-644b-466c-be4d-a51ea60fbf35",
+        "id": "348303ad-a271-4b91-9abf-557bff986fe0",
         "assertions": [
           {
             "assertion": "Status is 201",
@@ -835,15 +835,15 @@
       },
       {
         "cursor": {
-          "ref": "91bfc763-de6c-43dd-9d11-683738c2b710",
+          "ref": "e9672102-0dfd-4ad4-9bef-3d18ce95aa22",
           "length": 5,
           "cycles": 1,
           "position": 1,
           "iteration": 0,
-          "httpRequestId": "291b790c-2f16-4511-ae5e-3a9b8ed272ab"
+          "httpRequestId": "9d40f819-e060-4536-8978-27bb45e3aa50"
         },
         "item": {
-          "id": "38293263-a7d9-4b3a-9888-437bd9def0d7",
+          "id": "f38c3317-259f-4cfb-81c6-3c0ee185c865",
           "name": "Register Existing Account",
           "request": {
             "url": {
@@ -874,7 +874,7 @@
             {
               "listen": "test",
               "script": {
-                "id": "3f786bf3-82fd-4eef-aad8-8aba74213a80",
+                "id": "b246df1a-3545-40fc-b647-887744907063",
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status is 400', function () {",
@@ -887,7 +887,7 @@
                   "  pm.expect(data.message).to.eql('Email này đã được đăng ký');",
                   "});"
                 ],
-                "_lastExecutionId": "08257873-797e-4415-8438-90b4e1dc64bf"
+                "_lastExecutionId": "fcc94109-6c8f-4b7a-bb8b-aa02cdeaae74"
               }
             }
           ]
@@ -929,7 +929,7 @@
             },
             {
               "key": "Postman-Token",
-              "value": "7d0fb471-b030-42ca-ba13-c6c5014ce6dc",
+              "value": "51ea7d66-9b18-47bd-8686-cc14f9c14fc8",
               "system": true
             },
             {
@@ -956,11 +956,11 @@
           "method": "POST",
           "body": {
             "mode": "raw",
-            "raw": "{\n  \"fullName\": \"Duplicate User\",\n  \"email\": \"newuser_1778394097079@example.com\",\n  \"password\": \"Password@123\"\n}"
+            "raw": "{\n  \"fullName\": \"Duplicate User\",\n  \"email\": \"newuser_1778395558909@example.com\",\n  \"password\": \"Password@123\"\n}"
           }
         },
         "response": {
-          "id": "34b32c23-6994-4f87-83c2-034797f94448",
+          "id": "0e7fc8e2-97e3-4f55-8c14-a9228e34a53b",
           "status": "Bad Request",
           "code": 400,
           "header": [
@@ -982,11 +982,11 @@
             },
             {
               "key": "RateLimit-Remaining",
-              "value": "3"
+              "value": "18"
             },
             {
               "key": "RateLimit-Reset",
-              "value": "723"
+              "value": "900"
             },
             {
               "key": "Content-Type",
@@ -1002,7 +1002,7 @@
             },
             {
               "key": "Date",
-              "value": "Sun, 10 May 2026 06:21:37 GMT"
+              "value": "Sun, 10 May 2026 06:45:59 GMT"
             },
             {
               "key": "Connection",
@@ -1084,10 +1084,10 @@
             ]
           },
           "cookie": [],
-          "responseTime": 95,
+          "responseTime": 69,
           "responseSize": 65
         },
-        "id": "38293263-a7d9-4b3a-9888-437bd9def0d7",
+        "id": "f38c3317-259f-4cfb-81c6-3c0ee185c865",
         "assertions": [
           {
             "assertion": "Status is 400",
@@ -1101,15 +1101,15 @@
       },
       {
         "cursor": {
-          "ref": "2d9609e1-5832-4eb9-8ea5-ba99edd08b4f",
+          "ref": "16ff1b81-04e4-4aca-a56c-c0f6e15a4c84",
           "length": 5,
           "cycles": 1,
           "position": 2,
           "iteration": 0,
-          "httpRequestId": "c536cbca-3a08-47c5-8bce-5a10f0d4f6c9"
+          "httpRequestId": "212f79b0-17f7-4076-a995-5d0159a80ce2"
         },
         "item": {
-          "id": "f0846188-fca5-41c1-8079-397ff6dd3d5a",
+          "id": "13a02751-dfe0-419f-b0db-fb3020dcad79",
           "name": "Invalid Email",
           "request": {
             "url": {
@@ -1140,14 +1140,14 @@
             {
               "listen": "test",
               "script": {
-                "id": "9512c7df-372e-4bab-8960-fcc5b92a7e7c",
+                "id": "9184b231-bde6-45d0-942e-39edfe20dff4",
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status is 400', function () {",
                   "  pm.response.to.have.status(400);",
                   "});"
                 ],
-                "_lastExecutionId": "8db531b3-e8a0-4e8e-a6ef-6217f514043d"
+                "_lastExecutionId": "44cdf5c6-124e-4a77-a470-2dea6f7b3422"
               }
             }
           ]
@@ -1189,7 +1189,7 @@
             },
             {
               "key": "Postman-Token",
-              "value": "e432e76d-9a82-49bf-83fc-bba37be5370d",
+              "value": "b753a312-e4a3-4e3d-aad3-28eba9bcbe37",
               "system": true
             },
             {
@@ -1220,7 +1220,7 @@
           }
         },
         "response": {
-          "id": "5fc3df6d-b0f9-44bf-aea7-7f3fb974fb16",
+          "id": "8912fa20-e828-495e-8344-36bad3804f66",
           "status": "Bad Request",
           "code": 400,
           "header": [
@@ -1242,11 +1242,11 @@
             },
             {
               "key": "RateLimit-Remaining",
-              "value": "2"
+              "value": "17"
             },
             {
               "key": "RateLimit-Reset",
-              "value": "723"
+              "value": "900"
             },
             {
               "key": "Content-Type",
@@ -1262,7 +1262,7 @@
             },
             {
               "key": "Date",
-              "value": "Sun, 10 May 2026 06:21:37 GMT"
+              "value": "Sun, 10 May 2026 06:45:59 GMT"
             },
             {
               "key": "Connection",
@@ -1343,10 +1343,10 @@
             ]
           },
           "cookie": [],
-          "responseTime": 3,
+          "responseTime": 5,
           "responseSize": 64
         },
-        "id": "f0846188-fca5-41c1-8079-397ff6dd3d5a",
+        "id": "13a02751-dfe0-419f-b0db-fb3020dcad79",
         "assertions": [
           {
             "assertion": "Status is 400",
@@ -1356,15 +1356,15 @@
       },
       {
         "cursor": {
-          "ref": "c349437b-7afb-4bff-9780-a57accad5d17",
+          "ref": "88cdd9f9-3271-4fe9-ad5a-49fa1c059356",
           "length": 5,
           "cycles": 1,
           "position": 3,
           "iteration": 0,
-          "httpRequestId": "0a5cf43f-16a1-457e-b8c8-f2cde25e081a"
+          "httpRequestId": "305b91aa-f3dc-4657-a284-0335131322a1"
         },
         "item": {
-          "id": "6092d4a3-11c6-4276-a441-833ee5034c7e",
+          "id": "95695a11-6186-4bd5-a0f2-105f5d05ec2a",
           "name": "Weak Password",
           "request": {
             "url": {
@@ -1395,14 +1395,14 @@
             {
               "listen": "test",
               "script": {
-                "id": "8c67a714-e8bf-49b9-a4ac-e09b7d7e1555",
+                "id": "144fd37a-31d0-465a-a543-36e443a3cdbe",
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status is 400', function () {",
                   "  pm.response.to.have.status(400);",
                   "});"
                 ],
-                "_lastExecutionId": "79c4fe78-76d5-41b1-a9f7-0d72c8ff21b6"
+                "_lastExecutionId": "89f3f737-19ed-404f-93d3-d89d264677be"
               }
             }
           ]
@@ -1444,7 +1444,7 @@
             },
             {
               "key": "Postman-Token",
-              "value": "f5c3f633-afa5-47b3-a701-3d29e759545e",
+              "value": "9f1e463e-ab64-4b14-bfb9-366d5029dc1b",
               "system": true
             },
             {
@@ -1475,7 +1475,7 @@
           }
         },
         "response": {
-          "id": "ddc86c26-4e82-489b-ba80-a6b46024106e",
+          "id": "c8a8a47e-d296-4f57-9655-194ea68ec508",
           "status": "Bad Request",
           "code": 400,
           "header": [
@@ -1497,11 +1497,11 @@
             },
             {
               "key": "RateLimit-Remaining",
-              "value": "1"
+              "value": "16"
             },
             {
               "key": "RateLimit-Reset",
-              "value": "723"
+              "value": "900"
             },
             {
               "key": "Content-Type",
@@ -1517,7 +1517,7 @@
             },
             {
               "key": "Date",
-              "value": "Sun, 10 May 2026 06:21:37 GMT"
+              "value": "Sun, 10 May 2026 06:45:59 GMT"
             },
             {
               "key": "Connection",
@@ -1653,7 +1653,7 @@
           "responseTime": 4,
           "responseSize": 116
         },
-        "id": "6092d4a3-11c6-4276-a441-833ee5034c7e",
+        "id": "95695a11-6186-4bd5-a0f2-105f5d05ec2a",
         "assertions": [
           {
             "assertion": "Status is 400",
@@ -1663,15 +1663,15 @@
       },
       {
         "cursor": {
-          "ref": "c0864e7c-7d52-4c6e-a67a-9d62e05c819e",
+          "ref": "3c184c3e-ec05-4859-a2f8-d3ad0bf25e48",
           "length": 5,
           "cycles": 1,
           "position": 4,
           "iteration": 0,
-          "httpRequestId": "50fbb780-1c1c-444e-8a63-b06298127458"
+          "httpRequestId": "114ccb82-590d-4101-9806-8843df0670f8"
         },
         "item": {
-          "id": "56bd54c8-d153-4b8f-8965-b92011411b1d",
+          "id": "91255308-ea61-49e1-836b-d4ef93cb71d5",
           "name": "Missing Full Name",
           "request": {
             "url": {
@@ -1702,14 +1702,14 @@
             {
               "listen": "test",
               "script": {
-                "id": "6358c86d-464f-4647-b4fb-e3cf4719dd75",
+                "id": "c9e08ac2-12dc-45ec-993b-03dc1b892d26",
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status is 400', function () {",
                   "  pm.response.to.have.status(400);",
                   "});"
                 ],
-                "_lastExecutionId": "b153b9ea-e3f6-4c4e-b3a0-6e2dc153dbb3"
+                "_lastExecutionId": "fcf02aa6-846a-41a8-b230-cf47bac59e45"
               }
             }
           ]
@@ -1751,7 +1751,7 @@
             },
             {
               "key": "Postman-Token",
-              "value": "4ee3ba55-f3a4-4c45-a4df-6151f5eaaf1e",
+              "value": "c2bf154e-5490-4058-8d9b-eaa60b5e698a",
               "system": true
             },
             {
@@ -1782,7 +1782,7 @@
           }
         },
         "response": {
-          "id": "4df8d59a-cff0-47e2-b999-8c43fd88d641",
+          "id": "740e2358-ec8b-4781-808d-03ac812afc4c",
           "status": "Bad Request",
           "code": 400,
           "header": [
@@ -1804,11 +1804,11 @@
             },
             {
               "key": "RateLimit-Remaining",
-              "value": "0"
+              "value": "15"
             },
             {
               "key": "RateLimit-Reset",
-              "value": "723"
+              "value": "900"
             },
             {
               "key": "Content-Type",
@@ -1824,7 +1824,7 @@
             },
             {
               "key": "Date",
-              "value": "Sun, 10 May 2026 06:21:37 GMT"
+              "value": "Sun, 10 May 2026 06:45:59 GMT"
             },
             {
               "key": "Connection",
@@ -1897,10 +1897,10 @@
             ]
           },
           "cookie": [],
-          "responseTime": 3,
+          "responseTime": 4,
           "responseSize": 56
         },
-        "id": "56bd54c8-d153-4b8f-8965-b92011411b1d",
+        "id": "91255308-ea61-49e1-836b-d4ef93cb71d5",
         "assertions": [
           {
             "assertion": "Status is 400",
