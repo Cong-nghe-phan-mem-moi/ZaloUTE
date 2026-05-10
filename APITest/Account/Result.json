@@ -1,55 +1,1918 @@
 {
-  "collection_name": "ZaloUTE - Register API",
-  "results": [
-    {
-      "folder": "1. Register - Success",
-      "requests": [
-        {
-          "name": "Register New Account",
-          "method": "POST",
-          "url": "http://localhost:5000/api/auth/register",
-          "status": "201 Created",
-          "assertions": [
-            { "passed": true, "message": "Status is 201" },
-            { "passed": true, "message": "Response success true" }
-          ]
-        }
-      ]
-    },
-    {
-      "folder": "2. Register - Duplicate Email",
-      "requests": [
-        {
-          "name": "Register Existing Account",
-          "method": "POST",
-          "url": "http://localhost:5000/api/auth/register",
-          "status": "400 Bad Request",
-          "assertions": [{ "passed": true, "message": "Status is 400" }]
-        }
-      ]
-    },
-    {
-      "folder": "3. Register - Validation Errors",
-      "requests": [
-        {
-          "name": "Invalid Email",
-          "method": "POST",
-          "url": "http://localhost:5000/api/auth/register",
-          "status": "400 Bad Request"
-        },
-        {
-          "name": "Weak Password",
-          "method": "POST",
-          "url": "http://localhost:5000/api/auth/register",
-          "status": "400 Bad Request"
-        },
-        {
-          "name": "Missing Full Name",
-          "method": "POST",
-          "url": "http://localhost:5000/api/auth/register",
-          "status": "400 Bad Request"
-        }
-      ]
+  "collection": {
+    "item": [
+      {
+        "id": "fe846e3a-76f1-4837-a3a1-83a2f3adc494",
+        "name": "1. Register - Success",
+        "item": [
+          {
+            "id": "a577dba7-644b-466c-be4d-a51ea60fbf35",
+            "name": "Register New Account",
+            "request": {
+              "url": {
+                "path": [
+                  "auth",
+                  "register"
+                ],
+                "host": [
+                  "{{base_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "method": "POST",
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"fullName\": \"{{register_fullname}}\",\n  \"email\": \"{{generated_register_email}}\",\n  \"password\": \"{{register_password}}\"\n}"
+              }
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "e3c69356-340b-417d-b650-b13a51c29908",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status is 201', function () {",
+                    "  pm.response.to.have.status(201);",
+                    "});",
+                    "",
+                    "pm.test('Response success true', function () {",
+                    "  var data = pm.response.json();",
+                    "  pm.expect(data.success).to.eql(true);",
+                    "});",
+                    "",
+                    "pm.test('Response message is correct', function () {",
+                    "  var data = pm.response.json();",
+                    "  pm.expect(data.message).to.eql('Đăng ký thành công! Vui lòng xác thực OTP');",
+                    "});",
+                    "",
+                    "pm.test('Response data contains requested email', function () {",
+                    "  var data = pm.response.json();",
+                    "  pm.expect(data.data.email).to.eql(pm.environment.get('generated_register_email'));",
+                    "});",
+                    "",
+                    "pm.test('OTP notice is returned', function () {",
+                    "  var data = pm.response.json();",
+                    "  pm.expect(data.data.message).to.eql('OTP đã được gửi đến email của bạn');",
+                    "});"
+                  ],
+                  "_lastExecutionId": "7f7977f8-4fcb-4dae-a083-c2749fa017b1"
+                }
+              }
+            ]
+          }
+        ],
+        "event": [
+          {
+            "listen": "prerequest",
+            "script": {
+              "id": "548b9744-b854-4dda-b7bf-8cfd9e24a17b",
+              "type": "text/javascript",
+              "exec": [
+                "const generatedEmail = `newuser_${Date.now()}@example.com`;",
+                "pm.environment.set('generated_register_email', generatedEmail);"
+              ],
+              "_lastExecutionId": "6d89159d-0ac1-462c-b04a-9fcbb4283c90"
+            }
+          }
+        ]
+      },
+      {
+        "id": "9165b86f-6ab3-477b-9723-350d9a3ce612",
+        "name": "2. Register - Duplicate Email",
+        "item": [
+          {
+            "id": "38293263-a7d9-4b3a-9888-437bd9def0d7",
+            "name": "Register Existing Account",
+            "request": {
+              "url": {
+                "path": [
+                  "auth",
+                  "register"
+                ],
+                "host": [
+                  "{{base_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "method": "POST",
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"fullName\": \"Duplicate User\",\n  \"email\": \"{{generated_register_email}}\",\n  \"password\": \"{{register_password}}\"\n}"
+              }
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "3f786bf3-82fd-4eef-aad8-8aba74213a80",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status is 400', function () {",
+                    "  pm.response.to.have.status(400);",
+                    "});",
+                    "",
+                    "pm.test('Duplicate email message exists', function () {",
+                    "  var data = pm.response.json();",
+                    "  pm.expect(data.success).to.eql(false);",
+                    "  pm.expect(data.message).to.eql('Email này đã được đăng ký');",
+                    "});"
+                  ],
+                  "_lastExecutionId": "08257873-797e-4415-8438-90b4e1dc64bf"
+                }
+              }
+            ]
+          }
+        ],
+        "event": [
+          {
+            "listen": "prerequest",
+            "script": {
+              "id": "7be60ea8-f96d-4b31-8f5f-c63e908dd81f",
+              "type": "text/javascript",
+              "exec": [
+                "const generatedEmail = pm.environment.get('generated_register_email');",
+                "if (!generatedEmail) {",
+                "  throw new Error('generated_register_email is missing. Run the success case first.');",
+                "}"
+              ],
+              "_lastExecutionId": "084c2a6c-0da3-4c39-8f10-9cdf5a86ac28"
+            }
+          }
+        ]
+      },
+      {
+        "id": "da21d34f-6605-43ad-8f0e-c64fb052e048",
+        "name": "3. Register - Validation Errors",
+        "item": [
+          {
+            "id": "f0846188-fca5-41c1-8079-397ff6dd3d5a",
+            "name": "Invalid Email",
+            "request": {
+              "url": {
+                "path": [
+                  "auth",
+                  "register"
+                ],
+                "host": [
+                  "{{base_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "method": "POST",
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"fullName\": \"User Invalid Email\",\n  \"email\": \"invalid-email\",\n  \"password\": \"Password@123\"\n}"
+              }
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "9512c7df-372e-4bab-8960-fcc5b92a7e7c",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status is 400', function () {",
+                    "  pm.response.to.have.status(400);",
+                    "});"
+                  ],
+                  "_lastExecutionId": "8db531b3-e8a0-4e8e-a6ef-6217f514043d"
+                }
+              }
+            ]
+          },
+          {
+            "id": "6092d4a3-11c6-4276-a441-833ee5034c7e",
+            "name": "Weak Password",
+            "request": {
+              "url": {
+                "path": [
+                  "auth",
+                  "register"
+                ],
+                "host": [
+                  "{{base_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "method": "POST",
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"fullName\": \"Weak Password User\",\n  \"email\": \"weakpass@example.com\",\n  \"password\": \"12345678\"\n}"
+              }
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "8c67a714-e8bf-49b9-a4ac-e09b7d7e1555",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status is 400', function () {",
+                    "  pm.response.to.have.status(400);",
+                    "});"
+                  ],
+                  "_lastExecutionId": "79c4fe78-76d5-41b1-a9f7-0d72c8ff21b6"
+                }
+              }
+            ]
+          },
+          {
+            "id": "56bd54c8-d153-4b8f-8965-b92011411b1d",
+            "name": "Missing Full Name",
+            "request": {
+              "url": {
+                "path": [
+                  "auth",
+                  "register"
+                ],
+                "host": [
+                  "{{base_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "method": "POST",
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"email\": \"nofullname@example.com\",\n  \"password\": \"Password@123\"\n}"
+              }
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "6358c86d-464f-4647-b4fb-e3cf4719dd75",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status is 400', function () {",
+                    "  pm.response.to.have.status(400);",
+                    "});"
+                  ],
+                  "_lastExecutionId": "b153b9ea-e3f6-4c4e-b3a0-6e2dc153dbb3"
+                }
+              }
+            ]
+          }
+        ],
+        "event": []
+      }
+    ],
+    "event": [],
+    "variable": [],
+    "info": {
+      "_postman_id": "aa99652d-605b-4497-af09-88e9345bfd7e",
+      "name": "ZaloUTE - Register API",
+      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+      "description": {
+        "content": "Postman collection to test register endpoint /api/auth/register",
+        "type": "text/plain"
+      }
     }
-  ]
+  },
+  "environment": {
+    "id": "zaloute-register-env",
+    "name": "ZaloUTE Register Environment",
+    "values": [
+      {
+        "type": "any",
+        "value": "http://localhost:5000/api",
+        "key": "base_url"
+      },
+      {
+        "type": "any",
+        "value": "newuser_{{$timestamp}}@example.com",
+        "key": "register_email"
+      },
+      {
+        "type": "any",
+        "value": "Password@123",
+        "key": "register_password"
+      },
+      {
+        "type": "any",
+        "value": "Vo An Thai",
+        "key": "register_fullname"
+      },
+      {
+        "type": "any",
+        "value": "newuser_1778394097079@example.com",
+        "key": "generated_register_email"
+      }
+    ]
+  },
+  "globals": {
+    "id": "2594c7a2-09e9-487c-b971-20f8a2fb871d",
+    "values": []
+  },
+  "run": {
+    "stats": {
+      "iterations": {
+        "total": 1,
+        "pending": 0,
+        "failed": 0
+      },
+      "items": {
+        "total": 5,
+        "pending": 0,
+        "failed": 0
+      },
+      "scripts": {
+        "total": 7,
+        "pending": 0,
+        "failed": 0
+      },
+      "prerequests": {
+        "total": 5,
+        "pending": 0,
+        "failed": 0
+      },
+      "requests": {
+        "total": 5,
+        "pending": 0,
+        "failed": 0
+      },
+      "tests": {
+        "total": 5,
+        "pending": 0,
+        "failed": 0
+      },
+      "assertions": {
+        "total": 10,
+        "pending": 0,
+        "failed": 0
+      },
+      "testScripts": {
+        "total": 5,
+        "pending": 0,
+        "failed": 0
+      },
+      "prerequestScripts": {
+        "total": 2,
+        "pending": 0,
+        "failed": 0
+      }
+    },
+    "timings": {
+      "responseAverage": 82.8,
+      "responseMin": 3,
+      "responseMax": 309,
+      "responseSd": 118.54180697121164,
+      "dnsAverage": 0,
+      "dnsMin": 0,
+      "dnsMax": 0,
+      "dnsSd": 0,
+      "firstByteAverage": 0,
+      "firstByteMin": 0,
+      "firstByteMax": 0,
+      "firstByteSd": 0,
+      "started": 1778394097049,
+      "completed": 1778394097940
+    },
+    "executions": [
+      {
+        "cursor": {
+          "position": 0,
+          "iteration": 0,
+          "length": 5,
+          "cycles": 1,
+          "empty": false,
+          "eof": false,
+          "bof": true,
+          "cr": false,
+          "ref": "8480ffb6-8716-478c-a594-0faf2e648ef9",
+          "httpRequestId": "d402482b-1286-4223-81e8-6af66d27c38a"
+        },
+        "item": {
+          "id": "a577dba7-644b-466c-be4d-a51ea60fbf35",
+          "name": "Register New Account",
+          "request": {
+            "url": {
+              "path": [
+                "auth",
+                "register"
+              ],
+              "host": [
+                "{{base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"{{register_fullname}}\",\n  \"email\": \"{{generated_register_email}}\",\n  \"password\": \"{{register_password}}\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "e3c69356-340b-417d-b650-b13a51c29908",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Response success true', function () {",
+                  "  var data = pm.response.json();",
+                  "  pm.expect(data.success).to.eql(true);",
+                  "});",
+                  "",
+                  "pm.test('Response message is correct', function () {",
+                  "  var data = pm.response.json();",
+                  "  pm.expect(data.message).to.eql('Đăng ký thành công! Vui lòng xác thực OTP');",
+                  "});",
+                  "",
+                  "pm.test('Response data contains requested email', function () {",
+                  "  var data = pm.response.json();",
+                  "  pm.expect(data.data.email).to.eql(pm.environment.get('generated_register_email'));",
+                  "});",
+                  "",
+                  "pm.test('OTP notice is returned', function () {",
+                  "  var data = pm.response.json();",
+                  "  pm.expect(data.data.message).to.eql('OTP đã được gửi đến email của bạn');",
+                  "});"
+                ],
+                "_lastExecutionId": "7f7977f8-4fcb-4dae-a083-c2749fa017b1"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "5000",
+            "path": [
+              "api",
+              "auth",
+              "register"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "92a13482-1cc1-4b9e-b860-f57a4c2315ba",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:5000",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            },
+            {
+              "key": "Content-Length",
+              "value": "108",
+              "system": true
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"fullName\": \"Vo An Thai\",\n  \"email\": \"newuser_1778394097079@example.com\",\n  \"password\": \"Password@123\"\n}"
+          }
+        },
+        "response": {
+          "id": "456b76d7-7f02-4687-a81b-b7357f47e3be",
+          "status": "Created",
+          "code": 201,
+          "header": [
+            {
+              "key": "X-Powered-By",
+              "value": "Express"
+            },
+            {
+              "key": "Access-Control-Allow-Origin",
+              "value": "*"
+            },
+            {
+              "key": "RateLimit-Policy",
+              "value": "20;w=900"
+            },
+            {
+              "key": "RateLimit-Limit",
+              "value": "20"
+            },
+            {
+              "key": "RateLimit-Remaining",
+              "value": "4"
+            },
+            {
+              "key": "RateLimit-Reset",
+              "value": "724"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "key": "Content-Length",
+              "value": "193"
+            },
+            {
+              "key": "ETag",
+              "value": "W/\"c1-bFUCnI6cps5it7tfHt154NY8WvQ\""
+            },
+            {
+              "key": "Date",
+              "value": "Sun, 10 May 2026 06:21:37 GMT"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "key": "Keep-Alive",
+              "value": "timeout=5"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              115,
+              117,
+              99,
+              99,
+              101,
+              115,
+              115,
+              34,
+              58,
+              116,
+              114,
+              117,
+              101,
+              44,
+              34,
+              109,
+              101,
+              115,
+              115,
+              97,
+              103,
+              101,
+              34,
+              58,
+              34,
+              196,
+              144,
+              196,
+              131,
+              110,
+              103,
+              32,
+              107,
+              195,
+              189,
+              32,
+              116,
+              104,
+              195,
+              160,
+              110,
+              104,
+              32,
+              99,
+              195,
+              180,
+              110,
+              103,
+              33,
+              32,
+              86,
+              117,
+              105,
+              32,
+              108,
+              195,
+              178,
+              110,
+              103,
+              32,
+              120,
+              195,
+              161,
+              99,
+              32,
+              116,
+              104,
+              225,
+              187,
+              177,
+              99,
+              32,
+              79,
+              84,
+              80,
+              34,
+              44,
+              34,
+              100,
+              97,
+              116,
+              97,
+              34,
+              58,
+              123,
+              34,
+              101,
+              109,
+              97,
+              105,
+              108,
+              34,
+              58,
+              34,
+              110,
+              101,
+              119,
+              117,
+              115,
+              101,
+              114,
+              95,
+              49,
+              55,
+              55,
+              56,
+              51,
+              57,
+              52,
+              48,
+              57,
+              55,
+              48,
+              55,
+              57,
+              64,
+              101,
+              120,
+              97,
+              109,
+              112,
+              108,
+              101,
+              46,
+              99,
+              111,
+              109,
+              34,
+              44,
+              34,
+              109,
+              101,
+              115,
+              115,
+              97,
+              103,
+              101,
+              34,
+              58,
+              34,
+              79,
+              84,
+              80,
+              32,
+              196,
+              145,
+              195,
+              163,
+              32,
+              196,
+              145,
+              198,
+              176,
+              225,
+              187,
+              163,
+              99,
+              32,
+              103,
+              225,
+              187,
+              173,
+              105,
+              32,
+              196,
+              145,
+              225,
+              186,
+              191,
+              110,
+              32,
+              101,
+              109,
+              97,
+              105,
+              108,
+              32,
+              99,
+              225,
+              187,
+              167,
+              97,
+              32,
+              98,
+              225,
+              186,
+              161,
+              110,
+              34,
+              125,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 309,
+          "responseSize": 193
+        },
+        "id": "a577dba7-644b-466c-be4d-a51ea60fbf35",
+        "assertions": [
+          {
+            "assertion": "Status is 201",
+            "skipped": false
+          },
+          {
+            "assertion": "Response success true",
+            "skipped": false
+          },
+          {
+            "assertion": "Response message is correct",
+            "skipped": false
+          },
+          {
+            "assertion": "Response data contains requested email",
+            "skipped": false
+          },
+          {
+            "assertion": "OTP notice is returned",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "91bfc763-de6c-43dd-9d11-683738c2b710",
+          "length": 5,
+          "cycles": 1,
+          "position": 1,
+          "iteration": 0,
+          "httpRequestId": "291b790c-2f16-4511-ae5e-3a9b8ed272ab"
+        },
+        "item": {
+          "id": "38293263-a7d9-4b3a-9888-437bd9def0d7",
+          "name": "Register Existing Account",
+          "request": {
+            "url": {
+              "path": [
+                "auth",
+                "register"
+              ],
+              "host": [
+                "{{base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Duplicate User\",\n  \"email\": \"{{generated_register_email}}\",\n  \"password\": \"{{register_password}}\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "3f786bf3-82fd-4eef-aad8-8aba74213a80",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Duplicate email message exists', function () {",
+                  "  var data = pm.response.json();",
+                  "  pm.expect(data.success).to.eql(false);",
+                  "  pm.expect(data.message).to.eql('Email này đã được đăng ký');",
+                  "});"
+                ],
+                "_lastExecutionId": "08257873-797e-4415-8438-90b4e1dc64bf"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "5000",
+            "path": [
+              "api",
+              "auth",
+              "register"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "7d0fb471-b030-42ca-ba13-c6c5014ce6dc",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:5000",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            },
+            {
+              "key": "Content-Length",
+              "value": "112",
+              "system": true
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"fullName\": \"Duplicate User\",\n  \"email\": \"newuser_1778394097079@example.com\",\n  \"password\": \"Password@123\"\n}"
+          }
+        },
+        "response": {
+          "id": "34b32c23-6994-4f87-83c2-034797f94448",
+          "status": "Bad Request",
+          "code": 400,
+          "header": [
+            {
+              "key": "X-Powered-By",
+              "value": "Express"
+            },
+            {
+              "key": "Access-Control-Allow-Origin",
+              "value": "*"
+            },
+            {
+              "key": "RateLimit-Policy",
+              "value": "20;w=900"
+            },
+            {
+              "key": "RateLimit-Limit",
+              "value": "20"
+            },
+            {
+              "key": "RateLimit-Remaining",
+              "value": "3"
+            },
+            {
+              "key": "RateLimit-Reset",
+              "value": "723"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "key": "Content-Length",
+              "value": "65"
+            },
+            {
+              "key": "ETag",
+              "value": "W/\"41-GjLwNQ7zAMFZAL1oZhlmynLPkJ0\""
+            },
+            {
+              "key": "Date",
+              "value": "Sun, 10 May 2026 06:21:37 GMT"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "key": "Keep-Alive",
+              "value": "timeout=5"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              115,
+              117,
+              99,
+              99,
+              101,
+              115,
+              115,
+              34,
+              58,
+              102,
+              97,
+              108,
+              115,
+              101,
+              44,
+              34,
+              109,
+              101,
+              115,
+              115,
+              97,
+              103,
+              101,
+              34,
+              58,
+              34,
+              69,
+              109,
+              97,
+              105,
+              108,
+              32,
+              110,
+              195,
+              160,
+              121,
+              32,
+              196,
+              145,
+              195,
+              163,
+              32,
+              196,
+              145,
+              198,
+              176,
+              225,
+              187,
+              163,
+              99,
+              32,
+              196,
+              145,
+              196,
+              131,
+              110,
+              103,
+              32,
+              107,
+              195,
+              189,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 95,
+          "responseSize": 65
+        },
+        "id": "38293263-a7d9-4b3a-9888-437bd9def0d7",
+        "assertions": [
+          {
+            "assertion": "Status is 400",
+            "skipped": false
+          },
+          {
+            "assertion": "Duplicate email message exists",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "2d9609e1-5832-4eb9-8ea5-ba99edd08b4f",
+          "length": 5,
+          "cycles": 1,
+          "position": 2,
+          "iteration": 0,
+          "httpRequestId": "c536cbca-3a08-47c5-8bce-5a10f0d4f6c9"
+        },
+        "item": {
+          "id": "f0846188-fca5-41c1-8079-397ff6dd3d5a",
+          "name": "Invalid Email",
+          "request": {
+            "url": {
+              "path": [
+                "auth",
+                "register"
+              ],
+              "host": [
+                "{{base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"User Invalid Email\",\n  \"email\": \"invalid-email\",\n  \"password\": \"Password@123\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "9512c7df-372e-4bab-8960-fcc5b92a7e7c",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});"
+                ],
+                "_lastExecutionId": "8db531b3-e8a0-4e8e-a6ef-6217f514043d"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "5000",
+            "path": [
+              "api",
+              "auth",
+              "register"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "e432e76d-9a82-49bf-83fc-bba37be5370d",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:5000",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            },
+            {
+              "key": "Content-Length",
+              "value": "96",
+              "system": true
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"fullName\": \"User Invalid Email\",\n  \"email\": \"invalid-email\",\n  \"password\": \"Password@123\"\n}"
+          }
+        },
+        "response": {
+          "id": "5fc3df6d-b0f9-44bf-aea7-7f3fb974fb16",
+          "status": "Bad Request",
+          "code": 400,
+          "header": [
+            {
+              "key": "X-Powered-By",
+              "value": "Express"
+            },
+            {
+              "key": "Access-Control-Allow-Origin",
+              "value": "*"
+            },
+            {
+              "key": "RateLimit-Policy",
+              "value": "20;w=900"
+            },
+            {
+              "key": "RateLimit-Limit",
+              "value": "20"
+            },
+            {
+              "key": "RateLimit-Remaining",
+              "value": "2"
+            },
+            {
+              "key": "RateLimit-Reset",
+              "value": "723"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "key": "Content-Length",
+              "value": "64"
+            },
+            {
+              "key": "ETag",
+              "value": "W/\"40-HA9iD753Id5YdN18F3Ojt/KtcHQ\""
+            },
+            {
+              "key": "Date",
+              "value": "Sun, 10 May 2026 06:21:37 GMT"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "key": "Keep-Alive",
+              "value": "timeout=5"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              115,
+              117,
+              99,
+              99,
+              101,
+              115,
+              115,
+              34,
+              58,
+              102,
+              97,
+              108,
+              115,
+              101,
+              44,
+              34,
+              109,
+              101,
+              115,
+              115,
+              97,
+              103,
+              101,
+              34,
+              58,
+              34,
+              69,
+              109,
+              97,
+              105,
+              108,
+              32,
+              107,
+              104,
+              195,
+              180,
+              110,
+              103,
+              32,
+              196,
+              145,
+              195,
+              186,
+              110,
+              103,
+              32,
+              196,
+              145,
+              225,
+              187,
+              139,
+              110,
+              104,
+              32,
+              100,
+              225,
+              186,
+              161,
+              110,
+              103,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 3,
+          "responseSize": 64
+        },
+        "id": "f0846188-fca5-41c1-8079-397ff6dd3d5a",
+        "assertions": [
+          {
+            "assertion": "Status is 400",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "c349437b-7afb-4bff-9780-a57accad5d17",
+          "length": 5,
+          "cycles": 1,
+          "position": 3,
+          "iteration": 0,
+          "httpRequestId": "0a5cf43f-16a1-457e-b8c8-f2cde25e081a"
+        },
+        "item": {
+          "id": "6092d4a3-11c6-4276-a441-833ee5034c7e",
+          "name": "Weak Password",
+          "request": {
+            "url": {
+              "path": [
+                "auth",
+                "register"
+              ],
+              "host": [
+                "{{base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Weak Password User\",\n  \"email\": \"weakpass@example.com\",\n  \"password\": \"12345678\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "8c67a714-e8bf-49b9-a4ac-e09b7d7e1555",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});"
+                ],
+                "_lastExecutionId": "79c4fe78-76d5-41b1-a9f7-0d72c8ff21b6"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "5000",
+            "path": [
+              "api",
+              "auth",
+              "register"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "f5c3f633-afa5-47b3-a701-3d29e759545e",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:5000",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            },
+            {
+              "key": "Content-Length",
+              "value": "99",
+              "system": true
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"fullName\": \"Weak Password User\",\n  \"email\": \"weakpass@example.com\",\n  \"password\": \"12345678\"\n}"
+          }
+        },
+        "response": {
+          "id": "ddc86c26-4e82-489b-ba80-a6b46024106e",
+          "status": "Bad Request",
+          "code": 400,
+          "header": [
+            {
+              "key": "X-Powered-By",
+              "value": "Express"
+            },
+            {
+              "key": "Access-Control-Allow-Origin",
+              "value": "*"
+            },
+            {
+              "key": "RateLimit-Policy",
+              "value": "20;w=900"
+            },
+            {
+              "key": "RateLimit-Limit",
+              "value": "20"
+            },
+            {
+              "key": "RateLimit-Remaining",
+              "value": "1"
+            },
+            {
+              "key": "RateLimit-Reset",
+              "value": "723"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "key": "Content-Length",
+              "value": "116"
+            },
+            {
+              "key": "ETag",
+              "value": "W/\"74-JoN5cy8oDJim6Bz9JwVEt2BNkWE\""
+            },
+            {
+              "key": "Date",
+              "value": "Sun, 10 May 2026 06:21:37 GMT"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "key": "Keep-Alive",
+              "value": "timeout=5"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              115,
+              117,
+              99,
+              99,
+              101,
+              115,
+              115,
+              34,
+              58,
+              102,
+              97,
+              108,
+              115,
+              101,
+              44,
+              34,
+              109,
+              101,
+              115,
+              115,
+              97,
+              103,
+              101,
+              34,
+              58,
+              34,
+              77,
+              225,
+              186,
+              173,
+              116,
+              32,
+              107,
+              104,
+              225,
+              186,
+              169,
+              117,
+              32,
+              112,
+              104,
+              225,
+              186,
+              163,
+              105,
+              32,
+              99,
+              104,
+              225,
+              187,
+              169,
+              97,
+              32,
+              99,
+              104,
+              225,
+              187,
+              175,
+              32,
+              104,
+              111,
+              97,
+              44,
+              32,
+              99,
+              104,
+              225,
+              187,
+              175,
+              32,
+              116,
+              104,
+              198,
+              176,
+              225,
+              187,
+              157,
+              110,
+              103,
+              44,
+              32,
+              115,
+              225,
+              187,
+              145,
+              32,
+              118,
+              195,
+              160,
+              32,
+              107,
+              195,
+              189,
+              32,
+              116,
+              225,
+              187,
+              177,
+              32,
+              196,
+              145,
+              225,
+              186,
+              183,
+              99,
+              32,
+              98,
+              105,
+              225,
+              187,
+              135,
+              116,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 4,
+          "responseSize": 116
+        },
+        "id": "6092d4a3-11c6-4276-a441-833ee5034c7e",
+        "assertions": [
+          {
+            "assertion": "Status is 400",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "c0864e7c-7d52-4c6e-a67a-9d62e05c819e",
+          "length": 5,
+          "cycles": 1,
+          "position": 4,
+          "iteration": 0,
+          "httpRequestId": "50fbb780-1c1c-444e-8a63-b06298127458"
+        },
+        "item": {
+          "id": "56bd54c8-d153-4b8f-8965-b92011411b1d",
+          "name": "Missing Full Name",
+          "request": {
+            "url": {
+              "path": [
+                "auth",
+                "register"
+              ],
+              "host": [
+                "{{base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"nofullname@example.com\",\n  \"password\": \"Password@123\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "6358c86d-464f-4647-b4fb-e3cf4719dd75",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});"
+                ],
+                "_lastExecutionId": "b153b9ea-e3f6-4c4e-b3a0-6e2dc153dbb3"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "5000",
+            "path": [
+              "api",
+              "auth",
+              "register"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "4ee3ba55-f3a4-4c45-a4df-6151f5eaaf1e",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:5000",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            },
+            {
+              "key": "Content-Length",
+              "value": "69",
+              "system": true
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"email\": \"nofullname@example.com\",\n  \"password\": \"Password@123\"\n}"
+          }
+        },
+        "response": {
+          "id": "4df8d59a-cff0-47e2-b999-8c43fd88d641",
+          "status": "Bad Request",
+          "code": 400,
+          "header": [
+            {
+              "key": "X-Powered-By",
+              "value": "Express"
+            },
+            {
+              "key": "Access-Control-Allow-Origin",
+              "value": "*"
+            },
+            {
+              "key": "RateLimit-Policy",
+              "value": "20;w=900"
+            },
+            {
+              "key": "RateLimit-Limit",
+              "value": "20"
+            },
+            {
+              "key": "RateLimit-Remaining",
+              "value": "0"
+            },
+            {
+              "key": "RateLimit-Reset",
+              "value": "723"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "key": "Content-Length",
+              "value": "56"
+            },
+            {
+              "key": "ETag",
+              "value": "W/\"38-EmAlCdEWw8pzddaxsxpkxRFSup0\""
+            },
+            {
+              "key": "Date",
+              "value": "Sun, 10 May 2026 06:21:37 GMT"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "key": "Keep-Alive",
+              "value": "timeout=5"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              115,
+              117,
+              99,
+              99,
+              101,
+              115,
+              115,
+              34,
+              58,
+              102,
+              97,
+              108,
+              115,
+              101,
+              44,
+              34,
+              109,
+              101,
+              115,
+              115,
+              97,
+              103,
+              101,
+              34,
+              58,
+              34,
+              72,
+              225,
+              187,
+              141,
+              32,
+              116,
+              195,
+              170,
+              110,
+              32,
+              108,
+              195,
+              160,
+              32,
+              98,
+              225,
+              186,
+              175,
+              116,
+              32,
+              98,
+              117,
+              225,
+              187,
+              153,
+              99,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 3,
+          "responseSize": 56
+        },
+        "id": "56bd54c8-d153-4b8f-8965-b92011411b1d",
+        "assertions": [
+          {
+            "assertion": "Status is 400",
+            "skipped": false
+          }
+        ]
+      }
+    ],
+    "transfers": {
+      "responseTotal": 494
+    },
+    "failures": [],
+    "error": null
+  }
 }

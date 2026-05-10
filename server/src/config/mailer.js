@@ -1,19 +1,34 @@
 const nodemailer = require("nodemailer");
 
-// Cấu hình email service (Gmail, SendGrid, v.v.)
-// Thay thế bằng thông tin email của bạn
+const smtpPort = Number(process.env.SMTP_PORT || 587);
+
 const transporter = nodemailer.createTransport({
-  service: "gmail", // hoặc service khác
+  host: process.env.SMTP_HOST || "smtp.gmail.com",
+  port: smtpPort,
+  secure: process.env.SMTP_SECURE === "true" || smtpPort === 465,
   auth: {
-    user: process.env.EMAIL_USER || "your-email@gmail.com",
-    pass: process.env.EMAIL_PASSWORD || "your-app-password", // App Password cho Gmail
+    user:
+      process.env.SMTP_USER || process.env.EMAIL_USER || "your-email@gmail.com",
+    pass:
+      process.env.SMTP_PASS ||
+      process.env.EMAIL_PASSWORD ||
+      "your-app-password",
   },
 });
 
 const sendOTPEmail = async (email, otp) => {
   try {
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`[MOCK EMAIL] OTP for ${email}: ${otp}`);
+      return { success: true };
+    }
+
     const mailOptions = {
-      from: process.env.EMAIL_USER || "your-email@gmail.com",
+      from:
+        process.env.EMAIL_FROM ||
+        process.env.SMTP_USER ||
+        process.env.EMAIL_USER ||
+        "your-email@gmail.com",
       to: email,
       subject: "Xác thực OTP đăng ký tài khoản",
       html: `
