@@ -17,15 +17,26 @@ const accountSchema = new mongoose.Schema(
     },
     provider: {
       type: String,
-      enum: ['google'],
+      enum: ['google', 'local'],
     },
     isVerified: {
       type: Boolean,
       default: false,
     },
-    roles: {
-      type: [String],
-      default: ['user'],
+    role: {
+      type: String,
+      enum: ['user', 'admin'],
+      default: 'user',
+    },
+    otp: {
+      code: {
+        type: String,
+        default: null,
+      },
+      expiresAt: {
+        type: Date,
+        default: null,
+      },
     },
     user: {
       type: mongoose.Schema.Types.ObjectId,

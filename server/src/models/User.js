@@ -44,10 +44,10 @@ const userSchema = new mongoose.Schema(
       maxlength: [100, 'Address must not exceed 100 characters'],
       default: '',
     },
-    role: {
-      type: String,
-      enum: ['user', 'admin'],
-      default: 'user',
+    account: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Account',
+      default: null,
     },
     createdAt: {
       type: Date,

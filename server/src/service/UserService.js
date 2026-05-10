@@ -49,7 +49,6 @@ class UserService {
           dateOfBirth: updatedUser.dateOfBirth,
           gender: updatedUser.gender,
           address: updatedUser.address,
-          role: updatedUser.role,
         },
       };
     } catch (error) {
@@ -80,12 +79,12 @@ class UserService {
           dateOfBirth: user.dateOfBirth,
           gender: user.gender,
           address: user.address,
-          role: user.role,
           createdAt: user.createdAt,
           updatedAt: user.updatedAt,
         },
       };
     } catch (error) {
+      console.error('getUserProfile error:', error);
       throw error;
     }
   }
@@ -113,7 +112,6 @@ class UserService {
           dateOfBirth: user.dateOfBirth,
           gender: user.gender,
           address: user.address,
-          role: user.role,
           createdAt: user.createdAt,
           updatedAt: user.updatedAt,
         },

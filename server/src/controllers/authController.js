@@ -43,6 +43,10 @@ const register = async (req, res) => {
     });
     await newAccount.save();
 
+    // Update user with account reference
+    newUser.account = newAccount._id;
+    await newUser.save();
+
     // Send OTP via email
     const emailResult = await sendOTPEmail(email, otp);
 
