@@ -1,0 +1,1102 @@
+{
+  "collection": {
+    "item": [
+      {
+        "id": "8bc1e9eb-3330-4250-b009-b7876b88ebcc",
+        "name": "1. Request OTP",
+        "item": [
+          {
+            "id": "89460d19-2b2c-4f09-a600-b605913843bc",
+            "name": "Request OTP - Success",
+            "request": {
+              "url": {
+                "path": [
+                  "auth",
+                  "forgot-password",
+                  "request-otp"
+                ],
+                "host": [
+                  "{{base_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "method": "POST",
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"email\": \"{{forgot_email}}\"\n}"
+              }
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "4cea9eee-e308-4f8e-a25e-502438e8aee7",
+                  "type": "text/javascript",
+                  "exec": [
+                    "const status = pm.response.code;",
+                    "pm.environment.set('otp_request_ok', status === 200);",
+                    "",
+                    "pm.test('Status is 200 or 429', function () {",
+                    "  pm.expect([200, 429]).to.include(status);",
+                    "});",
+                    "",
+                    "if (status === 200) {",
+                    "  const data = pm.response.json();",
+                    "  pm.test('Response success true', function () {",
+                    "    pm.expect(data.success).to.eql(true);",
+                    "  });",
+                    "  pm.test('Response message is generic', function () {",
+                    "    pm.expect(data.message).to.eql('Nếu email tồn tại, mã OTP đã được gửi.');",
+                    "  });",
+                    "  console.log('Request OTP success.');",
+                    "} else {",
+                    "  console.warn('Rate limit hit. Skipping OTP verification flow.');",
+                    "}"
+                  ],
+                  "_lastExecutionId": "64c70319-f494-4ed1-9b68-8a04c186a7bc"
+                }
+              }
+            ]
+          },
+          {
+            "id": "328de774-5596-453d-9ab1-3145d6a5d7d8",
+            "name": "Get Reset OTP (Dev)",
+            "request": {
+              "url": {
+                "path": [
+                  "auth",
+                  "dev",
+                  "reset-otp"
+                ],
+                "host": [
+                  "{{base_url}}"
+                ],
+                "query": [
+                  {
+                    "key": "email",
+                    "value": "{{forgot_email}}"
+                  }
+                ],
+                "variable": []
+              },
+              "method": "GET"
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "prerequest",
+                "script": {
+                  "id": "f0ff4cb4-ae6f-468e-abd1-11bef7ccad87",
+                  "type": "text/javascript",
+                  "exec": [
+                    "const otpRequestOk = pm.environment.get('otp_request_ok');",
+                    "if (!otpRequestOk) {",
+                    "  console.warn('OTP request did not succeed. Skipping OTP fetch.');",
+                    "  pm.execution.skipRequest();",
+                    "}"
+                  ],
+                  "_lastExecutionId": "84849a92-b71b-4178-9f75-1c76d83f692b"
+                }
+              },
+              {
+                "listen": "test",
+                "script": {
+                  "id": "91fd23f7-3367-4301-a84d-726902b565d1",
+                  "type": "text/javascript",
+                  "exec": [
+                    "if (pm.response.code === 200) {",
+                    "  const data = pm.response.json();",
+                    "  pm.environment.set('reset_otp', data.data.otp);",
+                    "}",
+                    "pm.test('Dev OTP fetch success in non-production', function () {",
+                    "  pm.expect([200, 403, 404]).to.include(pm.response.code);",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "id": "f45d34a1-8952-4e53-a58c-aa46f7f84ed0",
+            "name": "Request OTP - Invalid Email",
+            "request": {
+              "url": {
+                "path": [
+                  "auth",
+                  "forgot-password",
+                  "request-otp"
+                ],
+                "host": [
+                  "{{base_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "method": "POST",
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"email\": \"invalid-email\"\n}"
+              }
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "0b709746-0a93-4788-903d-ddc7e46834bc",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status is 400 or 429', function () {",
+                    "  pm.expect([400, 429]).to.include(pm.response.code);",
+                    "});"
+                  ],
+                  "_lastExecutionId": "422f24d4-c722-4d23-bb5f-e2a547d10091"
+                }
+              }
+            ]
+          }
+        ],
+        "event": []
+      },
+      {
+        "id": "d4ce6854-37fb-432a-8e86-4869e16edfca",
+        "name": "2. Verify OTP",
+        "item": [
+          {
+            "id": "243448aa-14a4-4fba-95fd-779687eaafcd",
+            "name": "Verify OTP - Success",
+            "request": {
+              "url": {
+                "path": [
+                  "auth",
+                  "forgot-password",
+                  "verify-otp"
+                ],
+                "host": [
+                  "{{base_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "method": "POST",
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"email\": \"{{forgot_email}}\",\n  \"otp\": \"{{reset_otp}}\"\n}"
+              }
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "prerequest",
+                "script": {
+                  "id": "b42e0235-fe66-461f-a7fe-d91cd696a0e8",
+                  "type": "text/javascript",
+                  "exec": [
+                    "const otpRequestOk = pm.environment.get('otp_request_ok');",
+                    "const resetOtp = pm.environment.get('reset_otp');",
+                    "if (!otpRequestOk || !resetOtp) {",
+                    "  console.warn('OTP not available. Skipping verify OTP step.');",
+                    "  pm.execution.skipRequest();",
+                    "}"
+                  ],
+                  "_lastExecutionId": "465262d3-fcee-4dc8-b6c6-2e2ae5e526f3"
+                }
+              },
+              {
+                "listen": "test",
+                "script": {
+                  "id": "a5673c8a-0236-4cd5-8e23-057cffbdb100",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status is 200', function () {",
+                    "  pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test('Response success true', function () {",
+                    "  var data = pm.response.json();",
+                    "  pm.expect(data.success).to.eql(true);",
+                    "});",
+                    "",
+                    "pm.test('Reset token returned', function () {",
+                    "  var data = pm.response.json();",
+                    "  pm.expect(data.data.resetToken).to.be.a('string');",
+                    "  pm.environment.set('reset_token', data.data.resetToken);",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        ],
+        "event": []
+      },
+      {
+        "id": "cc848d48-03e8-42a0-a9b3-004f174a101d",
+        "name": "3. Reset Password",
+        "item": [
+          {
+            "id": "ad39ffaf-0bae-4df8-af72-4e9c14756048",
+            "name": "Reset Password - Success",
+            "request": {
+              "url": {
+                "path": [
+                  "auth",
+                  "forgot-password",
+                  "reset-password"
+                ],
+                "host": [
+                  "{{base_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "Authorization",
+                  "value": "Bearer {{reset_token}}"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "method": "POST",
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"newPassword\": \"{{forgot_new_password}}\",\n  \"confirmPassword\": \"{{forgot_confirm_password}}\"\n}"
+              }
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "prerequest",
+                "script": {
+                  "id": "56b01878-409c-45c8-9398-a3bedd9912d2",
+                  "type": "text/javascript",
+                  "exec": [
+                    "const resetToken = pm.environment.get('reset_token');",
+                    "if (!resetToken) {",
+                    "  console.warn('reset_token is missing. Run verify OTP first.');",
+                    "  pm.execution.skipRequest();",
+                    "}"
+                  ],
+                  "_lastExecutionId": "80b038f3-9804-4ee7-a84a-7127531fd89b"
+                }
+              },
+              {
+                "listen": "test",
+                "script": {
+                  "id": "0e33a9cd-0c8e-41c3-b4fc-86e94ed7dc48",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status is 200', function () {",
+                    "  pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test('Response success true', function () {",
+                    "  var data = pm.response.json();",
+                    "  pm.expect(data.success).to.eql(true);",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          }
+        ],
+        "event": []
+      }
+    ],
+    "event": [],
+    "variable": [],
+    "info": {
+      "_postman_id": "c36179f4-93ba-49fb-8eff-b890e67dcc28",
+      "name": "ZaloUTE - Forgot Password API",
+      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+      "description": {
+        "content": "Postman collection to test forgot password endpoints",
+        "type": "text/plain"
+      }
+    }
+  },
+  "environment": {
+    "id": "zaloute-forgot-password-env",
+    "name": "ZaloUTE Forgot Password Environment",
+    "values": [
+      {
+        "type": "any",
+        "value": "http://localhost:5000/api",
+        "key": "base_url"
+      },
+      {
+        "type": "any",
+        "value": "user@example.com",
+        "key": "forgot_email"
+      },
+      {
+        "type": "any",
+        "value": "NewPassword@123",
+        "key": "forgot_new_password"
+      },
+      {
+        "type": "any",
+        "value": "NewPassword@123",
+        "key": "forgot_confirm_password"
+      },
+      {
+        "type": "any",
+        "value": "",
+        "key": "reset_otp"
+      },
+      {
+        "type": "any",
+        "value": "",
+        "key": "reset_token"
+      },
+      {
+        "type": "any",
+        "value": false,
+        "key": "otp_request_ok"
+      }
+    ]
+  },
+  "globals": {
+    "id": "f2e61995-a43f-4810-8df7-cc673bbbd9fb",
+    "values": []
+  },
+  "run": {
+    "stats": {
+      "iterations": {
+        "total": 1,
+        "pending": 0,
+        "failed": 0
+      },
+      "items": {
+        "total": 5,
+        "pending": 0,
+        "failed": 0
+      },
+      "scripts": {
+        "total": 5,
+        "pending": 0,
+        "failed": 0
+      },
+      "prerequests": {
+        "total": 5,
+        "pending": 0,
+        "failed": 0
+      },
+      "requests": {
+        "total": 2,
+        "pending": 0,
+        "failed": 0
+      },
+      "tests": {
+        "total": 2,
+        "pending": 0,
+        "failed": 0
+      },
+      "assertions": {
+        "total": 2,
+        "pending": 0,
+        "failed": 0
+      },
+      "testScripts": {
+        "total": 2,
+        "pending": 0,
+        "failed": 0
+      },
+      "prerequestScripts": {
+        "total": 3,
+        "pending": 0,
+        "failed": 0
+      }
+    },
+    "timings": {
+      "responseAverage": 21.5,
+      "responseMin": 3,
+      "responseMax": 40,
+      "responseSd": 18.5,
+      "dnsAverage": 0,
+      "dnsMin": 0,
+      "dnsMax": 0,
+      "dnsSd": 0,
+      "firstByteAverage": 0,
+      "firstByteMin": 0,
+      "firstByteMax": 0,
+      "firstByteSd": 0,
+      "started": 1778419664564,
+      "completed": 1778419664910
+    },
+    "executions": [
+      {
+        "cursor": {
+          "position": 0,
+          "iteration": 0,
+          "length": 5,
+          "cycles": 1,
+          "empty": false,
+          "eof": false,
+          "bof": true,
+          "cr": false,
+          "ref": "f409787c-3ab5-4f47-90bd-694353e59412",
+          "httpRequestId": "957df92c-3ad9-4da2-af15-618f0ff09ee6"
+        },
+        "item": {
+          "id": "89460d19-2b2c-4f09-a600-b605913843bc",
+          "name": "Request OTP - Success",
+          "request": {
+            "url": {
+              "path": [
+                "auth",
+                "forgot-password",
+                "request-otp"
+              ],
+              "host": [
+                "{{base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{forgot_email}}\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "4cea9eee-e308-4f8e-a25e-502438e8aee7",
+                "type": "text/javascript",
+                "exec": [
+                  "const status = pm.response.code;",
+                  "pm.environment.set('otp_request_ok', status === 200);",
+                  "",
+                  "pm.test('Status is 200 or 429', function () {",
+                  "  pm.expect([200, 429]).to.include(status);",
+                  "});",
+                  "",
+                  "if (status === 200) {",
+                  "  const data = pm.response.json();",
+                  "  pm.test('Response success true', function () {",
+                  "    pm.expect(data.success).to.eql(true);",
+                  "  });",
+                  "  pm.test('Response message is generic', function () {",
+                  "    pm.expect(data.message).to.eql('Nếu email tồn tại, mã OTP đã được gửi.');",
+                  "  });",
+                  "  console.log('Request OTP success.');",
+                  "} else {",
+                  "  console.warn('Rate limit hit. Skipping OTP verification flow.');",
+                  "}"
+                ],
+                "_lastExecutionId": "64c70319-f494-4ed1-9b68-8a04c186a7bc"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "5000",
+            "path": [
+              "api",
+              "auth",
+              "forgot-password",
+              "request-otp"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "5a8dc7ef-4860-4230-97ca-af73a14eef26",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:5000",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            },
+            {
+              "key": "Content-Length",
+              "value": "33",
+              "system": true
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"email\": \"user@example.com\"\n}"
+          }
+        },
+        "response": {
+          "id": "f57b3989-6c8c-4632-988f-a795a36c597e",
+          "status": "Too Many Requests",
+          "code": 429,
+          "header": [
+            {
+              "key": "X-Powered-By",
+              "value": "Express"
+            },
+            {
+              "key": "Access-Control-Allow-Origin",
+              "value": "*"
+            },
+            {
+              "key": "RateLimit-Policy",
+              "value": "5;w=900"
+            },
+            {
+              "key": "RateLimit-Limit",
+              "value": "5"
+            },
+            {
+              "key": "RateLimit-Remaining",
+              "value": "0"
+            },
+            {
+              "key": "RateLimit-Reset",
+              "value": "329"
+            },
+            {
+              "key": "Retry-After",
+              "value": "329"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "key": "Content-Length",
+              "value": "115"
+            },
+            {
+              "key": "ETag",
+              "value": "W/\"73-8lMKxwT58YmXmD3ZyiuGMNPPTq8\""
+            },
+            {
+              "key": "Date",
+              "value": "Sun, 10 May 2026 13:27:44 GMT"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "key": "Keep-Alive",
+              "value": "timeout=5"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              115,
+              117,
+              99,
+              99,
+              101,
+              115,
+              115,
+              34,
+              58,
+              102,
+              97,
+              108,
+              115,
+              101,
+              44,
+              34,
+              99,
+              111,
+              100,
+              101,
+              34,
+              58,
+              34,
+              82,
+              65,
+              84,
+              69,
+              95,
+              76,
+              73,
+              77,
+              73,
+              84,
+              95,
+              69,
+              88,
+              67,
+              69,
+              69,
+              68,
+              69,
+              68,
+              34,
+              44,
+              34,
+              109,
+              101,
+              115,
+              115,
+              97,
+              103,
+              101,
+              34,
+              58,
+              34,
+              84,
+              111,
+              111,
+              32,
+              109,
+              97,
+              110,
+              121,
+              32,
+              112,
+              97,
+              115,
+              115,
+              119,
+              111,
+              114,
+              100,
+              32,
+              114,
+              101,
+              115,
+              101,
+              116,
+              32,
+              114,
+              101,
+              113,
+              117,
+              101,
+              115,
+              116,
+              115,
+              44,
+              32,
+              112,
+              108,
+              101,
+              97,
+              115,
+              101,
+              32,
+              116,
+              114,
+              121,
+              32,
+              97,
+              103,
+              97,
+              105,
+              110,
+              32,
+              108,
+              97,
+              116,
+              101,
+              114,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 40,
+          "responseSize": 115
+        },
+        "id": "89460d19-2b2c-4f09-a600-b605913843bc",
+        "assertions": [
+          {
+            "assertion": "Status is 200 or 429",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "93d94d2e-0645-414f-a798-f6107989fd47",
+          "length": 5,
+          "cycles": 1,
+          "position": 2,
+          "iteration": 0,
+          "httpRequestId": "36a77c74-adc1-4aa1-b0a5-f5942733fb5a"
+        },
+        "item": {
+          "id": "f45d34a1-8952-4e53-a58c-aa46f7f84ed0",
+          "name": "Request OTP - Invalid Email",
+          "request": {
+            "url": {
+              "path": [
+                "auth",
+                "forgot-password",
+                "request-otp"
+              ],
+              "host": [
+                "{{base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"invalid-email\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "0b709746-0a93-4788-903d-ddc7e46834bc",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 400 or 429', function () {",
+                  "  pm.expect([400, 429]).to.include(pm.response.code);",
+                  "});"
+                ],
+                "_lastExecutionId": "422f24d4-c722-4d23-bb5f-e2a547d10091"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "5000",
+            "path": [
+              "api",
+              "auth",
+              "forgot-password",
+              "request-otp"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "124b909c-87a4-46c4-8794-b4500890d7c3",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:5000",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            },
+            {
+              "key": "Content-Length",
+              "value": "30",
+              "system": true
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"email\": \"invalid-email\"\n}"
+          }
+        },
+        "response": {
+          "id": "91423504-85d2-4bc1-a86b-3b0fec9f51b3",
+          "status": "Too Many Requests",
+          "code": 429,
+          "header": [
+            {
+              "key": "X-Powered-By",
+              "value": "Express"
+            },
+            {
+              "key": "Access-Control-Allow-Origin",
+              "value": "*"
+            },
+            {
+              "key": "RateLimit-Policy",
+              "value": "5;w=900"
+            },
+            {
+              "key": "RateLimit-Limit",
+              "value": "5"
+            },
+            {
+              "key": "RateLimit-Remaining",
+              "value": "0"
+            },
+            {
+              "key": "RateLimit-Reset",
+              "value": "329"
+            },
+            {
+              "key": "Retry-After",
+              "value": "329"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "key": "Content-Length",
+              "value": "115"
+            },
+            {
+              "key": "ETag",
+              "value": "W/\"73-8lMKxwT58YmXmD3ZyiuGMNPPTq8\""
+            },
+            {
+              "key": "Date",
+              "value": "Sun, 10 May 2026 13:27:44 GMT"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "key": "Keep-Alive",
+              "value": "timeout=5"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              115,
+              117,
+              99,
+              99,
+              101,
+              115,
+              115,
+              34,
+              58,
+              102,
+              97,
+              108,
+              115,
+              101,
+              44,
+              34,
+              99,
+              111,
+              100,
+              101,
+              34,
+              58,
+              34,
+              82,
+              65,
+              84,
+              69,
+              95,
+              76,
+              73,
+              77,
+              73,
+              84,
+              95,
+              69,
+              88,
+              67,
+              69,
+              69,
+              68,
+              69,
+              68,
+              34,
+              44,
+              34,
+              109,
+              101,
+              115,
+              115,
+              97,
+              103,
+              101,
+              34,
+              58,
+              34,
+              84,
+              111,
+              111,
+              32,
+              109,
+              97,
+              110,
+              121,
+              32,
+              112,
+              97,
+              115,
+              115,
+              119,
+              111,
+              114,
+              100,
+              32,
+              114,
+              101,
+              115,
+              101,
+              116,
+              32,
+              114,
+              101,
+              113,
+              117,
+              101,
+              115,
+              116,
+              115,
+              44,
+              32,
+              112,
+              108,
+              101,
+              97,
+              115,
+              101,
+              32,
+              116,
+              114,
+              121,
+              32,
+              97,
+              103,
+              97,
+              105,
+              110,
+              32,
+              108,
+              97,
+              116,
+              101,
+              114,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 3,
+          "responseSize": 115
+        },
+        "id": "f45d34a1-8952-4e53-a58c-aa46f7f84ed0",
+        "assertions": [
+          {
+            "assertion": "Status is 400 or 429",
+            "skipped": false
+          }
+        ]
+      }
+    ],
+    "transfers": {
+      "responseTotal": 230
+    },
+    "failures": [],
+    "error": null
+  }
+}

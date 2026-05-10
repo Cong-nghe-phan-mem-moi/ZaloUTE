@@ -1,0 +1,36 @@
+{
+  "id": "zaloute-forgot-password-env",
+  "name": "ZaloUTE Forgot Password Environment",
+  "values": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000/api",
+      "enabled": true
+    },
+    {
+      "key": "forgot_email",
+      "value": "user@example.com",
+      "enabled": true
+    },
+    {
+      "key": "forgot_new_password",
+      "value": "NewPassword@123",
+      "enabled": true
+    },
+    {
+      "key": "forgot_confirm_password",
+      "value": "NewPassword@123",
+      "enabled": true
+    },
+    {
+      "key": "reset_otp",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "reset_token",
+      "value": "",
+      "enabled": true
+    }
+  ]
+}

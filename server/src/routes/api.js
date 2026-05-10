@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
-const UserController = require("../controllers/UserController");
-const authRoutes = require("./auth");
+const UserController = require("../controllers/user.controller");
+const authRoutes = require("./auth.route");
 const { authMiddleware, authorize } = require("../middleware/authMiddleware");
 const { validateEditProfile } = require("../middleware/validateRequest");
 const { editProfileLimiter } = require("../middleware/rateLimiter");
