@@ -20,7 +20,7 @@ class UserRepository {
   async updateProfile(userId, updateData) {
     try {
       // Remove sensitive fields that shouldn't be updated through edit profile
-      delete updateData.role;
+      delete updateData.account;
 
       const updatedUser = await User.findByIdAndUpdate(userId, updateData, {
         returnDocument: 'after',
@@ -47,22 +47,26 @@ class UserRepository {
 
   async getUserById(userId) {
     try {
-      return await User.findById(userId);
+      console.log('getUserById - userId:', userId);
+      const user = await User.findById(userId).populate('account');
+      console.log('getUserById - user found:', !!user, user?.fullName);
+      return user;
     } catch (error) {
+      console.error('getUserById error:', error);
       throw error;
     }
   }
 
   async getProfileByRole(userId, role) {
     try {
-      const user = await User.findById(userId);
+      const user = await User.findById(userId).populate('account');
       
       if (!user) {
         return null;
       }
 
-      // Check if user has the required role
-      if (user.role !== role) {
+      // Check if user has the required role from account
+      if (!user.account || user.account.role !== role) {
         return null;
       }
 

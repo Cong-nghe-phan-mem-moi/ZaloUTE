@@ -14,7 +14,13 @@ const accountSchema = new mongoose.Schema(
     },
     passwordHash: {
       type: String,
-      required: [true, "Password hash is required"],
+      required: function () {
+        return this.provider === 'local';
+      },
+    },
+    provider: {
+      type: String,
+      enum: ['google', 'local'],
     },
     isVerified: {
       type: Boolean,
@@ -22,8 +28,18 @@ const accountSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["user", "admin"],
-      default: "user",
+      enum: ['user', 'admin'],
+      default: 'user',
+    },
+    otp: {
+      code: {
+        type: String,
+        default: null,
+      },
+      expiresAt: {
+        type: Date,
+        default: null,
+      },
     },
     user: {
       type: mongoose.Schema.Types.ObjectId,

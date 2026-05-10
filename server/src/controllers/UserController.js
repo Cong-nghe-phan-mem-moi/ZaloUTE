@@ -3,7 +3,7 @@ const UserService = require('../service/UserService');
 class UserController {
   async editProfile(req, res) {
     try {
-      const userId = req.user.id;
+      const userId = req.user.userId;
       const updateData = {
         fullName: req.body.fullName,
         email: req.body.email,
@@ -92,7 +92,8 @@ class UserController {
 
   async getProfile(req, res) {
     try {
-      const userId = req.user.id;
+      const userId = req.user.userId;
+      console.log('Getting profile for userId:', userId);
       const result = await UserService.getUserProfile(userId);
 
       return res.status(200).json({
@@ -121,14 +122,15 @@ class UserController {
       return res.status(500).json({
         success: false,
         code: 'INTERNAL_SERVER_ERROR',
-        message: 'Internal server error',
+        message: error.message || 'Internal server error',
+        error: process.env.NODE_ENV === 'development' ? error.toString() : undefined,
       });
     }
   }
 
   async getUserProfile(req, res) {
     try {
-      const userId = req.user.id;
+      const userId = req.user.userId;
       const result = await UserService.getUserProfileByRole(userId, 'user');
 
       return res.status(200).json({
@@ -164,7 +166,7 @@ class UserController {
 
   async getAdminProfile(req, res) {
     try {
-      const userId = req.user.id;
+      const userId = req.user.userId;
       const result = await UserService.getUserProfileByRole(userId, 'admin');
 
       return res.status(200).json({
