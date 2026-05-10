@@ -60,7 +60,7 @@ async function getUserById(userId) {
 async function getProfileByRole(userId, role) {
   try {
     const user = await User.findById(userId).populate('account');
-    
+
     if (!user) {
       return null;
     }
