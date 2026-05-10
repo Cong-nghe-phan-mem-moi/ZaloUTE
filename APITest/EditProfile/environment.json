@@ -9,7 +9,7 @@
     },
     {
       "key": "jwt_token",
-      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjUwN2YxZjc3YmNmODZjZDc5OTQzOTAxMSIsImVtYWlsIjoidGVzdEBleGFtcGxlLmNvbSIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzc4MzEwNjk0LCJleHAiOjE3NzgzOTcwOTR9.NyQmNT4BfOuyRaKz1D-5E_fnDazkbERLlQK4iwVzD38",
+      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjUwN2YxZjc3YmNmODZjZDc5OTQzOTAxMSIsImVtYWlsIjoidGVzdEBleGFtcGxlLmNvbSIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzc4Mzg5ODI1LCJleHAiOjE3Nzg0NzYyMjV9.yHIyghp-h3q7EkqW2_elkQEhGOdzGAYBtlGLKgnDNeI",
       "enabled": true
     },
     {
