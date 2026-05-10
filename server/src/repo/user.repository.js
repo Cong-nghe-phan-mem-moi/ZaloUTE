@@ -1,5 +1,33 @@
-const User = require('../models/User');
-const Account = require('../models/Account');
+const User = require("../models/User");
+const Account = require("../models/Account");
+
+async function createUser(userData) {
+  try {
+    return await User.create(userData);
+  } catch (error) {
+    throw error;
+  }
+}
+
+async function deleteUserById(userId) {
+  try {
+    return await User.deleteOne({ _id: userId });
+  } catch (error) {
+    throw error;
+  }
+}
+
+async function linkAccountToUser(userId, accountId) {
+  try {
+    return await User.findByIdAndUpdate(
+      userId,
+      { account: accountId },
+      { returnDocument: "after" },
+    );
+  } catch (error) {
+    throw error;
+  }
+}
 
 async function findById(userId) {
   try {
@@ -23,7 +51,7 @@ async function updateProfile(userId, updateData) {
     delete updateData.account;
 
     const updatedUser = await User.findByIdAndUpdate(userId, updateData, {
-      returnDocument: 'after',
+      returnDocument: "after",
       runValidators: true,
     });
 
@@ -47,20 +75,20 @@ async function emailExists(email, excludeUserId = null) {
 
 async function getUserById(userId) {
   try {
-    console.log('getUserById - userId:', userId);
-    const user = await User.findById(userId).populate('account');
-    console.log('getUserById - user found:', !!user, user?.fullName);
+    console.log("getUserById - userId:", userId);
+    const user = await User.findById(userId).populate("account");
+    console.log("getUserById - user found:", !!user, user?.fullName);
     return user;
   } catch (error) {
-    console.error('getUserById error:', error);
+    console.error("getUserById error:", error);
     throw error;
   }
 }
 
 async function getProfileByRole(userId, role) {
   try {
-    const user = await User.findById(userId).populate('account');
-    
+    const user = await User.findById(userId).populate("account");
+
     if (!user) {
       return null;
     }
@@ -77,6 +105,9 @@ async function getProfileByRole(userId, role) {
 }
 
 module.exports = {
+  createUser,
+  deleteUserById,
+  linkAccountToUser,
   findById,
   findByEmail,
   updateProfile,
