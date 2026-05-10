@@ -1,0 +1,26 @@
+{
+  "id": "zaloute-register-env",
+  "name": "ZaloUTE Register Environment",
+  "values": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000/api",
+      "enabled": true
+    },
+    {
+      "key": "register_email",
+      "value": "newuser_{{$timestamp}}@example.com",
+      "enabled": true
+    },
+    {
+      "key": "register_password",
+      "value": "Password@123",
+      "enabled": true
+    },
+    {
+      "key": "register_fullname",
+      "value": "Vo An Thai",
+      "enabled": true
+    }
+  ]
+}
