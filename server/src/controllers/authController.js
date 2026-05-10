@@ -36,7 +36,6 @@ const register = async (req, res) => {
     const newAccount = new Account({
       email,
       passwordHash: hashedPassword,
-      provider: "local",
       isVerified: false,
       otp: { code: otp, expiresAt: otpExpiry },
       user: newUser._id,
@@ -54,22 +53,18 @@ const register = async (req, res) => {
       // Delete account and user if email sending fails
       await Account.deleteOne({ email });
       await User.deleteOne({ _id: newUser._id });
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message: "Không thể gửi email. Vui lòng thử lại.",
-        });
+      return res.status(500).json({
+        success: false,
+        message: "Không thể gửi email. Vui lòng thử lại.",
+      });
     }
 
     // Return success response
-    res
-      .status(201)
-      .json({
-        success: true,
-        message: "Đăng ký thành công! Vui lòng xác thực OTP",
-        data: { email, message: "OTP đã được gửi đến email của bạn" },
-      });
+    res.status(201).json({
+      success: true,
+      message: "Đăng ký thành công! Vui lòng xác thực OTP",
+      data: { email, message: "OTP đã được gửi đến email của bạn" },
+    });
   } catch (error) {
     console.error("Register error:", error);
     res.status(500).json({
@@ -102,22 +97,18 @@ const verifyOTP = async (req, res) => {
 
     // Check if OTP exists
     if (!account.otp || !account.otp.code) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "OTP không tồn tại. Vui lòng đăng ký lại",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "OTP không tồn tại. Vui lòng đăng ký lại",
+      });
     }
 
     // Check if OTP expired
     if (new Date() > account.otp.expiresAt) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "OTP đã hết hạn. Vui lòng đăng ký lại",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "OTP đã hết hạn. Vui lòng đăng ký lại",
+      });
     }
 
     // Verify OTP code
@@ -132,13 +123,11 @@ const verifyOTP = async (req, res) => {
     account.otp = null;
     await account.save();
 
-    res
-      .status(200)
-      .json({
-        success: true,
-        message: "Xác thực OTP thành công!",
-        data: { email: account.email, isVerified: true },
-      });
+    res.status(200).json({
+      success: true,
+      message: "Xác thực OTP thành công!",
+      data: { email: account.email, isVerified: true },
+    });
   } catch (error) {
     console.error("Verify OTP error:", error);
     res.status(500).json({

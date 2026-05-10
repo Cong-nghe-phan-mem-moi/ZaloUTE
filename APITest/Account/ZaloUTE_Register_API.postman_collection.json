@@ -7,6 +7,17 @@
   "item": [
     {
       "name": "1. Register - Success",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "const generatedEmail = `newuser_${Date.now()}@example.com`;",
+              "pm.environment.set('generated_register_email', generatedEmail);"
+            ]
+          }
+        }
+      ],
       "item": [
         {
           "name": "Register New Account",
@@ -20,7 +31,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"fullName\": \"{{register_fullname}}\",\n  \"email\": \"{{register_email}}\",\n  \"password\": \"{{register_password}}\"\n}"
+              "raw": "{\n  \"fullName\": \"{{register_fullname}}\",\n  \"email\": \"{{generated_register_email}}\",\n  \"password\": \"{{register_password}}\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/auth/register",
@@ -42,9 +53,19 @@
                   "  pm.expect(data.success).to.eql(true);",
                   "});",
                   "",
-                  "pm.test('Response has email in data', function () {",
+                  "pm.test('Response message is correct', function () {",
                   "  var data = pm.response.json();",
-                  "  pm.expect(data.data.email).to.be.a('string');",
+                  "  pm.expect(data.message).to.eql('Đăng ký thành công! Vui lòng xác thực OTP');",
+                  "});",
+                  "",
+                  "pm.test('Response data contains requested email', function () {",
+                  "  var data = pm.response.json();",
+                  "  pm.expect(data.data.email).to.eql(pm.environment.get('generated_register_email'));",
+                  "});",
+                  "",
+                  "pm.test('OTP notice is returned', function () {",
+                  "  var data = pm.response.json();",
+                  "  pm.expect(data.data.message).to.eql('OTP đã được gửi đến email của bạn');",
                   "});"
                 ]
               }
@@ -55,6 +76,19 @@
     },
     {
       "name": "2. Register - Duplicate Email",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "const generatedEmail = pm.environment.get('generated_register_email');",
+              "if (!generatedEmail) {",
+              "  throw new Error('generated_register_email is missing. Run the success case first.');",
+              "}"
+            ]
+          }
+        }
+      ],
       "item": [
         {
           "name": "Register Existing Account",
@@ -68,7 +102,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"fullName\": \"Duplicate User\",\n  \"email\": \"{{register_email}}\",\n  \"password\": \"{{register_password}}\"\n}"
+              "raw": "{\n  \"fullName\": \"Duplicate User\",\n  \"email\": \"{{generated_register_email}}\",\n  \"password\": \"{{register_password}}\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/auth/register",
@@ -88,7 +122,7 @@
                   "pm.test('Duplicate email message exists', function () {",
                   "  var data = pm.response.json();",
                   "  pm.expect(data.success).to.eql(false);",
-                  "  pm.expect(data.message).to.be.a('string');",
+                  "  pm.expect(data.message).to.eql('Email này đã được đăng ký');",
                   "});"
                 ]
               }
