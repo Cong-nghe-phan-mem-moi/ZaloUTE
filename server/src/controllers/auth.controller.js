@@ -2,6 +2,8 @@ const bcrypt = require("bcrypt");
 const User = require("../models/User");
 const Account = require("../models/Account");
 const { sendOTPEmail } = require("../config/mailer");
+const jwt = require("jsonwebtoken");
+const authService = require("../service/auth.service");
 
 // Generate OTP
 const generateOTP = () => {
@@ -36,6 +38,7 @@ const register = async (req, res) => {
     const newAccount = new Account({
       email,
       passwordHash: hashedPassword,
+      provider: 'local',
       isVerified: false,
       otp: { code: otp, expiresAt: otpExpiry },
       user: newUser._id,
@@ -138,7 +141,41 @@ const verifyOTP = async (req, res) => {
   }
 };
 
+// [POST] /api/auth/login
+const login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Email and password are required!!!",
+      })
+    }
+
+    const result = await authService.login(email, password);
+    res.status(200).json({
+      success: true,
+      message: "Login successful!!!",
+      data: result
+    })
+
+
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message
+    })
+  }
+}
+
+
 module.exports = {
   register,
   verifyOTP,
+  login
 };
+
+
+
+
