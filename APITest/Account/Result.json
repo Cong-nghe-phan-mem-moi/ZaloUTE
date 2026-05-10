@@ -1,0 +1,55 @@
+{
+  "collection_name": "ZaloUTE - Register API",
+  "results": [
+    {
+      "folder": "1. Register - Success",
+      "requests": [
+        {
+          "name": "Register New Account",
+          "method": "POST",
+          "url": "http://localhost:5000/api/auth/register",
+          "status": "201 Created",
+          "assertions": [
+            { "passed": true, "message": "Status is 201" },
+            { "passed": true, "message": "Response success true" }
+          ]
+        }
+      ]
+    },
+    {
+      "folder": "2. Register - Duplicate Email",
+      "requests": [
+        {
+          "name": "Register Existing Account",
+          "method": "POST",
+          "url": "http://localhost:5000/api/auth/register",
+          "status": "400 Bad Request",
+          "assertions": [{ "passed": true, "message": "Status is 400" }]
+        }
+      ]
+    },
+    {
+      "folder": "3. Register - Validation Errors",
+      "requests": [
+        {
+          "name": "Invalid Email",
+          "method": "POST",
+          "url": "http://localhost:5000/api/auth/register",
+          "status": "400 Bad Request"
+        },
+        {
+          "name": "Weak Password",
+          "method": "POST",
+          "url": "http://localhost:5000/api/auth/register",
+          "status": "400 Bad Request"
+        },
+        {
+          "name": "Missing Full Name",
+          "method": "POST",
+          "url": "http://localhost:5000/api/auth/register",
+          "status": "400 Bad Request"
+        }
+      ]
+    }
+  ]
+}

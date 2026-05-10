@@ -1,42 +1,9 @@
-<<<<<<< HEAD
-const mongoose = require("mongoose");
-=======
 const mongoose = require('mongoose');
->>>>>>> upstream/develop
 
 const userSchema = new mongoose.Schema(
   {
     fullName: {
       type: String,
-<<<<<<< HEAD
-      required: true,
-      trim: true,
-    },
-    email: {
-      type: String,
-      required: true,
-      unique: true,
-      lowercase: true,
-      trim: true,
-    },
-    password: {
-      type: String,
-      required: true,
-    },
-    isVerified: {
-      type: Boolean,
-      default: false,
-    },
-    otp: {
-      code: String,
-      expiresAt: Date,
-    },
-  },
-  { timestamps: true },
-);
-
-module.exports = mongoose.model("User", userSchema);
-=======
       required: [true, 'Full name is required'],
       trim: true,
       minlength: [3, 'Full name must be at least 3 characters'],
@@ -95,4 +62,3 @@ module.exports = mongoose.model("User", userSchema);
 );
 
 module.exports = mongoose.model('User', userSchema);
->>>>>>> upstream/develop

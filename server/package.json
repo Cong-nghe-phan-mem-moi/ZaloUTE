@@ -12,17 +12,6 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-<<<<<<< HEAD
-    "bcrypt": "^6.0.0",
-    "cors": "^2.8.6",
-    "dotenv": "^17.4.2",
-    "express": "^5.2.1",
-    "express-rate-limit": "^8.5.1",
-    "joi": "^18.2.1",
-    "mongodb": "^7.2.0",
-    "mongoose": "^9.6.1",
-    "nodemailer": "^8.0.7"
-=======
     "bcrypt": "^5.1.1",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
@@ -32,7 +21,6 @@
     "mongodb": "^7.2.0",
     "mongoose": "^9.6.1",
     "nodemailer": "^6.9.7"
->>>>>>> upstream/develop
   },
   "devDependencies": {
     "nodemon": "^3.1.14"
