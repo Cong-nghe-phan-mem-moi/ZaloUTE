@@ -41,6 +41,24 @@ const accountSchema = new mongoose.Schema(
         default: null,
       },
     },
+    resetOtp: {
+      code: {
+        type: String,
+        default: null,
+      },
+      expiresAt: {
+        type: Date,
+        default: null,
+      },
+      verifiedAt: {
+        type: Date,
+        default: null,
+      },
+      attempts: {
+        type: Number,
+        default: 0,
+      },
+    },
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
