@@ -46,6 +46,56 @@ const editProfileLimiter = rateLimit({
   },
 });
 
+const forgotPasswordRequestLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: "Too many password reset requests, please try again later",
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    res.status(429).json({
+      success: false,
+      code: "RATE_LIMIT_EXCEEDED",
+      message: "Too many password reset requests, please try again later",
+    });
+  },
+});
 
+const forgotPasswordVerifyLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: "Too many OTP verification requests, please try again later",
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    res.status(429).json({
+      success: false,
+      code: "RATE_LIMIT_EXCEEDED",
+      message: "Too many OTP verification requests, please try again later",
+    });
+  },
+});
 
-module.exports = { registerLimiter, editProfileLimiter, loginLimiter };
+const resetPasswordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: "Too many reset password requests, please try again later",
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    res.status(429).json({
+      success: false,
+      code: "RATE_LIMIT_EXCEEDED",
+      message: "Too many reset password requests, please try again later",
+    });
+  },
+});
+
+module.exports = {
+  registerLimiter,
+  editProfileLimiter,
+  forgotPasswordRequestLimiter,
+  forgotPasswordVerifyLimiter,
+  resetPasswordLimiter,
+  loginLimiter,
+};

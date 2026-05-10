@@ -48,7 +48,40 @@ const sendOTPEmail = async (email, otp) => {
   }
 };
 
+const sendPasswordResetOTP = async (email, otp) => {
+  try {
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`[MOCK EMAIL] Password reset OTP for ${email}: ${otp}`);
+      return { success: true };
+    }
+
+    const mailOptions = {
+      from:
+        process.env.EMAIL_FROM ||
+        process.env.SMTP_USER ||
+        process.env.EMAIL_USER ||
+        "your-email@gmail.com",
+      to: email,
+      subject: "OTP đặt lại mật khẩu",
+      html: `
+        <h2>Đặt lại mật khẩu</h2>
+        <p>Mã OTP đặt lại mật khẩu của bạn là:</p>
+        <h1 style="color: #dc3545; font-size: 32px; letter-spacing: 5px;">${otp}</h1>
+        <p>Mã OTP này sẽ hết hạn trong <strong>10 phút</strong>.</p>
+        <p>Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.</p>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+    return { success: true };
+  } catch (error) {
+    console.error("Password reset email send error:", error);
+    return { success: false, error: error.message };
+  }
+};
+
 module.exports = {
   sendOTPEmail,
+  sendPasswordResetOTP,
   transporter,
 };
