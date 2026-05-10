@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const Account = require('../models/Account');
 
 class UserRepository {
   async findById(userId) {
