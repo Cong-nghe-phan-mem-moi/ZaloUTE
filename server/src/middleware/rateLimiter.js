@@ -1,5 +1,21 @@
 const rateLimit = require("express-rate-limit");
 
+const handler = (req, res) => {
+  res.status(429).json({
+    success: false,
+    code: "RATE_LIMIT_EXCEEDED",
+    message: "Too many requests, please try again later",
+  });
+};
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler,
+});
+
 const registerLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 20, // limit each IP to 20 register requests per windowMs
@@ -81,4 +97,5 @@ module.exports = {
   forgotPasswordRequestLimiter,
   forgotPasswordVerifyLimiter,
   resetPasswordLimiter,
+  loginLimiter,
 };

@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+
 const {
   register,
   verifyOTP,
@@ -7,7 +8,8 @@ const {
   verifyPasswordResetOTP,
   resetPassword,
   getResetOtpDev,
-} = require("../controllers/authController");
+  login,
+} = require("../controllers/auth.controller");
 const {
   validateRegister,
   validateVerifyOTP,
@@ -20,6 +22,7 @@ const {
   forgotPasswordRequestLimiter,
   forgotPasswordVerifyLimiter,
   resetPasswordLimiter,
+  loginLimiter,
 } = require("../middleware/rateLimiter");
 const { resetTokenMiddleware } = require("../middleware/authMiddleware");
 
@@ -56,5 +59,8 @@ router.post(
 
 // GET /api/auth/dev/reset-otp?email=...
 router.get("/dev/reset-otp", getResetOtpDev);
+
+// router.post("/login", loginLimiter, login);
+router.post("/login", login);
 
 module.exports = router;
