@@ -14,6 +14,8 @@ async function editProfile(req, res) {
       avatar: req.body.avatar,
     };
 
+
+
     // Remove undefined fields
     Object.keys(updateData).forEach((key) => {
       if (updateData[key] === undefined) {

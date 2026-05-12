@@ -41,11 +41,14 @@ const ProfileHeader = ({ profileData }) => {
 
 const CoverImage = ({ coverImage }) => (
   <div className="relative h-64 w-full bg-surface-variant">
-    <img
-      className="w-full h-full object-cover"
-      src={coverImage}
-      alt="Profile cover"
-    />
+    {coverImage && (
+      <img
+        className="w-full h-full object-cover"
+        src={coverImage}
+        alt="Profile cover"
+      />
+    )}
+
     <button className="absolute bottom-4 right-4 bg-black/50 hover:bg-black/60 text-white rounded-lg px-4 py-2 flex items-center gap-2 transition-colors">
       <span className="material-symbols-outlined text-sm">photo_camera</span>
       <span className="text-label-md font-label-md">Edit Cover</span>
@@ -56,7 +59,14 @@ const CoverImage = ({ coverImage }) => (
 const ProfileAvatar = ({ profileImage, isOnline }) => (
   <div className="relative group">
     <div className="w-40 h-40 rounded-full border-4 border-surface-container-lowest overflow-hidden bg-surface-dim shadow-premium transition-transform duration-300 group-hover:scale-[1.02]">
+    {profileImage ? (
       <img className="w-full h-full object-cover" src={profileImage} alt="Profile" />
+    ) : (
+      <div className="w-full h-full flex items-center justify-center bg-primary/10 text-primary">
+        <span className="material-symbols-outlined text-4xl">person</span>
+      </div>
+    )}
+
     </div>
     {isOnline && (
       <div className="absolute bottom-4 right-4 w-6 h-6 bg-green-500 border-4 border-surface-container-lowest rounded-full shadow-sm"></div>
