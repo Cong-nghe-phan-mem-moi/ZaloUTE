@@ -16,9 +16,14 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+const useMockEmail =
+  String(process.env.EMAIL_USE_MOCK || "")
+    .trim()
+    .toLowerCase() === "true";
+
 const sendOTPEmail = async (email, otp) => {
   try {
-    if (process.env.NODE_ENV !== "production") {
+    if (useMockEmail) {
       console.log(`[MOCK EMAIL] OTP for ${email}: ${otp}`);
       return { success: true };
     }
@@ -27,8 +32,7 @@ const sendOTPEmail = async (email, otp) => {
       from:
         process.env.EMAIL_FROM ||
         process.env.SMTP_USER ||
-        process.env.EMAIL_USER ||
-        "your-email@gmail.com",
+        process.env.EMAIL_USER,
       to: email,
       subject: "Xác thực OTP đăng ký tài khoản",
       html: `
@@ -59,8 +63,7 @@ const sendPasswordResetOTP = async (email, otp) => {
       from:
         process.env.EMAIL_FROM ||
         process.env.SMTP_USER ||
-        process.env.EMAIL_USER ||
-        "your-email@gmail.com",
+        process.env.EMAIL_USER,
       to: email,
       subject: "OTP đặt lại mật khẩu",
       html: `

@@ -1,3 +1,10 @@
-const API_URL = 'http://localhost:5000/api';
+import axios from "axios";
 
-export const fetchUsers = () => fetch(`${API_URL}/users`).then(r => r.json());
+const api = axios.create({
+  baseURL: "http://localhost:5000/api",
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
+export default api;
