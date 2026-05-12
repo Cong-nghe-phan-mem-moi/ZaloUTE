@@ -10,8 +10,8 @@
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 const mongoose = require('mongoose');
-const User = require('./src/models/User');
-const Account = require('./src/models/Account');
+const User = require('./src/models/user.model');
+const Account = require('./src/models/account.model');
 
 // Default JWT Secret
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
@@ -71,12 +71,12 @@ async function main() {
       // Lấy user đầu tiên từ DB - query trực tiếp (bypass validation)
       const usersCollection = db.collection('users');
       const rawUser = await usersCollection.findOne();
-      
+
       if (!rawUser) {
         console.error('❌ No users found in database. Please insert a test user first.');
         process.exit(1);
       }
-      
+
       // Convert raw user to Mongoose document with account populated
       user = await User.findById(rawUser._id).populate('account');
       if (!user) {

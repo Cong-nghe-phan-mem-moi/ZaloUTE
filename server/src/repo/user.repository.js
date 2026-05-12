@@ -1,5 +1,5 @@
-const User = require("../models/User");
-const Account = require("../models/Account");
+const User = require("../models/user.model");
+const Account = require("../models/account.model");
 
 async function createUser(userData) {
   try {
