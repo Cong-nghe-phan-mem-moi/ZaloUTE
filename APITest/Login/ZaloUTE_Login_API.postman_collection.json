@@ -1,0 +1,333 @@
+{
+    "info": {
+        "name": "ZaloUTE - Login API",
+        "description": "API Testing Collection for Login functionality",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "1. Valid Login - Verified Account",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"email\": \"{{verified_email}}\",\n  \"password\": \"{{verified_password}}\"\n}"
+                },
+                "url": {
+                    "raw": "{{base_url}}/auth/login",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "auth",
+                        "login"
+                    ]
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "console.log('Test: Valid Login - Verified Account');",
+                            "console.log('Status Code: ' + pm.response.code);",
+                            "console.log('Response Body: ' + pm.response.text());",
+                            "",
+                            "pm.test('Status code is 200', function() {",
+                            "    pm.expect(pm.response.code).to.equal(200);",
+                            "});",
+                            "",
+                            "pm.test('Response has success flag', function() {",
+                            "    var jsonData = pm.response.json();",
+                            "    pm.expect(jsonData.success).to.equal(true);",
+                            "});",
+                            "",
+                            "pm.test('Response has JWT token', function() {",
+                            "    var jsonData = pm.response.json();",
+                            "    pm.expect(jsonData.data.token).to.be.a('string');",
+                            "    pm.expect(jsonData.data.token.length).to.be.above(0);",
+                            "});",
+                            "",
+                            "pm.test('Response has redirect URL', function() {",
+                            "    var jsonData = pm.response.json();",
+                            "    pm.expect(jsonData.data.redirectUrl).to.be.a('string');",
+                            "});",
+                            "",
+                            "if (pm.response.code === 200) {",
+                            "    var jsonData = pm.response.json();",
+                            "    pm.environment.set('jwt_token', jsonData.data.token);",
+                            "    console.log('JWT Token saved to environment');",
+                            "}"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "2. Login - Unverified Account",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"email\": \"{{unverified_email}}\",\n  \"password\": \"UnverifiedPass@123\"\n}"
+                },
+                "url": {
+                    "raw": "{{base_url}}/auth/login",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "auth",
+                        "login"
+                    ]
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "console.log('Test: Login - Unverified Account');",
+                            "console.log('Status Code: ' + pm.response.code);",
+                            "console.log('Response Body: ' + pm.response.text());",
+                            "",
+                            "pm.test('Status code is 400 (Unverified)', function() {",
+                            "    pm.expect(pm.response.code).to.equal(400);",
+                            "});",
+                            "",
+                            "pm.test('Response has success: false', function() {",
+                            "    var jsonData = pm.response.json();",
+                            "    pm.expect(jsonData.success).to.equal(false);",
+                            "});",
+                            "",
+                            "pm.test('Error message about verification', function() {",
+                            "    var jsonData = pm.response.json();",
+                            "    pm.expect(jsonData.message).to.include('xác thực');",
+                            "});"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "3. Login - Invalid Password",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"email\": \"{{verified_email}}\",\n  \"password\": \"WrongPassword@123\"\n}"
+                },
+                "url": {
+                    "raw": "{{base_url}}/auth/login",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "auth",
+                        "login"
+                    ]
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "console.log('Test: Login - Invalid Password');",
+                            "console.log('Status Code: ' + pm.response.code);",
+                            "console.log('Response Body: ' + pm.response.text());",
+                            "",
+                            "pm.test('Status code is 400 (Invalid password)', function() {",
+                            "    pm.expect(pm.response.code).to.equal(400);",
+                            "});",
+                            "",
+                            "pm.test('Response has success: false', function() {",
+                            "    var jsonData = pm.response.json();",
+                            "    pm.expect(jsonData.success).to.equal(false);",
+                            "});",
+                            "",
+                            "pm.test('Error message about password', function() {",
+                            "    var jsonData = pm.response.json();",
+                            "    pm.expect(jsonData.message).to.include('incorrect');",
+                            "});"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "4. Login - Email Not Found",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"email\": \"notexist@example.com\",\n  \"password\": \"Password@123\"\n}"
+                },
+                "url": {
+                    "raw": "{{base_url}}/auth/login",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "auth",
+                        "login"
+                    ]
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "console.log('Test: Login - Email Not Found');",
+                            "console.log('Status Code: ' + pm.response.code);",
+                            "console.log('Response Body: ' + pm.response.text());",
+                            "",
+                            "pm.test('Status code is 400 (Not found)', function() {",
+                            "    pm.expect(pm.response.code).to.equal(400);",
+                            "});",
+                            "",
+                            "pm.test('Response has success: false', function() {",
+                            "    var jsonData = pm.response.json();",
+                            "    pm.expect(jsonData.success).to.equal(false);",
+                            "});",
+                            "",
+                            "pm.test('Error message about account', function() {",
+                            "    var jsonData = pm.response.json();",
+                            "    pm.expect(jsonData.message).to.include('not found');",
+                            "});"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "5. Login - Missing Email",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"password\": \"{{verified_password}}\"\n}"
+                },
+                "url": {
+                    "raw": "{{base_url}}/auth/login",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "auth",
+                        "login"
+                    ]
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "console.log('Test: Login - Missing Email');",
+                            "console.log('Status Code: ' + pm.response.code);",
+                            "console.log('Response Body: ' + pm.response.text());",
+                            "",
+                            "pm.test('Status code is 400 (Missing field)', function() {",
+                            "    pm.expect(pm.response.code).to.equal(400);",
+                            "});",
+                            "",
+                            "pm.test('Response has success: false', function() {",
+                            "    var jsonData = pm.response.json();",
+                            "    pm.expect(jsonData.success).to.equal(false);",
+                            "});",
+                            "",
+                            "pm.test('Error message about required fields', function() {",
+                            "    var jsonData = pm.response.json();",
+                            "    pm.expect(jsonData.message.toLowerCase()).to.include('required');",
+                            "});"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "6. Login - Missing Password",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"email\": \"{{verified_email}}\"\n}"
+                },
+                "url": {
+                    "raw": "{{base_url}}/auth/login",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "auth",
+                        "login"
+                    ]
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "console.log('Test: Login - Missing Password');",
+                            "console.log('Status Code: ' + pm.response.code);",
+                            "console.log('Response Body: ' + pm.response.text());",
+                            "",
+                            "pm.test('Status code is 400 (Missing field)', function() {",
+                            "    pm.expect(pm.response.code).to.equal(400);",
+                            "});",
+                            "",
+                            "pm.test('Response has success: false', function() {",
+                            "    var jsonData = pm.response.json();",
+                            "    pm.expect(jsonData.success).to.equal(false);",
+                            "});",
+                            "",
+                            "pm.test('Error message about required fields', function() {",
+                            "    var jsonData = pm.response.json();",
+                            "    pm.expect(jsonData.message.toLowerCase()).to.include('required');",
+                            "});"
+                        ]
+                    }
+                }
+            ]
+        }
+    ]
+}
