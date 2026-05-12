@@ -10,8 +10,8 @@
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 const mongoose = require('mongoose');
-const User = require('./src/models/User');
-const Account = require('./src/models/Account');
+const User = require('./src/models/user.model');
+const Account = require('./src/models/account.model');
 
 // Default JWT Secret
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
@@ -71,12 +71,12 @@ async function main() {
       // Lấy user đầu tiên từ DB - query trực tiếp (bypass validation)
       const usersCollection = db.collection('users');
       const rawUser = await usersCollection.findOne();
-      
+
       if (!rawUser) {
         console.error('❌ No users found in database. Please insert a test user first.');
         process.exit(1);
       }
-      
+
       // Convert raw user to Mongoose document with account populated
       user = await User.findById(rawUser._id).populate('account');
       if (!user) {
@@ -95,14 +95,14 @@ async function main() {
     console.log('-'.repeat(70));
     console.log('User ID:', user._id);
     console.log('Name:', user.fullName);
-    console.log('Email:', user.email);
+    console.log('Email:', user.account.email);
     console.log('Account ID:', user.account._id);
     console.log('Role:', user.account.role);
     console.log('');
 
     console.log('📌 Generated Token:');
     console.log('-'.repeat(70));
-    const token = generateToken(user._id.toString(), user.account._id.toString(), user.email, user.account.role);
+    const token = generateToken(user._id.toString(), user.account._id.toString(), user.account.email, user.account.role);
     console.log('Token:', token);
     console.log('');
     console.log('Decoded:', verifyToken(token));

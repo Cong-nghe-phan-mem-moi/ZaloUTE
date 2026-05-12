@@ -41,22 +41,25 @@ const validateRegister = (req, res, next) => {
 };
 
 const validateVerifyOTP = (req, res, next) => {
+  const otpSchema = Joi.string()
+    .length(6)
+    .pattern(/^[0-9]+$/)
+    .messages({
+      "string.length": "OTP phải có 6 ký tự",
+      "string.pattern.base": "OTP phải là số",
+      "string.empty": "OTP không được rỗng",
+    });
+
   const schema = Joi.object({
     email: Joi.string().email().required().messages({
       "string.email": "Email không đúng định dạng",
       "string.empty": "Email không được rỗng",
       "any.required": "Email là bắt buộc",
     }),
-    otp: Joi.string()
-      .length(6)
-      .pattern(/^[0-9]+$/)
-      .required()
-      .messages({
-        "string.length": "OTP phải có 6 ký tự",
-        "string.pattern.base": "OTP phải là số",
-        "string.empty": "OTP không được rỗng",
-        "any.required": "OTP là bắt buộc",
-      }),
+    otp: otpSchema,
+    otpCode: otpSchema,
+  }).or("otp", "otpCode").messages({
+    "object.missing": "OTP là bắt buộc",
   });
 
   const { error, value } = schema.validate(req.body);
@@ -68,7 +71,11 @@ const validateVerifyOTP = (req, res, next) => {
     });
   }
 
-  req.body = value;
+  req.body = {
+    ...value,
+    otp: value.otp || value.otpCode,
+  };
+  delete req.body.otpCode;
   next();
 };
 
@@ -95,22 +102,25 @@ const validateForgotPasswordRequest = (req, res, next) => {
 };
 
 const validateForgotPasswordVerifyOTP = (req, res, next) => {
+  const otpSchema = Joi.string()
+    .length(6)
+    .pattern(/^[0-9]+$/)
+    .messages({
+      "string.length": "OTP phải có 6 ký tự",
+      "string.pattern.base": "OTP phải là số",
+      "string.empty": "OTP không được rỗng",
+    });
+
   const schema = Joi.object({
     email: Joi.string().email().required().messages({
       "string.email": "Email không đúng định dạng",
       "string.empty": "Email không được rỗng",
       "any.required": "Email là bắt buộc",
     }),
-    otp: Joi.string()
-      .length(6)
-      .pattern(/^[0-9]+$/)
-      .required()
-      .messages({
-        "string.length": "OTP phải có 6 ký tự",
-        "string.pattern.base": "OTP phải là số",
-        "string.empty": "OTP không được rỗng",
-        "any.required": "OTP là bắt buộc",
-      }),
+    otp: otpSchema,
+    otpCode: otpSchema,
+  }).or("otp", "otpCode").messages({
+    "object.missing": "OTP là bắt buộc",
   });
 
   const { error, value } = schema.validate(req.body);
@@ -122,7 +132,11 @@ const validateForgotPasswordVerifyOTP = (req, res, next) => {
     });
   }
 
-  req.body = value;
+  req.body = {
+    ...value,
+    otp: value.otp || value.otpCode,
+  };
+  delete req.body.otpCode;
   next();
 };
 
@@ -141,10 +155,9 @@ const validateResetPassword = (req, res, next) => {
         "string.empty": "Mật khẩu không được rỗng",
         "any.required": "Mật khẩu là bắt buộc",
       }),
-    confirmPassword: Joi.string().valid(Joi.ref('newPassword')).required().messages({
+    confirmPassword: Joi.string().valid(Joi.ref('newPassword')).optional().messages({
       "any.only": "Xác nhận mật khẩu không khớp",
       "string.empty": "Xác nhận mật khẩu không được rỗng",
-      "any.required": "Xác nhận mật khẩu là bắt buộc",
     }),
   });
 

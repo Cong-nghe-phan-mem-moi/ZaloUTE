@@ -1,5 +1,5 @@
-const User = require("../models/User");
-const Account = require("../models/Account");
+const User = require("../models/user.model");
+const Account = require("../models/account.model");
 
 async function createUser(userData) {
   try {
@@ -37,18 +37,11 @@ async function findById(userId) {
   }
 }
 
-async function findByEmail(email) {
-  try {
-    return await User.findOne({ email: email.toLowerCase() });
-  } catch (error) {
-    throw error;
-  }
-}
-
 async function updateProfile(userId, updateData) {
   try {
     // Remove sensitive fields that shouldn't be updated through edit profile
     delete updateData.account;
+    delete updateData.email;
 
     const updatedUser = await User.findByIdAndUpdate(userId, updateData, {
       returnDocument: "after",
@@ -56,18 +49,6 @@ async function updateProfile(userId, updateData) {
     });
 
     return updatedUser;
-  } catch (error) {
-    throw error;
-  }
-}
-
-async function emailExists(email, excludeUserId = null) {
-  try {
-    const query = { email: email.toLowerCase() };
-    if (excludeUserId) {
-      query._id = { $ne: excludeUserId };
-    }
-    return await User.findOne(query);
   } catch (error) {
     throw error;
   }
@@ -109,9 +90,7 @@ module.exports = {
   deleteUserById,
   linkAccountToUser,
   findById,
-  findByEmail,
   updateProfile,
-  emailExists,
   getUserById,
   getProfileByRole,
 };
