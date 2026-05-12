@@ -9,7 +9,12 @@
     },
     {
       "key": "forgot_email",
-      "value": "user@example.com",
+      "value": "taomatdayma@gmail.com",
+      "enabled": true
+    },
+    {
+      "key": "forgot_email_missing",
+      "value": "missing_account@example.com",
       "enabled": true
     },
     {
@@ -24,6 +29,11 @@
     },
     {
       "key": "reset_otp",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "reset_token",
       "value": "",
       "enabled": true
     },
