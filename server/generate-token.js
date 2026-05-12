@@ -95,14 +95,14 @@ async function main() {
     console.log('-'.repeat(70));
     console.log('User ID:', user._id);
     console.log('Name:', user.fullName);
-    console.log('Email:', user.email);
+    console.log('Email:', user.account.email);
     console.log('Account ID:', user.account._id);
     console.log('Role:', user.account.role);
     console.log('');
 
     console.log('📌 Generated Token:');
     console.log('-'.repeat(70));
-    const token = generateToken(user._id.toString(), user.account._id.toString(), user.email, user.account.role);
+    const token = generateToken(user._id.toString(), user.account._id.toString(), user.account.email, user.account.role);
     console.log('Token:', token);
     console.log('');
     console.log('Decoded:', verifyToken(token));

@@ -54,45 +54,29 @@ const authorize = (...roles) => {
   };
 };
 
-const resetTokenMiddleware = (req, res, next) => {
-  try {
-    const token = req.headers.authorization?.split(' ')[1];
+const resetPasswordSessionMiddleware = (req, res, next) => {
+  const resetSession = req.session?.allowResetPassword;
 
-    if (!token) {
-      return res.status(401).json({
-        success: false,
-        code: 'UNAUTHORIZED',
-        message: 'No reset token provided',
-      });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    if (decoded.type !== 'password_reset') {
-      return res.status(401).json({
-        success: false,
-        code: 'INVALID_TOKEN',
-        message: 'Invalid reset token',
-      });
-    }
-
-    req.resetToken = decoded;
+  if (resetSession && resetSession.expiresAt > Date.now()) {
+    req.resetPasswordEmail = resetSession.email;
     next();
-  } catch (error) {
-    if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({
-        success: false,
-        code: 'TOKEN_EXPIRED',
-        message: 'Reset token has expired',
-      });
-    }
-
-    return res.status(401).json({
-      success: false,
-      code: 'INVALID_TOKEN',
-      message: 'Invalid reset token',
-    });
+    return;
   }
+
+  if (req.session?.allowResetPassword) {
+    delete req.session.allowResetPassword;
+  }
+
+  return res.status(401).json({
+    success: false,
+    code: 'RESET_SESSION_EXPIRED',
+    message: 'Reset password session has expired. Please verify OTP again.',
+    redirectUrl: '/forgot-password',
+  });
 };
 
-module.exports = { authMiddleware, authorize, resetTokenMiddleware };
+module.exports = {
+  authMiddleware,
+  authorize,
+  resetPasswordSessionMiddleware,
+};

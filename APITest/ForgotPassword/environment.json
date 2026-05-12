@@ -28,8 +28,8 @@
       "enabled": true
     },
     {
-      "key": "reset_token",
-      "value": "",
+      "key": "reset_session_ok",
+      "value": "false",
       "enabled": true
     }
   ]

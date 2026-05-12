@@ -1,50 +1,50 @@
 const Account = require("../models/account.model");
 
+const normalizeEmail = (email) => email.trim().toLowerCase();
+
 const createAccount = async (accountData) => {
   return new Account(accountData).save();
 };
 
 const deleteAccountByEmail = async (email) => {
-  return Account.deleteOne({ email: email.toLowerCase() });
+  return Account.deleteOne({ email: normalizeEmail(email) });
 };
 
-const findAccountByEmail = async (email) => {
-  return Account.findOne({ email: email.toLowerCase() });
+const findAccountByEmail = async (email, options = {}) => {
+  const query = Account.findOne({ email: normalizeEmail(email) });
+
+  if (options.includePassword) {
+    query.select("+passwordHash");
+  }
+
+  return query;
 };
 
 const findAccountById = async (accountId) => {
   return Account.findById(accountId);
 };
 
-const updateResetOtp = async (accountId, resetOtp) => {
-  return Account.findByIdAndUpdate(
-    accountId,
-    { resetOtp },
-    { returnDocument: "after" },
-  );
-};
-
-const clearResetOtp = async (accountId) => {
-  return Account.findByIdAndUpdate(
-    accountId,
-    { resetOtp: null },
-    { returnDocument: "after" },
-  );
-};
-
 const updatePasswordHash = async (accountId, passwordHash) => {
   return Account.findByIdAndUpdate(
     accountId,
     { passwordHash },
-    { returnDocument: "after" },
+    { returnDocument: "after", runValidators: true },
   );
 };
 
-const markEmailVerified = async (accountId) => {
+const updateAccountStatus = async (accountId, status) => {
   return Account.findByIdAndUpdate(
     accountId,
-    { isVerified: true, otp: null },
-    { returnDocument: "after" },
+    { status },
+    { returnDocument: "after", runValidators: true },
+  );
+};
+
+const updateAccountEmail = async (accountId, email) => {
+  return Account.findByIdAndUpdate(
+    accountId,
+    { email: normalizeEmail(email) },
+    { returnDocument: "after", runValidators: true },
   );
 };
 
@@ -53,8 +53,7 @@ module.exports = {
   deleteAccountByEmail,
   findAccountByEmail,
   findAccountById,
-  updateResetOtp,
-  clearResetOtp,
   updatePasswordHash,
-  markEmailVerified,
+  updateAccountStatus,
+  updateAccountEmail,
 };

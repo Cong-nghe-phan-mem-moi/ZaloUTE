@@ -1,9 +1,24 @@
 const UserRepository = require('../repo/user.repository');
+const AuthRepository = require('../repo/auth.repository');
+
+const buildProfileResponse = (user) => ({
+  userId: user._id,
+  fullName: user.fullName,
+  email: user.account?.email,
+  phone: user.phone,
+  avatar: user.avatar,
+  bio: user.bio,
+  dateOfBirth: user.dateOfBirth,
+  gender: user.gender,
+  address: user.address,
+  createdAt: user.createdAt,
+  updatedAt: user.updatedAt,
+});
 
 async function editProfile(userId, updateData) {
   try {
     // Check if user exists
-    const user = await UserRepository.findById(userId);
+    const user = await UserRepository.getUserById(userId);
     if (!user) {
       throw {
         statusCode: 404,
@@ -12,21 +27,40 @@ async function editProfile(userId, updateData) {
       };
     }
 
-    // Check if email is already in use by another user
     if (updateData.email) {
-      const emailExists = await UserRepository.emailExists(updateData.email, userId);
-      if (emailExists) {
+      if (!user.account) {
+        throw {
+          statusCode: 400,
+          code: 'ACCOUNT_NOT_FOUND',
+          message: 'Account not found',
+        };
+      }
+
+      const normalizedEmail = updateData.email.trim().toLowerCase();
+      const existingAccount = await AuthRepository.findAccountByEmail(normalizedEmail);
+      if (
+        existingAccount &&
+        existingAccount._id.toString() !== user.account._id.toString()
+      ) {
         throw {
           statusCode: 400,
           code: 'EMAIL_ALREADY_IN_USE',
           message: 'Email is already in use by another user',
         };
       }
+
+      if (normalizedEmail !== user.account.email) {
+        await AuthRepository.updateAccountEmail(user.account._id, normalizedEmail);
+      }
+
+      delete updateData.email;
     }
 
-    // Update the user profile
-    const updatedUser = await UserRepository.updateProfile(userId, updateData);
+    if (Object.keys(updateData).length > 0) {
+      await UserRepository.updateProfile(userId, updateData);
+    }
 
+    const updatedUser = await UserRepository.getUserById(userId);
     if (!updatedUser) {
       throw {
         statusCode: 500,
@@ -38,17 +72,7 @@ async function editProfile(userId, updateData) {
     return {
       success: true,
       message: 'Profile updated successfully',
-      data: {
-        userId: updatedUser._id,
-        fullName: updatedUser.fullName,
-        email: updatedUser.email,
-        phone: updatedUser.phone,
-        avatar: updatedUser.avatar,
-        bio: updatedUser.bio,
-        dateOfBirth: updatedUser.dateOfBirth,
-        gender: updatedUser.gender,
-        address: updatedUser.address,
-      },
+      data: buildProfileResponse(updatedUser),
     };
   } catch (error) {
     throw error;
@@ -68,19 +92,7 @@ async function getUserProfile(userId) {
 
     return {
       success: true,
-      data: {
-        userId: user._id,
-        fullName: user.fullName,
-        email: user.email,
-        phone: user.phone,
-        avatar: user.avatar,
-        bio: user.bio,
-        dateOfBirth: user.dateOfBirth,
-        gender: user.gender,
-        address: user.address,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-      },
+      data: buildProfileResponse(user),
     };
   } catch (error) {
     console.error('getUserProfile error:', error);
@@ -101,19 +113,7 @@ async function getUserProfileByRole(userId, role) {
 
     return {
       success: true,
-      data: {
-        userId: user._id,
-        fullName: user.fullName,
-        email: user.email,
-        phone: user.phone,
-        avatar: user.avatar,
-        bio: user.bio,
-        dateOfBirth: user.dateOfBirth,
-        gender: user.gender,
-        address: user.address,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-      },
+      data: buildProfileResponse(user),
     };
   } catch (error) {
     throw error;

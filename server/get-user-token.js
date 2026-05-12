@@ -25,20 +25,21 @@ async function main() {
   try {
     await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/zaloute');
 
-    // Find user with role 'user' (not admin)
-    const user = await User.findOne({ email: 'user@example.com' }).populate('account');
+    // Find account by email, then use the linked user for the token payload.
+    const account = await Account.findOne({ email: 'user@example.com' }).populate('user');
 
-    if (!user) {
+    if (!account || !account.user) {
       console.error('User not found');
       process.exit(1);
     }
 
-    const token = generateToken(user._id.toString(), user.account._id.toString(), user.email, user.account.role);
+    const user = account.user;
+    const token = generateToken(user._id.toString(), account._id.toString(), account.email, account.role);
 
     console.log('JWT Token:', token);
-    console.log('account_id (id):', user.account._id.toString());
+    console.log('account_id (id):', account._id.toString());
     console.log('user_id (userId):', user._id.toString());
-    console.log('role:', user.account.role);
+    console.log('role:', account.role);
 
     process.exit(0);
   } catch (error) {
