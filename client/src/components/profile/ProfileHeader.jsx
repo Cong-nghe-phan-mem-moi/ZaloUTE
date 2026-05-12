@@ -1,7 +1,8 @@
 import React from 'react';
 import StatCard from '../common/StatCard';
 
-const ProfileHeader = ({ profileData }) => {
+const ProfileHeader = ({ profileData, onEdit }) => {
+
   const { name, username, bio, coverImage, profileImage, stats, isOnline } = profileData;
 
   return (
@@ -25,7 +26,8 @@ const ProfileHeader = ({ profileData }) => {
               </p>
             </div>
           </div>
-          <ActionButtons />
+          <ActionButtons onEdit={onEdit} />
+
         </div>
 
         {/* Bio */}
@@ -75,12 +77,17 @@ const ProfileAvatar = ({ profileImage, isOnline }) => (
 );
 
 
-const ActionButtons = () => (
+const ActionButtons = ({ onEdit }) => (
+
   <div className="flex gap-2 mb-2">
-    <button className="bg-primary hover:bg-on-primary-fixed-variant text-on-primary rounded-lg px-6 py-2 font-label-md text-label-md transition-colors flex items-center gap-2">
+    <button 
+      onClick={onEdit}
+      className="bg-primary hover:bg-on-primary-fixed-variant text-on-primary rounded-lg px-6 py-2 font-label-md text-label-md transition-colors flex items-center gap-2"
+    >
       <span className="material-symbols-outlined text-sm">edit</span>
       Edit Profile
     </button>
+
     <button className="bg-secondary-container hover:bg-outline-variant text-on-surface rounded-lg px-4 py-2 transition-colors">
       <span className="material-symbols-outlined">share</span>
     </button>

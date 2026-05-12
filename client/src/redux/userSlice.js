@@ -13,6 +13,18 @@ export const fetchUserProfile = createAsyncThunk(
     }
   }
 );
+// Async thunk to update user profile
+export const updateUserProfile = createAsyncThunk(
+  'user/updateProfile',
+  async (userData, { rejectWithValue }) => {
+    try {
+      const response = await userAPI.updateProfile(userData);
+      return response.data.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || 'Failed to update profile');
+    }
+  }
+);
 
 
 const userSlice = createSlice({
@@ -44,7 +56,11 @@ const userSlice = createSlice({
       .addCase(fetchUserProfile.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+      .addCase(updateUserProfile.fulfilled, (state, action) => {
+        state.profile = action.payload;
       });
+
   },
 });
 

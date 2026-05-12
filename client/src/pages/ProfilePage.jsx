@@ -1,20 +1,31 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchUserProfile } from '../redux/userSlice';
+import { fetchUserProfile, updateUserProfile } from '../redux/userSlice';
 import TopAppBar from '../components/layout/TopAppBar';
 import ProfileHeader from '../components/profile/ProfileHeader';
 import FriendsGrid from '../components/profile/FriendsGrid';
 import AboutCard from '../components/profile/AboutCard';
 import RecentActivityCard from '../components/profile/RecentActivityCard';
+import EditProfileModal from '../components/profile/EditProfileModal';
 import FAB from '../components/common/FAB';
 
 const ProfilePage = () => {
   const dispatch = useDispatch();
   const { profile, loading, error } = useSelector((state) => state.user);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   useEffect(() => {
     dispatch(fetchUserProfile());
   }, [dispatch]);
+
+  const handleSaveProfile = async (formData) => {
+    try {
+      await dispatch(updateUserProfile(formData)).unwrap();
+      setIsEditModalOpen(false);
+    } catch (err) {
+      console.error('Failed to update profile:', err);
+    }
+  };
 
   // Data derived from profile or empty defaults
   const displayProfile = {
@@ -43,8 +54,7 @@ const ProfilePage = () => {
 
   const activities = []; // No static activities
 
-
-  if (loading) {
+  if (loading && !profile) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
@@ -59,17 +69,19 @@ const ProfilePage = () => {
         {error && (
           <div className="mb-6 bg-error-container text-on-error-container p-4 rounded-xl flex items-center gap-3">
             <span className="material-symbols-outlined">error</span>
-            <span>{typeof error === 'string' ? error : error.message || 'Error loading profile'}</span>
+            <span>{typeof error === 'string' ? error : error.message || 'Error occurred'}</span>
           </div>
         )}
         
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Left/Main Column */}
           <div className="lg:col-span-8 space-y-8">
-            <ProfileHeader profileData={displayProfile} />
+            <ProfileHeader 
+              profileData={displayProfile} 
+              onEdit={() => setIsEditModalOpen(true)}
+            />
             <FriendsGrid friends={friendsData} totalFriends={displayProfile.stats.friends} />
           </div>
-
 
           {/* Right Sidebar */}
           <div className="lg:col-span-4 space-y-8">
@@ -90,10 +102,18 @@ const ProfilePage = () => {
         </div>
       </main>
 
+      <EditProfileModal 
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onSave={handleSaveProfile}
+        initialData={profile}
+      />
+
       <FAB icon="add" label="Post Update" />
     </div>
   );
 };
 
 export default ProfilePage;
+
 
