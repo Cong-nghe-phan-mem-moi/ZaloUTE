@@ -24,7 +24,9 @@ const {
   resetPasswordLimiter,
   loginLimiter,
 } = require("../middleware/rateLimiter");
-const { resetTokenMiddleware } = require("../middleware/authMiddleware");
+const {
+  resetPasswordSessionMiddleware,
+} = require("../middleware/authMiddleware");
 
 // POST /api/auth/register
 router.post("/register", registerLimiter, validateRegister, register);
@@ -52,7 +54,7 @@ router.post(
 router.post(
   "/forgot-password/reset-password",
   resetPasswordLimiter,
-  resetTokenMiddleware,
+  resetPasswordSessionMiddleware,
   validateResetPassword,
   resetPassword,
 );
