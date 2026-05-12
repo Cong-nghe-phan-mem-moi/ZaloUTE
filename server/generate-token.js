@@ -10,16 +10,18 @@
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 const mongoose = require('mongoose');
-const User = require('./src/models/User');
+const User = require('./src/models/user.model');
+const Account = require('./src/models/account.model');
 
 // Default JWT Secret
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
 
 // Generate token
-function generateToken(userId, role = 'user') {
+function generateToken(userId, accountId, email, role = 'user') {
   const payload = {
-    id: userId,
-    email: 'test@example.com',
+    id: accountId,
+    userId: userId,
+    email: email,
     role: role,
   };
 
@@ -60,7 +62,7 @@ async function main() {
 
     if (userIdFromArgs) {
       // Lấy user theo ID từ argument
-      user = await User.findById(userIdFromArgs);
+      user = await User.findById(userIdFromArgs).populate('account');
       if (!user) {
         console.error('❌ User not found with ID:', userIdFromArgs);
         process.exit(1);
@@ -69,14 +71,14 @@ async function main() {
       // Lấy user đầu tiên từ DB - query trực tiếp (bypass validation)
       const usersCollection = db.collection('users');
       const rawUser = await usersCollection.findOne();
-      
+
       if (!rawUser) {
         console.error('❌ No users found in database. Please insert a test user first.');
         process.exit(1);
       }
-      
-      // Convert raw user to Mongoose document
-      user = await User.findById(rawUser._id);
+
+      // Convert raw user to Mongoose document with account populated
+      user = await User.findById(rawUser._id).populate('account');
       if (!user) {
         console.error('❌ User found but could not be loaded by Mongoose. Check schema validation.');
         console.log('Raw user:', rawUser);
@@ -91,15 +93,16 @@ async function main() {
 
     console.log('📌 User Found in Database:');
     console.log('-'.repeat(70));
-    console.log('ID:', user._id);
+    console.log('User ID:', user._id);
     console.log('Name:', user.fullName);
-    console.log('Email:', user.email);
-    console.log('Role:', user.role);
+    console.log('Email:', user.account.email);
+    console.log('Account ID:', user.account._id);
+    console.log('Role:', user.account.role);
     console.log('');
 
     console.log('📌 Generated Token:');
     console.log('-'.repeat(70));
-    const token = generateToken(user._id.toString(), user.role);
+    const token = generateToken(user._id.toString(), user.account._id.toString(), user.account.email, user.account.role);
     console.log('Token:', token);
     console.log('');
     console.log('Decoded:', verifyToken(token));

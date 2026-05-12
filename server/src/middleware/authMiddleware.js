@@ -42,7 +42,7 @@ const authorize = (...roles) => {
       });
     }
 
-    if (!roles.includes(req.user.role)) {
+    if (!req.user.role || !roles.includes(req.user.role)) {
       return res.status(403).json({
         success: false,
         code: 'FORBIDDEN',
@@ -54,4 +54,29 @@ const authorize = (...roles) => {
   };
 };
 
-module.exports = { authMiddleware, authorize };
+const resetPasswordSessionMiddleware = (req, res, next) => {
+  const resetSession = req.session?.allowResetPassword;
+
+  if (resetSession && resetSession.expiresAt > Date.now()) {
+    req.resetPasswordEmail = resetSession.email;
+    next();
+    return;
+  }
+
+  if (req.session?.allowResetPassword) {
+    delete req.session.allowResetPassword;
+  }
+
+  return res.status(401).json({
+    success: false,
+    code: 'RESET_SESSION_EXPIRED',
+    message: 'Reset password session has expired. Please verify OTP again.',
+    redirectUrl: '/forgot-password',
+  });
+};
+
+module.exports = {
+  authMiddleware,
+  authorize,
+  resetPasswordSessionMiddleware,
+};
