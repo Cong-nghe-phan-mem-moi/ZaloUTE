@@ -4,6 +4,7 @@ const API_URL = 'http://localhost:5000/api';
 
 const api = axios.create({
   baseURL: API_URL,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -23,6 +24,10 @@ api.interceptors.request.use((config) => {
 export const userAPI = {
   getProfile: () => api.get('/profile'),
   updateProfile: (data) => api.put('/profile', data),
+};
+
+export const authAPI = {
+  login: (credentials) => api.post('/auth/login', credentials),
 };
 
 
