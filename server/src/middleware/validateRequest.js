@@ -1,6 +1,8 @@
 const validateEditProfile = (req, res, next) => {
   const { fullName, email, phone, bio, dateOfBirth, gender, address, avatar } = req.body;
 
+
+
   const errors = [];
 
   if (fullName !== undefined) {
@@ -65,6 +67,9 @@ const validateEditProfile = (req, res, next) => {
       errors.push('Avatar must be a string or null');
     }
   }
+
+
+
 
   if (errors.length > 0) {
     return res.status(400).json({

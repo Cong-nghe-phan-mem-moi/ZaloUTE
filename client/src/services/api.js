@@ -27,4 +27,31 @@ export const resetPassword = (newPassword, resetToken) =>
 		},
 	)
 
+// Add interceptor to include token in every request
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+}, (error) => {
+  return Promise.reject(error);
+});
+
+export const userAPI = {
+  getProfile: () => api.get('/profile'),
+  updateProfile: (data) => api.put('/profile', data),
+};
+
+export const authAPI = {
+  login: (credentials) => api.post('/auth/login', credentials),
+};
+
+export const registerAPI = {
+	register: (fullName, email, password) =>
+		api.post('/auth/register', { fullName, email, password }),
+	verifyOTP: (email, otp) =>
+		api.post('/auth/verify-otp', { email, otp }),
+}
+
 export default api
