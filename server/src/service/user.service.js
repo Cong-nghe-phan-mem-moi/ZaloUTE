@@ -11,9 +11,14 @@ const buildProfileResponse = (user) => ({
   dateOfBirth: user.dateOfBirth,
   gender: user.gender,
   address: user.address,
+  isOnline: user.isOnline,
+  lastActive: user.lastActive,
+  friendsCount: user.friends?.length || 0,
   createdAt: user.createdAt,
   updatedAt: user.updatedAt,
 });
+
+
 
 async function editProfile(userId, updateData) {
   try {

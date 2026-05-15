@@ -255,9 +255,10 @@ const requestPasswordResetOTP = async (email) => {
   const account = await AuthRepository.findAccountByEmail(normalizedEmail);
 
   if (!account) {
-    return {
-      success: true,
-      message: "Nếu email tồn tại, mã OTP đã được gửi.",
+    throw {
+      statusCode: 404,
+      code: "ACCOUNT_NOT_FOUND",
+      message: "Tài khoản không tồn tại.",
     };
   }
 
@@ -318,6 +319,17 @@ const verifyPasswordResetOTP = async (email, otp) => {
   await validateOtp(otpDoc, otp);
   await OtpRepository.markOtpUsed(otpDoc._id);
 
+  const resetToken = jwt.sign(
+    {
+      email: account.email,
+      type: OTP_TYPE_RESET_PASSWORD,
+    },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: `${RESET_PASSWORD_SESSION_MINUTES}m`,
+    },
+  );
+
   return {
     success: true,
     message: "Xác thực OTP thành công.",
@@ -325,6 +337,7 @@ const verifyPasswordResetOTP = async (email, otp) => {
       email: account.email,
       redirectUrl: "/reset-password",
       expiresInMinutes: RESET_PASSWORD_SESSION_MINUTES,
+      resetToken,
     },
   };
 };

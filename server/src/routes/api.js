@@ -37,6 +37,8 @@ router.get(
 
 // General Profile Routes
 router.get("/profile", authMiddleware, UserController.getProfile);
+router.put("/profile", authMiddleware, validateEditProfile, UserController.editProfile);
+
 
 // Authentication routes
 router.use("/auth", authRoutes);
