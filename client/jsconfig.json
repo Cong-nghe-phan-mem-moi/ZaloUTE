@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "es2020",
+    "module": "esnext",
+    "jsx": "preserve",
+    "checkJs": false,
+    "strict": false,
+    "moduleResolution": "bundler", 
+    "paths": {
+      "*": ["./src/*"]
+    }
+  },
+  "exclude": [
+    "node_modules",
+    "build",
+    "dist"
+  ]
+}
