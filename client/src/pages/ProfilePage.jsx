@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { fetchUserProfile, updateUserProfile } from '../redux/userSlice';
+import { useEffect, useState } from 'react';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { fetchUserProfile, updateUserProfile } from '../store/slices/userSlice';
 import TopAppBar from '../components/layout/TopAppBar';
 import ProfileHeader from '../components/profile/ProfileHeader';
 import FriendsGrid from '../components/profile/FriendsGrid';
@@ -10,8 +10,8 @@ import EditProfileModal from '../components/profile/EditProfileModal';
 import FAB from '../components/common/FAB';
 
 const ProfilePage = () => {
-  const dispatch = useDispatch();
-  const { profile, loading, error } = useSelector((state) => state.user);
+  const dispatch = useAppDispatch();
+  const { profile, loading, error } = useAppSelector((state) => state.user);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   useEffect(() => {
