@@ -1,5 +1,20 @@
 @import "tailwindcss";
 
+@layer base {
+	html {
+		font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+		color: #0f172a;
+		background-color: #f8fafc;
+	}
+
+	body {
+		margin: 0;
+		min-height: 100vh;
+		background-color: #f8fafc;
+	}
+}
+@import "tailwindcss";
+
 @theme {
   --color-primary: #0052cc;
   --color-primary-container: #0068ff;
@@ -143,4 +158,4 @@
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-outline);
 }
-
+

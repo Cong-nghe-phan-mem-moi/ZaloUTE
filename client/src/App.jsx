@@ -1,25 +1,18 @@
-import LoginPage from './pages/LoginPage'
-import ProfilePage from './pages/ProfilePage'
+import { Routes, Route } from "react-router-dom";
 
-const profilePaths = new Set(['/profile', '/user/profile', '/admin/profile'])
+import Register from "./pages/Register";
+import VerifyOtp from "./pages/VerifyOtp";
+import Home from "./pages/Home";
 
 function App() {
-  const { pathname } = window.location
-
-  if (pathname === '/') {
-    window.history.replaceState(null, '', '/login')
-    return <LoginPage />
-  }
-
-  if (pathname === '/login') {
-    return <LoginPage />
-  }
-
-  if (profilePaths.has(pathname)) {
-    return <ProfilePage />
-  }
-
-  return <LoginPage />
+  return (
+    <Routes>
+      <Route path="/" element={<Register />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/verify-otp" element={<VerifyOtp />} />
+      <Route path="/home" element={<Home />} />
+    </Routes>
+  );
 }
 
-export default App
+export default App;

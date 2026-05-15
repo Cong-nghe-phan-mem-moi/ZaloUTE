@@ -63,6 +63,23 @@ const resetPasswordSessionMiddleware = (req, res, next) => {
     return;
   }
 
+  const bearerToken = req.headers.authorization?.split(' ')[1];
+  const resetToken = req.body?.resetToken || bearerToken;
+
+  if (resetToken) {
+    try {
+      const payload = jwt.verify(resetToken, process.env.JWT_SECRET);
+
+      if (payload?.type === 'reset_password' && payload.email) {
+        req.resetPasswordEmail = payload.email;
+        next();
+        return;
+      }
+    } catch (error) {
+      // fall through to unauthorized response
+    }
+  }
+
   if (req.session?.allowResetPassword) {
     delete req.session.allowResetPassword;
   }
