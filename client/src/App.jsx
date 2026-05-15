@@ -1,11 +1,18 @@
-import ForgotPassword from './pages/ForgotPassword'
+import { Routes, Route } from "react-router-dom";
+
+import Register from "./pages/Register";
+import VerifyOtp from "./pages/VerifyOtp";
+import Home from "./pages/Home";
 
 function App() {
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      <ForgotPassword />
-    </div>
-  )
+    <Routes>
+      <Route path="/" element={<Register />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/verify-otp" element={<VerifyOtp />} />
+      <Route path="/home" element={<Home />} />
+    </Routes>
+  );
 }
 
-export default App
+export default App;
