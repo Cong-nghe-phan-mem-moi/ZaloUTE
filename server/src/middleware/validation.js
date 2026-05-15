@@ -159,6 +159,7 @@ const validateResetPassword = (req, res, next) => {
       "any.only": "Xác nhận mật khẩu không khớp",
       "string.empty": "Xác nhận mật khẩu không được rỗng",
     }),
+    resetToken: Joi.string().optional(),
   });
 
   const { error, value } = schema.validate(req.body);
