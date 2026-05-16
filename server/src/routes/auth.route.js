@@ -62,7 +62,6 @@ router.post(
 // GET /api/auth/dev/reset-otp?email=...
 router.get("/dev/reset-otp", getResetOtpDev);
 
-// router.post("/login", loginLimiter, login);
-router.post("/login", login);
+router.post("/login", loginLimiter, login);
 
 module.exports = router;
