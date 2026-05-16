@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { mediaSchema } = require('./Media'); // Import media sub-document
+const { mediaSchema } = require('./media.model'); // Import media sub-document
 
 const postSchema = new mongoose.Schema({
     author: {

@@ -1,0 +1,359 @@
+const PostService = require('../service/post.service');
+const path = require('path');
+
+class PostController {
+  // 4.1 Tạo bài viết
+  static async createPost(req, res) {
+    try {
+      const { content } = req.body;
+      const userId = req.user.userId;
+
+      console.log('CreatePost - req.body:', req.body);
+      console.log('CreatePost - content:', content);
+      console.log('CreatePost - userId:', userId);
+      console.log('CreatePost - req.files:', req.files?.length);
+
+      // Process uploaded files
+      const media = [];
+      if (req.files && req.files.length > 0) {
+        req.files.forEach((file) => {
+          const fileUrl = `/uploads/${file.filename}`;
+          const fileType = file.mimetype.startsWith('image/') ? 'image' : 'video';
+          media.push({
+            type: fileType,
+            url: fileUrl,
+            filename: file.filename,
+            mimetype: file.mimetype,
+          });
+        });
+      }
+
+      const post = await PostService.createPost(userId, content, media);
+
+      return res.status(201).json({
+        success: true,
+        message: 'Tạo bài viết thành công',
+        data: post,
+      });
+    } catch (error) {
+      console.error('Error creating post:', error);
+      return res.status(400).json({
+        success: false,
+        message: error.message || 'Lỗi khi tạo bài viết',
+      });
+    }
+  }
+
+  // 4.2 Chỉnh sửa bài viết
+  static async updatePost(req, res) {
+    try {
+      const { postId } = req.params;
+      const { content, existingMedia } = req.body;
+      const userId = req.user.userId;
+
+      // Process uploaded files
+      const media = [];
+      
+      // Add existing media if provided
+      if (existingMedia) {
+        try {
+          const parsed = JSON.parse(existingMedia);
+          media.push(...parsed);
+        } catch (e) {
+          console.error('Error parsing existingMedia:', e);
+        }
+      }
+      
+      // Add newly uploaded files
+      if (req.files && req.files.length > 0) {
+        req.files.forEach((file) => {
+          const fileUrl = `/uploads/${file.filename}`;
+          const fileType = file.mimetype.startsWith('image/') ? 'image' : 'video';
+          media.push({
+            type: fileType,
+            url: fileUrl,
+            filename: file.filename,
+            mimetype: file.mimetype,
+          });
+        });
+      }
+
+      const post = await PostService.updatePost(postId, userId, content, media);
+
+      return res.status(200).json({
+        success: true,
+        message: 'Chỉnh sửa bài viết thành công',
+        data: post,
+      });
+    } catch (error) {
+      console.error('Error updating post:', error);
+
+      if (error.message.includes('không tồn tại')) {
+        return res.status(404).json({
+          success: false,
+          message: error.message,
+        });
+      }
+
+      if (error.message.includes('không có quyền')) {
+        return res.status(403).json({
+          success: false,
+          message: error.message,
+        });
+      }
+
+      return res.status(400).json({
+        success: false,
+        message: error.message || 'Lỗi khi chỉnh sửa bài viết',
+      });
+    }
+  }
+
+  // 4.3 Xóa bài viết
+  static async deletePost(req, res) {
+    try {
+      const { postId } = req.params;
+      const userId = req.user.userId;
+
+      await PostService.deletePost(postId, userId);
+
+      return res.status(200).json({
+        success: true,
+        message: 'Xóa bài viết thành công',
+      });
+    } catch (error) {
+      console.error('Error deleting post:', error);
+
+      if (error.message.includes('không tồn tại')) {
+        return res.status(404).json({
+          success: false,
+          message: error.message,
+        });
+      }
+
+      if (error.message.includes('không có quyền')) {
+        return res.status(403).json({
+          success: false,
+          message: error.message,
+        });
+      }
+
+      return res.status(400).json({
+        success: false,
+        message: error.message || 'Lỗi khi xóa bài viết',
+      });
+    }
+  }
+
+  // 4.4 Xem news feed
+  static async getNewsFeed(req, res) {
+    try {
+      const { page = 1, limit = 10 } = req.query;
+      const userId = req.user.userId;
+
+      const result = await PostService.getNewsFeed(
+        parseInt(page),
+        parseInt(limit),
+        userId,
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: 'Lấy news feed thành công',
+        data: result,
+      });
+    } catch (error) {
+      console.error('Error fetching news feed:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Lỗi khi lấy news feed',
+        error: error.message,
+      });
+    }
+  }
+
+  // Like/Unlike post
+  static async toggleLike(req, res) {
+    try {
+      const { postId } = req.params;
+      const userId = req.user.userId;
+
+      const result = await PostService.toggleLike(postId, userId);
+
+      return res.status(200).json({
+        success: true,
+        message: result.isLiked ? 'Thích bài viết' : 'Bỏ thích bài viết',
+        data: result,
+      });
+    } catch (error) {
+      console.error('Error toggling like:', error);
+
+      if (error.message.includes('không tồn tại')) {
+        return res.status(404).json({
+          success: false,
+          message: error.message,
+        });
+      }
+
+      return res.status(400).json({
+        success: false,
+        message: error.message || 'Lỗi khi thích bài viết',
+      });
+    }
+  }
+
+  // 4.5 Xem danh sách like
+  static async getPostLikes(req, res) {
+    try {
+      const { postId } = req.params;
+      const { page = 1, limit = 10 } = req.query;
+
+      const result = await PostService.getPostLikes(
+        postId,
+        parseInt(page),
+        parseInt(limit),
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: 'Lấy danh sách thích thành công',
+        data: result,
+      });
+    } catch (error) {
+      console.error('Error fetching likes:', error);
+
+      if (error.message.includes('không tồn tại')) {
+        return res.status(404).json({
+          success: false,
+          message: error.message,
+        });
+      }
+
+      return res.status(400).json({
+        success: false,
+        message: error.message || 'Lỗi khi lấy danh sách thích',
+      });
+    }
+  }
+
+  // 4.6 Xem danh sách bình luận
+  static async getPostComments(req, res) {
+    try {
+      const { postId } = req.params;
+      const { page = 1, limit = 10 } = req.query;
+
+      const result = await PostService.getPostComments(
+        postId,
+        parseInt(page),
+        parseInt(limit),
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: 'Lấy danh sách bình luận thành công',
+        data: result,
+      });
+    } catch (error) {
+      console.error('Error fetching comments:', error);
+
+      if (error.message.includes('không tồn tại')) {
+        return res.status(404).json({
+          success: false,
+          message: error.message,
+        });
+      }
+
+      return res.status(400).json({
+        success: false,
+        message: error.message || 'Lỗi khi lấy danh sách bình luận',
+      });
+    }
+  }
+
+  // Get single post
+  static async getPost(req, res) {
+    try {
+      const { postId } = req.params;
+      const userId = req.user?.userId;
+
+      const post = await PostService.getPost(postId, userId);
+
+      return res.status(200).json({
+        success: true,
+        message: 'Lấy bài viết thành công',
+        data: post,
+      });
+    } catch (error) {
+      console.error('Error fetching post:', error);
+
+      if (error.message.includes('không tồn tại')) {
+        return res.status(404).json({
+          success: false,
+          message: error.message,
+        });
+      }
+
+      return res.status(400).json({
+        success: false,
+        message: error.message || 'Lỗi khi lấy bài viết',
+      });
+    }
+  }
+
+  // Get posts by author
+  static async getPostsByAuthor(req, res) {
+    try {
+      const { authorId } = req.params;
+      const { page = 1, limit = 10 } = req.query;
+      const userId = req.user?.userId;
+
+      const result = await PostService.getPostsByAuthor(
+        authorId,
+        parseInt(page),
+        parseInt(limit),
+        userId,
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: 'Lấy bài viết của tác giả thành công',
+        data: result,
+      });
+    } catch (error) {
+      console.error('Error fetching author posts:', error);
+      return res.status(400).json({
+        success: false,
+        message: error.message || 'Lỗi khi lấy bài viết của tác giả',
+      });
+    }
+  }
+
+  // Search posts
+  static async searchPosts(req, res) {
+    try {
+      const { keyword, page = 1, limit = 10 } = req.query;
+      const userId = req.user?.userId;
+
+      const result = await PostService.searchPosts(
+        keyword,
+        parseInt(page),
+        parseInt(limit),
+        userId,
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: 'Tìm kiếm bài viết thành công',
+        data: result,
+      });
+    } catch (error) {
+      console.error('Error searching posts:', error);
+      return res.status(400).json({
+        success: false,
+        message: error.message || 'Lỗi khi tìm kiếm bài viết',
+      });
+    }
+  }
+}
+
+module.exports = PostController;
