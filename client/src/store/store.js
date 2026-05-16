@@ -3,6 +3,7 @@ import forgotPasswordReducer from './slices/forgotPasswordSlice'
 import registerReducer from './slices/registerSlice'
 import uiReducer from './slices/uiSlice'
 import userReducer from './slices/userSlice'
+import postReducer from './slices/postSlice'
 
 export const store = configureStore({
   reducer: {
@@ -10,5 +11,6 @@ export const store = configureStore({
     register: registerReducer,
     ui: uiReducer,
     user: userReducer,
+    posts: postReducer,
   },
 })

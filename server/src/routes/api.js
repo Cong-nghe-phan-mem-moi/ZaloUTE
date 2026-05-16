@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const UserController = require("../controllers/user.controller");
 const authRoutes = require("./auth.route");
+const postRoutes = require("./post.route");
 const { authMiddleware, authorize } = require("../middleware/authMiddleware");
 const { validateEditProfile } = require("../middleware/validateRequest");
 const { editProfileLimiter } = require("../middleware/rateLimiter");
@@ -39,6 +40,8 @@ router.get(
 router.get("/profile", authMiddleware, UserController.getProfile);
 router.put("/profile", authMiddleware, validateEditProfile, UserController.editProfile);
 
+// Post Routes
+router.use("/posts", postRoutes);
 
 // Authentication routes
 router.use("/auth", authRoutes);

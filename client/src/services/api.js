@@ -3,9 +3,6 @@ import axios from 'axios'
 const api = axios.create({
 	baseURL: '/api',
 	withCredentials: true,
-	headers: {
-		'Content-Type': 'application/json',
-	},
 })
 
 export const requestPasswordResetOtp = (email) =>
@@ -33,6 +30,10 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  // Don't set Content-Type for FormData - let browser set it automatically
+  if (config.data instanceof FormData) {
+    delete config.headers['Content-Type'];
+  }
   return config;
 }, (error) => {
   return Promise.reject(error);
@@ -52,6 +53,71 @@ export const registerAPI = {
 		api.post('/auth/register', { fullName, email, password }),
 	verifyOTP: (email, otp) =>
 		api.post('/auth/verify-otp', { email, otp }),
+}
+
+// Post API endpoints
+export const postAPI = {
+	// 4.1 Tạo bài viết
+	createPost: (formDataOrContent, media = []) => {
+		// If first param is FormData, use it directly
+		if (formDataOrContent instanceof FormData) {
+			return api.post('/posts', formDataOrContent);
+		}
+		// Otherwise, create FormData from content and media
+		const formData = new FormData();
+		formData.append('content', formDataOrContent);
+		media.forEach((item) => {
+			formData.append('media', item.file || item);
+		});
+		return api.post('/posts', formData);
+	},
+
+	// 4.4 Xem news feed
+	getNewsFeed: (page = 1, limit = 10) =>
+		api.get('/posts/feed', { params: { page, limit } }),
+
+	// Get single post
+	getPost: (postId) =>
+		api.get(`/posts/${postId}`),
+
+	// 4.2 Chỉnh sửa bài viết
+	updatePost: (postId, formDataOrContent, media = []) => {
+		// If first param is FormData, use it directly
+		if (formDataOrContent instanceof FormData) {
+			return api.put(`/posts/${postId}`, formDataOrContent);
+		}
+		// Otherwise, create FormData from content and media
+		const formData = new FormData();
+		formData.append('content', formDataOrContent);
+		media.forEach((item) => {
+			formData.append('media', item.file || item);
+		});
+		return api.put(`/posts/${postId}`, formData);
+	},
+
+	// 4.3 Xóa bài viết
+	deletePost: (postId) =>
+		api.delete(`/posts/${postId}`),
+
+	// Like/Unlike post
+	toggleLike: (postId) =>
+		api.post(`/posts/${postId}/like`),
+
+	// 4.5 Xem danh sách like
+	getPostLikes: (postId, page = 1, limit = 10) =>
+		api.get(`/posts/${postId}/likes`, { params: { page, limit } }),
+
+	// 4.6 Xem danh sách bình luận
+	getPostComments: (postId, page = 1, limit = 10) =>
+		api.get(`/posts/${postId}/comments`, { params: { page, limit } }),
+
+	// Get posts by author
+	getPostsByAuthor: (authorId, page = 1, limit = 10) =>
+		api.get(`/posts/author/${authorId}`, { params: { page, limit } }),
+
+	// Search posts
+	searchPosts: (keyword, page = 1, limit = 10) =>
+		api.get('/posts/search', { params: { keyword, page, limit } }),
 }
 
 export default api
