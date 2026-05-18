@@ -88,8 +88,53 @@ async function getUserProfileByRole(userId, role) {
   };
 }
 
+async function searchUsers(keyword, page, limit, myId) {
+  // 1. Kiểm tra keyword là sđt hay tên
+  let queryCondition = { _id: {$ne: myId} };
+  const isPhone = /^\d{10, 11}$/.test(keyword);
+  
+  if (isPhone) {
+    queryCondition.phone = keyword;
+  } else {
+    queryCondition.searchName = {$regex: keyword, $options: 'i'};
+  }
+
+  console.log(`searchUsers - queryCondition:`, queryCondition);
+
+  //2. Phân trang
+  const skip = (page - 1) * limit;
+
+  // 3. Lấy data
+  const users = await UserRepository.findUsers(queryCondition, skip, limit);
+  const total = await UserRepository.countUsers(queryCondition);
+  // console.log(`searchUsers - keyword: ${keyword}, isPhone: ${isPhone}, total found: ${total}`);
+
+  // 4. Quan hệ 
+  let usersWithRelation = users.map(user => {
+    const isFriend = user.friends.some(friendId => friendId.equals(myId));
+
+    return {
+      id: user._id,
+      fullName: user.fullName,
+      avatar: user.avatar,
+      isFriend: isFriend,
+    }
+  })
+  usersWithRelation.sort((a, b) => b.isFriend - a.isFriend);
+  
+  return {
+    data: usersWithRelation,
+    pagination: {
+      currentPage: page,
+      totalPages: Math.ceil(total / limit),
+      totalItems: total,
+    }
+  };
+}
+
 module.exports = {
   editProfile,
   getUserProfile,
+  searchUsers,
   getUserProfileByRole,
 };

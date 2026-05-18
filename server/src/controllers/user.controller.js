@@ -1,4 +1,4 @@
-
+const User = require('../models/user.model');
 const UserService = require('../service/user.service');
 
 async function editProfile(req, res) {
@@ -202,12 +202,39 @@ async function getAdminProfile(req, res) {
   }
 }
 
+async function searchUsers(req, res) {
+  try {
+    // console.log('Search Users - query:', req.query, 'userId:', req.user.userId);
+    const keyword = req.query.keyword;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const myId = req.user.userId;
+    // console.log(await User.findById(myId));
 
+    const result = await UserService.searchUsers(keyword, page, limit, myId);
+    console.log(result);
+    res.status(200).json({
+      success: true,
+      data: result.data,
+      pagination: result.pagination,
+    });
 
+  } catch (error) {
+    console.error('Search Users Error:', error);
+
+    return res.status(500).json({
+      success: false,
+      code: 'INTERNAL_SERVER_ERROR',
+      message: 'Internal server error',
+    });
+  }
+
+}
 
 module.exports = {
   editProfile,
   getProfile,
   getUserProfile,
   getAdminProfile,
+  searchUsers
 };

@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const removeVietnameseTones = require("../utils/stringUtil");
+const { removeVietnameseTones } = require("../utils/stringUtil");
 
 const userSchema = new mongoose.Schema({
   fullName: {
@@ -56,13 +56,23 @@ const userSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 
-userSchema.pre("save", function (next) {
+userSchema.pre("save", async function () {
   if (this.isModified("fullName")) {
     this.searchName = removeVietnameseTones(this.fullName);
   }
+});
 
-  next();
-})
+userSchema.pre("findOneAndUpdate", async function () {
+  const update = this.getUpdate();
+  
+  if (update.$set && update.$set.fullName) {
+    update.$set.searchName = removeVietnameseTones(update.$set.fullName);
+  }
+  else if (update.fullName) {
+    update.searchName = removeVietnameseTones(update.fullName);
+  }
 
+  this.setUpdate(update);
+});
 
 module.exports = mongoose.model('User', userSchema);

@@ -1,7 +1,8 @@
 const User = require("../models/user.model");
 
 async function createUser(userData) {
-  return await User.create(userData);
+  const user = new User(userData);
+  return await user.save();
 }
 
 async function deleteUserById(userId) {
@@ -33,7 +34,6 @@ async function updateProfile(userId, updateData) {
   return updatedUser;
 }
 
-// Hàm này GIỮ LẠI try...catch vì catch có xử lý logic (console.error)
 async function getUserById(userId) {
   try {
     console.log("getUserById - userId:", userId);
@@ -61,6 +61,17 @@ async function getProfileByRole(userId, role) {
   return user;
 }
 
+async function findUsers(condition, skip, limit) {
+  return await User.find(condition)
+    .skip(skip)
+    .limit(limit)
+    .select("id fullName avatar friends")
+}
+
+async function countUsers(condition) {
+  return await User.countDocuments(condition);
+}
+
 module.exports = {
   createUser,
   deleteUserById,
@@ -69,4 +80,6 @@ module.exports = {
   updateProfile,
   getUserById,
   getProfileByRole,
+  findUsers,
+  countUsers,
 };

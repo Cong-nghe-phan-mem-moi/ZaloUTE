@@ -5,6 +5,7 @@ const authRoutes = require("./auth.route");
 const { authMiddleware, authorize } = require("../middleware/authMiddleware");
 const { validateEditProfile } = require("../middleware/validateRequest");
 const { editProfileLimiter } = require("../middleware/rateLimiter");
+const userRoutes = require("./user.route");
 
 // Basic health check endpoint
 router.get("/health", (req, res) => {
@@ -42,5 +43,6 @@ router.put("/profile", authMiddleware, validateEditProfile, UserController.editP
 
 // Authentication routes
 router.use("/auth", authRoutes);
+router.use("/users", userRoutes);
 
 module.exports = router;
