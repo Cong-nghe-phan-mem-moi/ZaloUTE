@@ -1,5 +1,6 @@
 const UserRepository = require('../repo/user.repository');
 const AuthRepository = require('../repo/auth.repository');
+const FriendRequestRepo = require('../repo/friendRequest.repository');
 
 // Hàm Helper tạo lỗi chuẩn Node.js (Giữ được Stack Trace để dễ debug sau này)
 const throwError = (statusCode, code, message) => {
@@ -68,7 +69,7 @@ async function editProfile(userId, updateData) {
   };
 }
 
-async function getUserProfile(userId) {
+async function getMyProfile(userId) { 
   const user = await UserRepository.getUserById(userId);
   if (!user) throwError(404, 'USER_NOT_FOUND', 'User not found');
 
@@ -78,7 +79,7 @@ async function getUserProfile(userId) {
   };
 }
 
-async function getUserProfileByRole(userId, role) {
+async function getMyProfileByRole(userId, role) {
   const user = await UserRepository.getProfileByRole(userId, role);
   if (!user) throwError(403, 'FORBIDDEN', 'You do not have permission to access this resource');
 
@@ -86,6 +87,17 @@ async function getUserProfileByRole(userId, role) {
     success: true,
     data: buildProfileResponse(user),
   };
+}
+
+async function getOtherUserProfile(userId, myId) {
+  const user = await UserRepository.getOtherUserById(userId);
+  if (!user) throwError(404, 'USER_NOT_FOUND', 'User not found');
+  const isFriend = user.friends.some(friendId => friendId.equals(myId));
+
+  const userObj = user.toObject();
+  userObj.relation = isFriend ? 'friend' : 'none';
+
+  return userObj;
 }
 
 async function searchUsers(keyword, page, limit, myId) {
@@ -132,9 +144,11 @@ async function searchUsers(keyword, page, limit, myId) {
   };
 }
 
+
 module.exports = {
   editProfile,
-  getUserProfile,
+  getMyProfile,
   searchUsers,
-  getUserProfileByRole,
+  getMyProfileByRole,
+  getOtherUserProfile,
 };

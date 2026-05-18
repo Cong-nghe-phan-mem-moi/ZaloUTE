@@ -1,5 +1,5 @@
 const User = require("../models/user.model");
-
+const FriendRequest = require("../models/friendRequest.model");
 async function createUser(userData) {
   const user = new User(userData);
   return await user.save();
@@ -72,6 +72,11 @@ async function countUsers(condition) {
   return await User.countDocuments(condition);
 }
 
+async function getOtherUserById(userId) {
+  return await User.findById(userId).select("-account");
+}
+
+
 module.exports = {
   createUser,
   deleteUserById,
@@ -82,4 +87,5 @@ module.exports = {
   getProfileByRole,
   findUsers,
   countUsers,
+  getOtherUserById,
 };

@@ -17,7 +17,7 @@ router.get(
   "/user/profile",
   authMiddleware,
   authorize("user"),
-  UserController.getUserProfile,
+  UserController.getMyProfileIsUser,
 );
 router.put(
   "/user/profile",
@@ -33,11 +33,11 @@ router.get(
   "/admin/profile",
   authMiddleware,
   authorize("admin"),
-  UserController.getAdminProfile,
+  UserController.getMyProfileIsAdmin,
 );
 
 // General Profile Routes
-router.get("/profile", authMiddleware, UserController.getProfile);
+router.get("/profile", authMiddleware, UserController.getMyProfile);
 router.put("/profile", authMiddleware, validateEditProfile, UserController.editProfile);
 
 
