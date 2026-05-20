@@ -267,6 +267,24 @@ async function getOtherUserProfile(req, res) {
 
 }
 
+// [POST] /api/users/logout
+async function logout(req, res) {
+  try {
+    await UserService.logout(req.user.userId);
+    return res.status(200).json({
+      success: true,
+      message: 'Logged out successfully',
+    });
+  } catch (error) {
+    console.error('Logout Error:', error);
+
+    return res.status(500).json({
+      success: false,
+      code: 'INTERNAL_SERVER_ERROR',
+      message: 'Internal server error',
+    });
+  }
+}
 
 module.exports = {
   editProfile,
@@ -275,4 +293,5 @@ module.exports = {
   getMyProfileIsAdmin,
   searchUsers,
   getOtherUserProfile,
+  logout
 };

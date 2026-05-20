@@ -144,6 +144,9 @@ async function searchUsers(keyword, page, limit, myId) {
   };
 }
 
+async function logout(userId) {
+  await UserRepository.setUserOffline(userId, { isOnline: false, lastActive: new Date() });
+}
 
 module.exports = {
   editProfile,
@@ -151,4 +154,5 @@ module.exports = {
   searchUsers,
   getMyProfileByRole,
   getOtherUserProfile,
+  logout
 };

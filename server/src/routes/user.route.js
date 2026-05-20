@@ -13,5 +13,6 @@ router.post('/friend-request', authMiddleware.authMiddleware, friendRequestContr
 
 router.put("/friend-request/accept", authMiddleware.authMiddleware, friendRequestController.handleAcceptFriendRequest);
 
+router.post("/logout", authMiddleware.authMiddleware, userController.logout);
 
 module.exports = router;

@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { userAPI } from '../../services/api';
+import { useAppDispatch } from '../../store/hooks';
+import { clearProfile } from '../../store/slices/userSlice';
 
 const getInitials = (name = '') =>
   name
@@ -11,6 +13,25 @@ const getInitials = (name = '') =>
     .toUpperCase() || 'U';
 
 const TopAppBar = ({ profile }) => {
+  const dispatch = useAppDispatch();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    if (isLoggingOut) return;
+
+    setIsLoggingOut(true);
+
+    try {
+      await userAPI.logout();
+    } catch (error) {
+      console.error('Logout failed:', error);
+    } finally {
+      localStorage.removeItem('token');
+      dispatch(clearProfile());
+      window.location.assign('/login');
+    }
+  };
+
   return (
     <header className="sticky top-0 w-full z-50 bg-white border-b border-[#dddfe2] shadow-sm h-14">
       <div className="h-full px-4 flex items-center justify-between gap-3">
@@ -35,6 +56,12 @@ const TopAppBar = ({ profile }) => {
         <div className="flex items-center gap-2 shrink-0">
           <CircleButton icon="apps" label="Menu" />
           <CircleButton icon="notifications" label="Notifications" />
+          <CircleButton
+            icon="logout"
+            label={isLoggingOut ? 'Logging out' : 'Log out'}
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+          />
           <a
             href="/user/profile"
             className="hidden sm:flex items-center gap-2 rounded-full hover:bg-[#f0f2f5] p-1 pr-3 text-[#050505]"
@@ -184,9 +211,11 @@ const NavIcon = ({ icon, label, href, active = false }) => (
   </a>
 );
 
-const CircleButton = ({ icon, label }) => (
+const CircleButton = ({ icon, label, onClick, disabled = false }) => (
   <button
     type="button"
+    onClick={onClick}
+    disabled={disabled}
     className="w-10 h-10 rounded-full bg-[#e4e6eb] hover:bg-[#d8dadf] flex items-center justify-center text-[#050505]"
     title={label}
     aria-label={label}

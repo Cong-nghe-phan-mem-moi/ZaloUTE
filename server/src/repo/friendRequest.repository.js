@@ -39,7 +39,7 @@ async function updateRequestStatus(requestId, newStatus) {
   return await FriendRequest.findByIdAndUpdate(
     requestId,
     { status: newStatus },
-    { new: true }
+    { returnDocument: "after" }
   );
 }
 

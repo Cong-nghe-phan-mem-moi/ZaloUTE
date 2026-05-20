@@ -50,6 +50,7 @@ export const userAPI = {
     api.post('/users/friend-request', { receiverId }),
   acceptFriendRequest: (senderId) =>
     api.put('/users/friend-request/accept', { senderId }),
+  logout: () => api.post('/users/logout'),
 };
 
 export const authAPI = {

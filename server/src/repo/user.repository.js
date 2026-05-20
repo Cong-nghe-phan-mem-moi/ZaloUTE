@@ -1,5 +1,5 @@
 const User = require("../models/user.model");
-const FriendRequest = require("../models/friendRequest.model");
+
 async function createUser(userData) {
   const user = new User(userData);
   return await user.save();
@@ -84,6 +84,13 @@ async function addFriend(userId, friendId) {
   )
 }
 
+async function setUserOffline(userId, updateData) {
+  return await User.findByIdAndUpdate(userId, updateData, {
+    returnDocument: "after",
+    runValidators: true,
+   });
+}
+
 
 module.exports = {
   createUser,
@@ -96,5 +103,6 @@ module.exports = {
   findUsers,
   countUsers,
   getOtherUserById,
-  addFriend
+  addFriend,
+  setUserOffline
 };
