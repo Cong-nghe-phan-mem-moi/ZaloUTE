@@ -220,6 +220,7 @@ const login = async (email, password) => {
     };
   }
 
+
   if (!account.user) {
     throw {
       statusCode: 500,
@@ -229,9 +230,9 @@ const login = async (email, password) => {
   }
 
   const accountId = account._id.toString();
-  const userId = account.user.toString();
+  const userId = account.user._id ? account.user._id.toString() : account.user.toString();
   const payload = {
-    id: accountId,
+    id: userId,
     accountId,
     userId,
     email: account.email,

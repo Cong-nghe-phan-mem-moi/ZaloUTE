@@ -12,9 +12,11 @@ import ProfilePage from "./pages/ProfilePage";
 function App() {
   const dispatch = useAppDispatch()
   const currentPage = useAppSelector((state) => state.ui?.currentPage || "register");
+  const path = window.location.pathname
+  const otherProfileId = path.match(/^\/users\/profile\/([^/]+)$/)?.[1] || null
 
   useEffect(() => {
-    const path = window.location.pathname
+    const otherProfileMatch = path.match(/^\/users\/profile\/([^/]+)$/)
     
     if (path === '/' || path === '/register') {
       dispatch(setCurrentPage('register'))
@@ -26,10 +28,12 @@ function App() {
       dispatch(setCurrentPage('forgot-password'))
     } else if (path === '/home') {
       dispatch(setCurrentPage('home'))
-    } else if (path === '/edit-profile') {
-      dispatch(setCurrentPage('edit-profile'))
+    } else if (path === '/profile' || path === '/user/profile' || path === '/admin/profile' || path === '/edit-profile') {
+      dispatch(setCurrentPage('profile'))
+    } else if (otherProfileMatch) {
+      dispatch(setCurrentPage('other-profile'))
     }
-  }, [dispatch])
+  }, [dispatch, path])
 
   const renderPage = () => {
     switch (currentPage) {
@@ -41,8 +45,10 @@ function App() {
         return <ForgotPassword />;
       case "home":
         return <Home />;
-      case "edit-profile":
+      case "profile":
         return <ProfilePage />;
+      case "other-profile":
+        return <ProfilePage userId={otherProfileId} />;
       case "register":
       default:
         return <Register />;

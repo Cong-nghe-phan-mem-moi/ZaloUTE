@@ -1,5 +1,5 @@
 const UserService = require('../service/user.service');
-
+const FriendRequestService = require('../service/friendRequest.service');
 async function editProfile(req, res) {
   try {
     const userId = req.user.userId;
@@ -91,11 +91,11 @@ async function editProfile(req, res) {
   }
 }
 
-async function getProfile(req, res) {
+async function getMyProfile(req, res) {
   try {
     const userId = req.user.userId;
     console.log('Getting profile for userId:', userId);
-    const result = await UserService.getUserProfile(userId);
+    const result = await UserService.getMyProfile(userId);
 
     return res.status(200).json({
       success: true,
@@ -129,10 +129,10 @@ async function getProfile(req, res) {
   }
 }
 
-async function getUserProfile(req, res) {
+async function getMyProfileIsUser(req, res) {
   try {
     const userId = req.user.userId;
-    const result = await UserService.getUserProfileByRole(userId, 'user');
+    const result = await UserService.getMyProfileByRole(userId, 'user');
 
     return res.status(200).json({
       success: true,
@@ -165,10 +165,10 @@ async function getUserProfile(req, res) {
   }
 }
 
-async function getAdminProfile(req, res) {
+async function getMyProfileIsAdmin(req, res) {
   try {
     const userId = req.user.userId;
-    const result = await UserService.getUserProfileByRole(userId, 'admin');
+    const result = await UserService.getMyProfileByRole(userId, 'admin');
 
     return res.status(200).json({
       success: true,
@@ -201,9 +201,97 @@ async function getAdminProfile(req, res) {
   }
 }
 
+async function searchUsers(req, res) {
+  try {
+    // console.log('Search Users - query:', req.query, 'userId:', req.user.userId);
+    const keyword = req.query.keyword;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const myId = req.user.userId;
+    // console.log(await User.findById(myId));
+
+    const result = await UserService.searchUsers(keyword, page, limit, myId);
+    console.log(result);
+    res.status(200).json({
+      success: true,
+      data: result.data,
+      pagination: result.pagination,
+    });
+
+  } catch (error) {
+    console.error('Search Users Error:', error);
+
+    return res.status(500).json({
+      success: false,
+      code: 'INTERNAL_SERVER_ERROR',
+      message: 'Internal server error',
+    });
+  }
+
+}
+
+// [GET] /api/users/profile/:id
+async function getOtherUserProfile(req, res) {
+  try {
+    const userId = req.params.id;
+    const myId = req.user.userId;
+    if (userId === myId) {
+      return res.status(400).json({
+        success: false,
+        code: 'INVALID_USER_ID',
+        message: 'Không thể xem profile của chính mình qua endpoint này',
+      });
+    }
+
+    const user = await UserService.getOtherUserProfile(userId, myId);
+
+    if (user.relation !== 'friend') {
+      const result = await FriendRequestService.checkFriendRequest(userId, myId);
+      user.relation = result; // 'none', 'sent_request', 'received_request
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: user,
+    });   
+
+  } catch (error) { 
+    console.error('Get Other User Profile Error:', error);
+
+    return res.status(500).json({
+      success: false,
+      code: 'INTERNAL_SERVER_ERROR',
+      message: 'Internal server error',
+    });
+  }
+
+}
+
+// [POST] /api/users/logout
+async function logout(req, res) {
+  try {
+    await UserService.logout(req.user.userId);
+    return res.status(200).json({
+      success: true,
+      message: 'Logged out successfully',
+    });
+  } catch (error) {
+    console.error('Logout Error:', error);
+
+    return res.status(500).json({
+      success: false,
+      code: 'INTERNAL_SERVER_ERROR',
+      message: 'Internal server error',
+    });
+  }
+}
+
 module.exports = {
   editProfile,
-  getProfile,
-  getUserProfile,
-  getAdminProfile,
+  getMyProfile,
+  getMyProfileIsUser,
+  getMyProfileIsAdmin,
+  searchUsers,
+  getOtherUserProfile,
+  logout
 };
