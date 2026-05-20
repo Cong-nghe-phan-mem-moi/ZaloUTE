@@ -1,22 +1,22 @@
-import { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
   getNewsFeed,
   toggleLike,
   deletePost,
   clearError,
-} from '../../store/slices/postSlice';
-import { formatDistanceToNow } from 'date-fns';
-import { vi } from 'date-fns/locale';
-import LoadingSpinner from '../common/LoadingSpinner';
-import ErrorMessage from '../common/ErrorMessage';
-import PostDetail from './PostDetail';
-import EditPost from './EditPost';
+} from "../../store/slices/postSlice";
+import { formatDistanceToNow } from "date-fns";
+import { vi } from "date-fns/locale";
+import LoadingSpinner from "../common/LoadingSpinner";
+import ErrorMessage from "../common/ErrorMessage";
+import PostDetail from "./PostDetail";
+import EditPost from "./EditPost";
 
 const PostList = () => {
   const dispatch = useDispatch();
   const { posts, loading, error, pagination } = useSelector(
-    (state) => state.posts
+    (state) => state.posts,
   );
   const currentUser = useSelector((state) => state.user?.profile);
   const [selectedPostId, setSelectedPostId] = useState(null);
@@ -32,7 +32,7 @@ const PostList = () => {
   };
 
   const handleDeletePost = (postId) => {
-    if (window.confirm('Bạn có chắc muốn xóa bài viết này?')) {
+    if (window.confirm("Bạn có chắc muốn xóa bài viết này?")) {
       dispatch(deletePost(postId));
     }
   };
@@ -67,7 +67,9 @@ const PostList = () => {
       {posts.length === 0 ? (
         <div className="p-8 text-center text-gray-500 bg-white rounded-lg">
           <p className="text-lg">Không có bài viết nào</p>
-          <p className="text-sm mt-2">Hãy follow bạn bè để xem bài viết của họ</p>
+          <p className="text-sm mt-2">
+            Hãy follow bạn bè để xem bài viết của họ
+          </p>
         </div>
       ) : (
         <>
@@ -80,7 +82,7 @@ const PostList = () => {
               <div className="flex items-center justify-between p-4 border-b border-gray-100">
                 <div className="flex items-center gap-3 flex-1">
                   <img
-                    src={post.author?.avatar || '/default-avatar.png'}
+                    src={post.author?.avatar || "/default-avatar.png"}
                     alt={post.author?.fullName}
                     className="w-12 h-12 rounded-full object-cover cursor-pointer hover:opacity-80"
                   />
@@ -136,16 +138,28 @@ const PostList = () => {
                         key={index}
                         className="rounded-lg overflow-hidden bg-gray-200 relative"
                       >
-                        {item.type === 'image' ? (
+                        {item.type === "image" ? (
                           <img
                             src={item.url}
                             alt={`Post media ${index}`}
                             className="w-full h-48 object-cover"
+                            onError={(e) => {
+                              console.error(
+                                `Image failed to load: ${item.url}`,
+                              );
+                              e.target.style.display = "none";
+                            }}
                           />
                         ) : (
                           <video
                             src={item.url}
                             className="w-full h-48 object-cover"
+                            onError={(e) => {
+                              console.error(
+                                `Video failed to load: ${item.url}`,
+                              );
+                              e.target.style.display = "none";
+                            }}
                           />
                         )}
                         {post.media.length > 4 && index === 3 && (
@@ -181,12 +195,12 @@ const PostList = () => {
                   onClick={() => handleToggleLike(post._id)}
                   className={`flex-1 py-2 rounded-lg transition flex items-center justify-center gap-2 font-medium ${
                     post.isLiked
-                      ? 'bg-blue-100 text-blue-600'
-                      : 'hover:bg-gray-100 text-gray-600'
+                      ? "bg-blue-100 text-blue-600"
+                      : "hover:bg-gray-100 text-gray-600"
                   }`}
                 >
                   <span className="text-lg">👍</span>
-                  {post.isLiked ? 'Bỏ thích' : 'Thích'}
+                  {post.isLiked ? "Bỏ thích" : "Thích"}
                 </button>
                 <button
                   onClick={() => setSelectedPostId(post._id)}
@@ -211,7 +225,7 @@ const PostList = () => {
                 disabled={loading}
                 className="px-8 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white rounded-lg font-medium transition"
               >
-                {loading ? 'Đang tải...' : 'Xem thêm'}
+                {loading ? "Đang tải..." : "Xem thêm"}
               </button>
             </div>
           )}

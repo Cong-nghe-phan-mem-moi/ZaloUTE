@@ -1,13 +1,13 @@
-import { useState, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { updatePost } from '../../store/slices/postSlice';
-import ErrorMessage from '../common/ErrorMessage';
+import { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { updatePost } from "../../store/slices/postSlice";
+import ErrorMessage from "../common/ErrorMessage";
 
 const EditPost = ({ post, isOpen, onClose, onPostUpdated }) => {
   const dispatch = useDispatch();
   const { loading, error, message } = useSelector((state) => state.posts);
 
-  const [content, setContent] = useState('');
+  const [content, setContent] = useState("");
   const [media, setMedia] = useState([]);
   const [previewUrls, setPreviewUrls] = useState([]);
 
@@ -15,7 +15,7 @@ const EditPost = ({ post, isOpen, onClose, onPostUpdated }) => {
   useEffect(() => {
     if (post && isOpen) {
       const timer = setTimeout(() => {
-        setContent(post.content || '');
+        setContent(post.content || "");
         setMedia(post.media || []);
         setPreviewUrls((post.media || []).map((m) => m.url));
       }, 0);
@@ -25,7 +25,7 @@ const EditPost = ({ post, isOpen, onClose, onPostUpdated }) => {
 
   // Close modal and callback when update is successful
   useEffect(() => {
-    if (message && message.includes('Chỉnh sửa')) {
+    if (message && message.includes("Chỉnh sửa")) {
       onPostUpdated?.();
       onClose();
     }
@@ -39,11 +39,11 @@ const EditPost = ({ post, isOpen, onClose, onPostUpdated }) => {
     files.forEach((file) => {
       // Validate file size (max 10MB)
       if (file.size > 10 * 1024 * 1024) {
-        alert('File quá lớn (tối đa 10MB)');
+        alert("File quá lớn (tối đa 10MB)");
         return;
       }
 
-      const type = file.type.startsWith('image/') ? 'image' : 'video';
+      const type = file.type.startsWith("image/") ? "image" : "video";
 
       newMedia.push({
         file,
@@ -73,29 +73,29 @@ const EditPost = ({ post, isOpen, onClose, onPostUpdated }) => {
     e.preventDefault();
 
     if (!content.trim()) {
-      alert('Vui lòng nhập nội dung bài viết');
+      alert("Vui lòng nhập nội dung bài viết");
       return;
     }
 
     if (content.length > 5000) {
-      alert('Bài viết không được vượt quá 5000 ký tự');
+      alert("Bài viết không được vượt quá 5000 ký tự");
       return;
     }
 
     // Create FormData
     const formData = new FormData();
-    formData.append('content', content);
+    formData.append("content", content);
 
     // Append existing media info (for media to keep)
     const existingMedia = media.filter((item) => !item.file);
     if (existingMedia.length > 0) {
-      formData.append('existingMedia', JSON.stringify(existingMedia));
+      formData.append("existingMedia", JSON.stringify(existingMedia));
     }
 
     // Only append new file objects (with 'file' property)
     media.forEach((item) => {
       if (item.file) {
-        formData.append('media', item.file);
+        formData.append("media", item.file);
       }
     });
 
@@ -109,7 +109,9 @@ const EditPost = ({ post, isOpen, onClose, onPostUpdated }) => {
       <div className="bg-white rounded-lg shadow-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex justify-between items-center">
-          <h2 className="text-xl font-bold text-gray-900">Chỉnh sửa bài viết</h2>
+          <h2 className="text-xl font-bold text-gray-900">
+            Chỉnh sửa bài viết
+          </h2>
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700 text-2xl leading-none"
@@ -138,21 +140,32 @@ const EditPost = ({ post, isOpen, onClose, onPostUpdated }) => {
           {/* Media preview */}
           {previewUrls.length > 0 && (
             <div className="mt-4">
-              <p className="text-sm font-semibold text-gray-700 mb-2">Ảnh/Video</p>
+              <p className="text-sm font-semibold text-gray-700 mb-2">
+                Ảnh/Video
+              </p>
               <div className="grid grid-cols-2 gap-2">
                 {previewUrls.map((url, index) => (
                   <div key={index} className="relative">
-                    {media[index]?.type === 'image' || url.startsWith('data:image') ? (
+                    {media[index]?.type === "image" ||
+                    url.startsWith("data:image") ? (
                       <img
                         src={url}
                         alt={`Preview ${index}`}
                         className="w-full h-32 object-cover rounded-lg"
+                        onError={(e) => {
+                          console.error(`Image failed to load: ${url}`);
+                          e.target.style.display = "none";
+                        }}
                       />
                     ) : (
                       <video
                         src={url}
                         className="w-full h-32 object-cover rounded-lg"
                         controls
+                        onError={(e) => {
+                          console.error(`Video failed to load: ${url}`);
+                          e.target.style.display = "none";
+                        }}
                       />
                     )}
                     <button
@@ -189,7 +202,7 @@ const EditPost = ({ post, isOpen, onClose, onPostUpdated }) => {
               disabled={loading}
               className="flex-1 bg-blue-500 text-white py-2 rounded-lg font-semibold hover:bg-blue-600 disabled:opacity-50"
             >
-              {loading ? 'Đang cập nhật...' : 'Cập nhật bài viết'}
+              {loading ? "Đang cập nhật..." : "Cập nhật bài viết"}
             </button>
             <button
               type="button"
