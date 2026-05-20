@@ -5,16 +5,14 @@ async function handleSendFriendRequest(req, res) {
     const senderId = req.user.id;
     const receiverId = req.body.receiverId;
 
-    console.log(req.user);
+    // console.log(req.user);
 
     const result = await FriendRequestService.sendFriendRequest(senderId, receiverId);
     
     return res.status(201).json(result);
   } catch (error) {
-    // Nếu em có middleware errorHandler thì dùng next(error)
-    // Nếu chưa có thì trả về lỗi trực tiếp ở đây
     console.error('Error in handleSendFriendRequest:', error);
-    return res.status(500).json({
+    return res.status(error.statusCode || 500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
       message: error.message || 'Internal server error',
@@ -22,7 +20,29 @@ async function handleSendFriendRequest(req, res) {
   }
 }
 
+
+async function handleAcceptFriendRequest(req, res) {
+  try {
+    const receiverId = req.user.id;
+    const senderId = req.body.senderId;
+
+    // console.log('handleAcceptFriendRequest - senderId:', senderId, 'receiverId:', receiverId);
+
+    const result = await FriendRequestService.acceptFriendRequest(senderId, receiverId);
+    
+    return res.status(200).json(result);
+
+  } catch (error) {
+    console.error('Error in handleAcceptFriendRequest:', error);
+    return res.status(error.statusCode || 500).json({
+      success: false,
+      code: error.code || 'INTERNAL_SERVER_ERROR',
+      message: error.message || 'Internal server error',
+    });
+  }
+}
+
 module.exports = {
   handleSendFriendRequest,
-  // ... các hàm khác
+  handleAcceptFriendRequest,
 };

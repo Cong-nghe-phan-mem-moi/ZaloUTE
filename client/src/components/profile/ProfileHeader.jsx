@@ -3,7 +3,7 @@ import StatCard from '../common/StatCard';
 const relationLabels = {
   friend: { icon: 'check_circle', label: 'Friends', disabled: true },
   sent_request: { icon: 'schedule', label: 'Request sent', disabled: true },
-  received_request: { icon: 'person_add', label: 'Respond', disabled: true },
+  received_request: { icon: 'check', label: 'Confirm', disabled: false },
   none: { icon: 'person_add', label: 'Add friend', disabled: false },
 };
 
@@ -13,6 +13,8 @@ const ProfileHeader = ({
   isOwnProfile = true,
   onSendFriendRequest,
   sendingFriendRequest = false,
+  onAcceptFriendRequest,
+  acceptingFriendRequest = false,
 }) => {
 
   const { name, username, bio, coverImage, profileImage, stats, isOnline, relation } = profileData;
@@ -44,6 +46,8 @@ const ProfileHeader = ({
             relation={relation}
             onSendFriendRequest={onSendFriendRequest}
             sendingFriendRequest={sendingFriendRequest}
+            onAcceptFriendRequest={onAcceptFriendRequest}
+            acceptingFriendRequest={acceptingFriendRequest}
           />
 
         </div>
@@ -103,22 +107,27 @@ const ActionButtons = ({
   relation,
   onSendFriendRequest,
   sendingFriendRequest,
+  onAcceptFriendRequest,
+  acceptingFriendRequest,
 }) => {
   if (!isOwnProfile) {
     const action = relationLabels[relation] || relationLabels.none;
+    const isAcceptAction = relation === 'received_request';
+    const isBusy = isAcceptAction ? acceptingFriendRequest : sendingFriendRequest;
+    const handlePrimaryAction = isAcceptAction ? onAcceptFriendRequest : onSendFriendRequest;
 
     return (
       <div className="flex gap-2 mb-2">
         <button
           type="button"
-          onClick={onSendFriendRequest}
-          disabled={action.disabled || sendingFriendRequest}
+          onClick={handlePrimaryAction}
+          disabled={action.disabled || isBusy}
           className="bg-[#1877f2] hover:bg-[#166fe5] text-white rounded-md px-5 py-2 font-semibold text-sm transition-colors flex items-center gap-2"
         >
           <span className="material-symbols-outlined text-[18px]">
-            {sendingFriendRequest ? 'sync' : action.icon}
+            {isBusy ? 'sync' : action.icon}
           </span>
-          {sendingFriendRequest ? 'Sending...' : action.label}
+          {isBusy ? (isAcceptAction ? 'Confirming...' : 'Sending...') : action.label}
         </button>
 
         <button className="bg-[#e4e6eb] hover:bg-[#d8dadf] text-[#050505] rounded-md px-5 py-2 transition-colors font-semibold text-sm flex items-center gap-2">

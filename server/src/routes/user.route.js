@@ -10,4 +10,8 @@ router.get("/search", authMiddleware.authMiddleware, userController.searchUsers)
 router.get("/profile/:id",authMiddleware.authMiddleware, userController.getOtherUserProfile);
 
 router.post('/friend-request', authMiddleware.authMiddleware, friendRequestController.handleSendFriendRequest);
+
+router.put("/friend-request/accept", authMiddleware.authMiddleware, friendRequestController.handleAcceptFriendRequest);
+
+
 module.exports = router;

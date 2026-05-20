@@ -48,6 +48,8 @@ export const userAPI = {
   getOtherProfile: (id) => api.get(`/users/profile/${id}`),
   sendFriendRequest: (receiverId) =>
     api.post('/users/friend-request', { receiverId }),
+  acceptFriendRequest: (senderId) =>
+    api.put('/users/friend-request/accept', { senderId }),
 };
 
 export const authAPI = {

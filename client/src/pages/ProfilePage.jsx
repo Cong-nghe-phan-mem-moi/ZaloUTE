@@ -20,6 +20,7 @@ const ProfilePage = ({ userId }) => {
   const [otherLoading, setOtherLoading] = useState(false);
   const [otherError, setOtherError] = useState('');
   const [friendRequestLoading, setFriendRequestLoading] = useState(false);
+  const [acceptRequestLoading, setAcceptRequestLoading] = useState(false);
   const [notice, setNotice] = useState('');
 
   const isOwnProfile = !userId;
@@ -90,6 +91,45 @@ const ProfilePage = ({ userId }) => {
       setNotice(err.response?.data?.message || 'Khong the gui loi moi ket ban.');
     } finally {
       setFriendRequestLoading(false);
+    }
+  };
+
+  const handleAcceptFriendRequest = async () => {
+    const senderId = getProfileId(otherProfile);
+    if (!senderId || acceptRequestLoading) return;
+
+    setAcceptRequestLoading(true);
+    setNotice('');
+
+    try {
+      const response = await userAPI.acceptFriendRequest(senderId);
+      const myId = getProfileId(profile);
+
+      setOtherProfile((current) => {
+        if (!current) return current;
+
+        const currentFriends = Array.isArray(current.friends) ? current.friends : null;
+        const nextFriends =
+          currentFriends && myId && !currentFriends.some((friendId) => friendId?.toString() === myId?.toString())
+            ? [...currentFriends, myId]
+            : currentFriends;
+
+        return {
+          ...current,
+          relation: 'friend',
+          friends: nextFriends || current.friends,
+          friendsCount:
+            typeof current.friendsCount === 'number'
+              ? current.friendsCount + 1
+              : current.friendsCount,
+        };
+      });
+
+      setNotice(response.data?.message || 'Friend request accepted.');
+    } catch (err) {
+      setNotice(err.response?.data?.message || 'Khong the chap nhan loi moi ket ban.');
+    } finally {
+      setAcceptRequestLoading(false);
     }
   };
 
@@ -179,6 +219,8 @@ const ProfilePage = ({ userId }) => {
               isOwnProfile={isOwnProfile}
               onSendFriendRequest={handleSendFriendRequest}
               sendingFriendRequest={friendRequestLoading}
+              onAcceptFriendRequest={handleAcceptFriendRequest}
+              acceptingFriendRequest={acceptRequestLoading}
             />
             <ComposerCard profile={profile} />
             <FriendsGrid friends={friendsData} totalFriends={displayProfile.stats.friends} />

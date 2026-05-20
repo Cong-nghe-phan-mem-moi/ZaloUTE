@@ -77,6 +77,14 @@ async function getOtherUserById(userId) {
 }
 
 
+async function addFriend(userId, friendId) {
+  return await User.updateOne(
+    { _id: userId},
+    { $addToSet: { friends: friendId } }
+  )
+}
+
+
 module.exports = {
   createUser,
   deleteUserById,
@@ -88,4 +96,5 @@ module.exports = {
   findUsers,
   countUsers,
   getOtherUserById,
+  addFriend
 };
