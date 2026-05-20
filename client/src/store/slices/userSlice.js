@@ -28,7 +28,7 @@ export const fetchUserProfile = createAsyncThunk(
   'user/fetchProfile',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.get('/user/profile')
+      const response = await api.get('/profile')
       return response.data.data
     } catch (error) {
       return rejectWithValue(
@@ -42,7 +42,7 @@ export const updateUserProfile = createAsyncThunk(
   'user/updateProfile',
   async (formData, { rejectWithValue }) => {
     try {
-      const response = await api.put('/user/profile', formData)
+      const response = await api.put('/profile', formData)
       return response.data.data
     } catch (error) {
       return rejectWithValue(
