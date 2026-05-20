@@ -1,62 +1,212 @@
-import React from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { userAPI } from '../../services/api';
 
-const TopAppBar = () => {
+const getInitials = (name = '') =>
+  name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase() || 'U';
+
+const TopAppBar = ({ profile }) => {
   return (
-    <header className="sticky top-0 w-full z-50 bg-surface dark:bg-inverse-surface border-b border-outline-variant shadow-sm h-16 flex items-center justify-center">
-      <div className="max-w-[1200px] w-full px-4 flex items-center justify-between">
-        <div className="flex items-center gap-8">
-          <span className="font-headline-md text-headline-md font-bold text-primary">ZaloUTE</span>
-          <nav className="hidden md:flex items-center gap-6">
-            <NavLink icon="home" label="Home" href="#" />
-            <NavLink icon="group" label="Friends" href="#" />
-            <NavLink icon="chat" label="Messages" href="#" />
-          </nav>
-        </div>
-        <div className="flex items-center gap-3">
+    <header className="sticky top-0 w-full z-50 bg-white border-b border-[#dddfe2] shadow-sm h-14">
+      <div className="h-full px-4 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 min-w-0 flex-1 md:flex-none">
+          <a
+            href="/home"
+            className="w-10 h-10 rounded-full bg-[#1877f2] text-white flex items-center justify-center text-2xl font-bold shrink-0"
+            aria-label="ZaloUTE home"
+          >
+            z
+          </a>
           <SearchBox />
-          <IconButton icon="notifications" />
-          <ProfileButton />
-          <IconButton icon="more_vert" />
+        </div>
+
+        <nav className="hidden md:flex items-center justify-center gap-2 absolute left-1/2 -translate-x-1/2">
+          <NavIcon icon="home" label="Home" href="/home" active />
+          <NavIcon icon="group" label="Friends" href="/home" />
+          <NavIcon icon="forum" label="Messages" href="/home" />
+          <NavIcon icon="smart_display" label="Watch" href="/home" />
+        </nav>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <CircleButton icon="apps" label="Menu" />
+          <CircleButton icon="notifications" label="Notifications" />
+          <a
+            href="/user/profile"
+            className="hidden sm:flex items-center gap-2 rounded-full hover:bg-[#f0f2f5] p-1 pr-3 text-[#050505]"
+          >
+            <Avatar image={profile?.avatar} name={profile?.fullName} size="sm" />
+            <span className="font-semibold text-sm max-w-28 truncate">
+              {profile?.fullName?.split(' ')?.slice(-1)?.[0] || 'Profile'}
+            </span>
+          </a>
         </div>
       </div>
     </header>
   );
 };
 
-const NavLink = ({ icon, label, href }) => (
+const SearchBox = () => {
+  const [keyword, setKeyword] = useState('');
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [isOpen, setIsOpen] = useState(false);
+  const searchRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (searchRef.current && !searchRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    const value = keyword.trim();
+
+    if (value.length < 2) {
+      return;
+    }
+
+    let isCurrent = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLoading(true);
+    setError('');
+
+    const timer = window.setTimeout(async () => {
+      try {
+        const response = await userAPI.searchUsers(value, 1, 8);
+        if (!isCurrent) return;
+        setResults(response.data?.data || []);
+      } catch (err) {
+        if (!isCurrent) return;
+        setResults([]);
+        setError(err.response?.data?.message || 'Khong the tim kiem nguoi dung.');
+      } finally {
+        if (isCurrent) {
+          setLoading(false);
+          setIsOpen(true);
+        }
+      }
+    }, 300);
+
+    return () => {
+      isCurrent = false;
+      window.clearTimeout(timer);
+    };
+  }, [keyword]);
+
+  const shouldShowDropdown = isOpen && keyword.trim().length >= 2;
+
+  return (
+    <div className="relative w-full max-w-[280px]" ref={searchRef}>
+      <div className="h-10 bg-[#f0f2f5] rounded-full flex items-center gap-2 px-3 text-[#65676b]">
+        <span className="material-symbols-outlined text-[20px]">search</span>
+        <input
+          className="bg-transparent border-0 outline-none text-[15px] text-[#050505] placeholder:text-[#65676b] w-full"
+          placeholder="Search ZaloUTE"
+          type="text"
+          value={keyword}
+          onChange={(event) => {
+            const nextKeyword = event.target.value;
+            setKeyword(nextKeyword);
+            setIsOpen(true);
+
+            if (nextKeyword.trim().length < 2) {
+              setResults([]);
+              setError('');
+              setLoading(false);
+            }
+          }}
+          onFocus={() => setIsOpen(true)}
+        />
+      </div>
+
+      {shouldShowDropdown ? (
+        <div className="absolute left-0 top-12 w-[min(360px,calc(100vw-24px))] bg-white rounded-lg shadow-2xl border border-[#dddfe2] p-2">
+          <div className="px-2 py-2 text-sm font-semibold text-[#65676b]">Search results</div>
+
+          {loading ? (
+            <div className="flex items-center gap-3 px-2 py-3 text-[#65676b]">
+              <span className="w-5 h-5 rounded-full border-2 border-[#1877f2] border-t-transparent animate-spin" />
+              <span className="text-sm">Dang tim...</span>
+            </div>
+          ) : null}
+
+          {!loading && error ? (
+            <p className="px-2 py-3 text-sm text-red-600">{error}</p>
+          ) : null}
+
+          {!loading && !error && results.length === 0 ? (
+            <p className="px-2 py-3 text-sm text-[#65676b]">Khong tim thay nguoi dung phu hop.</p>
+          ) : null}
+
+          {!loading && !error
+            ? results.map((user) => <SearchResultItem key={user.id} user={user} />)
+            : null}
+        </div>
+      ) : null}
+    </div>
+  );
+};
+
+const SearchResultItem = ({ user }) => (
   <a
-    className="flex items-center gap-2 text-on-surface-variant hover:bg-surface-container-high rounded-full px-3 py-2 transition-colors"
-    href={href}
+    href={`/users/profile/${user.id}`}
+    className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#f0f2f5] text-[#050505]"
   >
-    <span className="material-symbols-outlined">{icon}</span>
-    <span className="font-label-md text-label-md">{label}</span>
+    <Avatar image={user.avatar} name={user.fullName} />
+    <div className="min-w-0">
+      <p className="font-semibold text-[15px] truncate">{user.fullName}</p>
+      <p className="text-xs text-[#65676b]">{user.isFriend ? 'Friend' : 'View profile'}</p>
+    </div>
   </a>
 );
 
-const SearchBox = () => (
-  <div className="relative flex items-center bg-secondary-container rounded-full px-4 py-2 w-64">
-    <span className="material-symbols-outlined text-on-surface-variant text-sm">search</span>
-    <input
-      className="bg-transparent border-none focus:ring-0 text-body-md font-body-md w-full placeholder:text-on-surface-variant"
-      placeholder="Search ZaloUTE..."
-      type="text"
-    />
-  </div>
+const NavIcon = ({ icon, label, href, active = false }) => (
+  <a
+    href={href}
+    className={`h-12 w-24 rounded-lg flex items-center justify-center ${
+      active ? 'text-[#1877f2] border-b-4 border-[#1877f2]' : 'text-[#65676b] hover:bg-[#f0f2f5]'
+    }`}
+    title={label}
+    aria-label={label}
+  >
+    <span className="material-symbols-outlined text-[28px]">{icon}</span>
+  </a>
 );
 
-const IconButton = ({ icon }) => (
-  <button className="hover:bg-surface-container-high rounded-full p-2 text-on-surface-variant transition-colors">
-    <span className="material-symbols-outlined">{icon}</span>
+const CircleButton = ({ icon, label }) => (
+  <button
+    type="button"
+    className="w-10 h-10 rounded-full bg-[#e4e6eb] hover:bg-[#d8dadf] flex items-center justify-center text-[#050505]"
+    title={label}
+    aria-label={label}
+  >
+    <span className="material-symbols-outlined text-[22px]">{icon}</span>
   </button>
 );
 
-const ProfileButton = () => (
-  <div className="bg-primary-container text-on-primary-container rounded-full px-4 py-1.5 flex items-center gap-2">
-    <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>
-      person
-    </span>
-    <span className="font-label-md text-label-md">Profile</span>
-  </div>
-);
+const Avatar = ({ image, name, size = 'md' }) => {
+  const sizeClass = size === 'sm' ? 'w-8 h-8 text-xs' : 'w-10 h-10 text-sm';
+
+  return (
+    <div className={`${sizeClass} rounded-full overflow-hidden bg-[#dbe7ff] text-[#1877f2] flex items-center justify-center font-bold shrink-0`}>
+      {image ? (
+        <img className="w-full h-full object-cover" src={image} alt={name || 'User'} />
+      ) : (
+        <span>{getInitials(name)}</span>
+      )}
+    </div>
+  );
+};
 
 export default TopAppBar;
