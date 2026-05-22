@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { removeVietnameseTones } = require("../utils/stringUtil");
 
 const userSchema = new mongoose.Schema({
   fullName: {
@@ -6,6 +7,11 @@ const userSchema = new mongoose.Schema({
     required: true,
     minlength: 3,
     maxlength: 100
+  },
+  searchName: {
+    type: String,
+    lowercase: true,
+    select: false
   },
   phone: {
     type: String,
@@ -48,5 +54,25 @@ const userSchema = new mongoose.Schema({
     default: Date.now
   }
 }, { timestamps: true });
+
+
+userSchema.pre("save", async function () {
+  if (this.isModified("fullName")) {
+    this.searchName = removeVietnameseTones(this.fullName);
+  }
+});
+
+userSchema.pre("findOneAndUpdate", async function () {
+  const update = this.getUpdate();
+  
+  if (update.$set && update.$set.fullName) {
+    update.$set.searchName = removeVietnameseTones(update.$set.fullName);
+  }
+  else if (update.fullName) {
+    update.searchName = removeVietnameseTones(update.fullName);
+  }
+
+  this.setUpdate(update);
+});
 
 module.exports = mongoose.model('User', userSchema);

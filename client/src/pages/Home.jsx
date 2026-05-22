@@ -1,76 +1,140 @@
-import { CreatePost, PostList } from '../components/Post';
-import { useSelector } from 'react-redux';
+import { useEffect } from 'react';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { fetchUserProfile } from '../store/slices/userSlice';
+import TopAppBar from '../components/layout/TopAppBar';
+
+const feedItems = [
+  {
+    id: 1,
+    author: 'UTE Student Hub',
+    meta: '12 min',
+    text: 'Welcome back to ZaloUTE. Search classmates, open their profile, and send a friend request right from the top bar.',
+  },
+  {
+    id: 2,
+    author: 'Computer Science Club',
+    meta: '1 hr',
+    text: 'Frontend is ready for user search, profile preview, and friend request flow.',
+  },
+];
 
 export default function Home() {
-  const currentUser = useSelector((state) => state.user?.profile);
+  const dispatch = useAppDispatch();
+  const { profile } = useAppSelector((state) => state.user);
 
-  if (!currentUser) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <div className="bg-white shadow-lg rounded-xl p-8 w-full max-w-md text-center">
-          <p className="text-gray-600">Vui lòng đăng nhập</p>
-        </div>
-      </div>
-    );
-  }
+  useEffect(() => {
+    dispatch(fetchUserProfile());
+  }, [dispatch]);
 
   return (
-    <div className="min-h-screen bg-gray-100 py-8">
-      {/* Sidebar + Main */}
-      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Sidebar - Profile (Optional) */}
-        <div className="hidden lg:block">
-          <div className="bg-white rounded-lg shadow-sm p-4 sticky top-4">
-            <div className="text-center mb-4 pb-4 border-b">
-              <img
-                src={currentUser.avatar || '/default-avatar.png'}
-                alt={currentUser.fullName}
-                className="w-16 h-16 rounded-full object-cover mx-auto mb-2"
-              />
-              <h3 className="font-semibold text-gray-900">{currentUser.fullName}</h3>
-              <p className="text-sm text-gray-500">{currentUser.email}</p>
-            </div>
-            <div className="space-y-2">
-              <button className="w-full text-left px-3 py-2 hover:bg-gray-100 rounded-lg transition">
-                👤 Trang cá nhân
-              </button>
-              <button className="w-full text-left px-3 py-2 hover:bg-gray-100 rounded-lg transition">
-                ⚙️ Cài đặt
-              </button>
-              <button className="w-full text-left px-3 py-2 hover:bg-gray-100 rounded-lg transition text-red-600">
-                🚪 Đăng xuất
-              </button>
-            </div>
-          </div>
-        </div>
+    <div className="min-h-screen bg-[#f0f2f5] text-[#050505]">
+      <TopAppBar profile={profile} />
 
-        {/* Main Content */}
-        <div className="lg:col-span-1">
-          <div className="sticky top-4 space-y-4">
-            <CreatePost
-              onPostCreated={() => {
-                // Could refresh feed here if needed
-              }}
-            />
-          </div>
-          <div className="mt-4">
-            <PostList />
-          </div>
-        </div>
+      <main className="grid grid-cols-1 lg:grid-cols-[280px_minmax(0,680px)_280px] gap-5 px-4 py-5 max-w-[1280px] mx-auto">
+        <aside className="hidden lg:block space-y-2 sticky top-20 self-start">
+          <SidebarLink icon="person" label={profile?.fullName || 'Profile'} href="/user/profile" />
+          <SidebarLink icon="group" label="Friends" href="/home" />
+          <SidebarLink icon="history" label="Memories" href="/home" />
+          <SidebarLink icon="bookmark" label="Saved" href="/home" />
+          <SidebarLink icon="groups" label="Groups" href="/home" />
+        </aside>
 
-        {/* Right Sidebar - Suggestions (Optional) */}
-        <div className="hidden lg:block">
-          <div className="bg-white rounded-lg shadow-sm p-4 sticky top-4">
-            <h3 className="font-semibold text-gray-900 mb-4">Gợi ý kết bạn</h3>
-            <div className="space-y-3">
-              {/* Suggestion items would go here */}
-              <p className="text-sm text-gray-500 text-center py-8">
-                Hiện không có gợi ý
-              </p>
+        <section className="space-y-4">
+          <Composer profile={profile} />
+          {feedItems.map((item) => (
+            <FeedCard key={item.id} item={item} />
+          ))}
+        </section>
+
+        <aside className="hidden lg:block sticky top-20 self-start">
+          <div className="bg-white rounded-lg shadow-sm border border-[#dddfe2] p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-semibold text-[#65676b]">Contacts</h2>
+              <span className="material-symbols-outlined text-[#65676b] text-[20px]">search</span>
             </div>
+            <Contact name="Nguyen Van A" />
+            <Contact name="Tran Thi B" />
+            <Contact name="Le Minh C" />
           </div>
-        </div>
-      </div>
+        </aside>
+      </main>
     </div>
   );
 }
+
+const SidebarLink = ({ icon, label, href }) => (
+  <a href={href} className="flex items-center gap-3 rounded-lg p-2 hover:bg-[#e4e6eb] font-semibold">
+    <span className="material-symbols-outlined text-[#1877f2]">{icon}</span>
+    <span className="truncate">{label}</span>
+  </a>
+);
+
+const Composer = ({ profile }) => (
+  <div className="bg-white rounded-lg shadow-sm border border-[#dddfe2] p-4">
+    <div className="flex items-center gap-3">
+      <Avatar image={profile?.avatar} />
+      <button className="flex-1 h-10 rounded-full bg-[#f0f2f5] hover:bg-[#e4e6eb] text-left px-4 text-[#65676b]">
+        What's on your mind, {profile?.fullName?.split(' ')?.slice(-1)?.[0] || 'UTE'}?
+      </button>
+    </div>
+    <div className="border-t border-[#dddfe2] mt-4 pt-2 grid grid-cols-3 gap-2">
+      <ComposerAction icon="videocam" label="Live video" color="text-red-500" />
+      <ComposerAction icon="photo_library" label="Photo/video" color="text-green-600" />
+      <ComposerAction icon="mood" label="Feeling" color="text-yellow-500" />
+    </div>
+  </div>
+);
+
+const FeedCard = ({ item }) => (
+  <article className="bg-white rounded-lg shadow-sm border border-[#dddfe2]">
+    <div className="p-4">
+      <div className="flex items-center gap-3">
+        <Avatar />
+        <div>
+          <h3 className="font-semibold">{item.author}</h3>
+          <p className="text-xs text-[#65676b]">{item.meta} · Public</p>
+        </div>
+      </div>
+      <p className="mt-3 text-[15px] leading-6">{item.text}</p>
+    </div>
+    <div className="h-64 bg-gradient-to-br from-[#1877f2] via-[#42b72a] to-[#f7b928] flex items-center justify-center text-white text-4xl font-bold">
+      ZaloUTE
+    </div>
+    <div className="p-3 border-t border-[#dddfe2] grid grid-cols-3 gap-1 text-[#65676b] font-semibold text-sm">
+      <PostAction icon="thumb_up" label="Like" />
+      <PostAction icon="chat_bubble" label="Comment" />
+      <PostAction icon="share" label="Share" />
+    </div>
+  </article>
+);
+
+const Contact = ({ name }) => (
+  <div className="flex items-center gap-3 rounded-lg p-2 hover:bg-[#f0f2f5]">
+    <Avatar />
+    <span className="font-semibold text-sm">{name}</span>
+  </div>
+);
+
+const Avatar = ({ image }) => (
+  <div className="w-10 h-10 rounded-full bg-[#dbe7ff] overflow-hidden flex items-center justify-center text-[#1877f2] shrink-0">
+    {image ? (
+      <img src={image} alt="Profile" className="w-full h-full object-cover" />
+    ) : (
+      <span className="material-symbols-outlined">person</span>
+    )}
+  </div>
+);
+
+const ComposerAction = ({ icon, label, color }) => (
+  <button className="h-10 rounded-lg hover:bg-[#f0f2f5] flex items-center justify-center gap-2 font-semibold text-sm text-[#65676b]">
+    <span className={`material-symbols-outlined text-[22px] ${color}`}>{icon}</span>
+    {label}
+  </button>
+);
+
+const PostAction = ({ icon, label }) => (
+  <button className="h-9 rounded-md hover:bg-[#f0f2f5] flex items-center justify-center gap-2">
+    <span className="material-symbols-outlined text-[20px]">{icon}</span>
+    {label}
+  </button>
+);

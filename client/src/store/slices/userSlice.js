@@ -59,6 +59,11 @@ const userSlice = createSlice({
     clearError: (state) => {
       state.error = null
     },
+    clearProfile: (state) => {
+      state.profile = null
+      state.loading = false
+      state.error = null
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -89,5 +94,5 @@ const userSlice = createSlice({
   },
 })
 
-export const { clearError } = userSlice.actions
+export const { clearError, clearProfile } = userSlice.actions
 export default userSlice.reducer

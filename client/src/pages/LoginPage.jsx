@@ -6,7 +6,7 @@ const getErrorMessage = (error) => {
   return (
     error.response?.data?.message ||
     error.message ||
-    'Không thể đăng nhập. Vui lòng thử lại.'
+    'Unable to log in. Please try again.'
   )
 }
 
@@ -40,38 +40,52 @@ function LoginPage() {
 
   return (
     <main className="login-page">
-      <section className="login-shell" aria-label="Đăng nhập ZaloUTE">
+      <section className="login-shell" aria-label="ZaloUTE login">
         <div className="brand-panel">
-          <h1>ZaloUTE</h1>
-          <p>Kết nối sinh viên UTE, trò chuyện và cập nhật mọi hoạt động trong một nơi.</p>
+          <div className="brand-lockup">
+            <div className="brand-mark">z</div>
+            <div>
+              <h1>ZaloUTE</h1>
+              <p>Connect with classmates and keep your campus life in one place.</p>
+            </div>
+          </div>
         </div>
 
         <div className="login-panel">
           <form className="login-card" onSubmit={handleSubmit}>
+            <div className="login-card-header">
+              <h2>Log in</h2>
+              <p>Welcome back to ZaloUTE</p>
+            </div>
+
             <label className="sr-only" htmlFor="email">
               Email
             </label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              autoComplete="email"
-              placeholder="Email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              required
-            />
+            <div className="input-shell">
+              <span className="material-symbols-outlined">mail</span>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                placeholder="Email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                required
+              />
+            </div>
 
             <label className="sr-only" htmlFor="password">
-              Mật khẩu
+              Password
             </label>
-            <div className="password-field">
+            <div className="input-shell password-field">
+              <span className="material-symbols-outlined">lock</span>
               <input
                 id="password"
                 name="password"
                 type={showPassword ? 'text' : 'password'}
                 autoComplete="current-password"
-                placeholder="Mật khẩu"
+                placeholder="Password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 required
@@ -81,42 +95,43 @@ function LoginPage() {
                 className="password-toggle"
                 onClick={() => setShowPassword((current) => !current)}
               >
-                {showPassword ? 'Ẩn' : 'Hiện'}
+                {showPassword ? 'Hide' : 'Show'}
               </button>
             </div>
 
             {errorMessage ? (
               <p className="login-error" role="alert">
+                <span className="material-symbols-outlined">error</span>
                 {errorMessage}
               </p>
             ) : null}
 
             <button className="login-button" type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Đang đăng nhập...' : 'Đăng nhập'}
+              {isSubmitting ? 'Logging in...' : 'Log in'}
             </button>
 
             <a className="forgot-link" href="/forgot-password">
-              Quên mật khẩu?
+              Forgot password?
             </a>
 
             <div className="divider" aria-hidden="true" />
 
             <a className="create-button" href="/register">
-              Tạo tài khoản mới
+              Create new account
             </a>
           </form>
 
           <p className="login-caption">
-            <strong>ZaloUTE</strong> dành cho cộng đồng sinh viên và giảng viên.
+            <strong>ZaloUTE</strong> for students, lecturers, and campus communities.
           </p>
         </div>
       </section>
 
       <footer className="login-footer">
-        <span>Tiếng Việt</span>
         <span>English</span>
-        <span>Quyền riêng tư</span>
-        <span>Điều khoản</span>
+        <span>Vietnamese</span>
+        <span>Privacy</span>
+        <span>Terms</span>
         <span>ZaloUTE 2026</span>
       </footer>
     </main>

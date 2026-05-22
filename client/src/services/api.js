@@ -43,8 +43,18 @@ api.interceptors.request.use(
 );
 
 export const userAPI = {
-  getProfile: () => api.get("/profile"),
-  updateProfile: (data) => api.put("/profile", data),
+  getProfile: () => api.get('/profile'),
+  updateProfile: (data) => api.put('/profile', data),
+  searchUsers: (keyword, page = 1, limit = 8) =>
+    api.get('/users/search', {
+      params: { keyword, page, limit },
+    }),
+  getOtherProfile: (id) => api.get(`/users/profile/${id}`),
+  sendFriendRequest: (receiverId) =>
+    api.post('/users/friend-request', { receiverId }),
+  acceptFriendRequest: (senderId) =>
+    api.put('/users/friend-request/accept', { senderId }),
+  logout: () => api.post('/users/logout'),
 };
 
 export const authAPI = {
@@ -144,4 +154,4 @@ export const commentAPI = {
     api.get(`/comments/${commentId}/replies`, { params: { page, limit } }),
 };
 
-export default api;
+export default api
