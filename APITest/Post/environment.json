@@ -1,0 +1,32 @@
+{
+  "id": "post-api-env",
+  "name": "ZaloUTE Post API Environment",
+  "values": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000/api",
+      "enabled": true
+    },
+    {
+      "key": "token",
+      "value": "",
+      "enabled": true,
+      "type": "string"
+    },
+    {
+      "key": "postId",
+      "value": "",
+      "enabled": true,
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "enabled": true,
+      "type": "string"
+    }
+  ],
+  "_postman_variable_scope": "environment",
+  "_postman_exported_at": "2026-05-16T00:00:00.000Z",
+  "_postman_exported_using": "Postman/11.0.0"
+}

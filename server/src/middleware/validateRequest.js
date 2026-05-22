@@ -18,7 +18,7 @@ const validateEditProfile = (req, res, next) => {
   }
 
   if (email !== undefined) {
-    const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
+    const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
     if (!emailRegex.test(email)) {
       errors.push('Invalid email format');
     }

@@ -1,9 +1,9 @@
 .login-page {
   min-height: 100vh;
   background: #f0f2f5;
+  color: #050505;
   display: flex;
   flex-direction: column;
-  color: #1c1e21;
 }
 
 .login-shell {
@@ -11,31 +11,59 @@
   margin: 0 auto;
   padding: 92px 0 64px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 396px;
-  gap: 56px;
+  grid-template-columns: minmax(0, 1fr) 420px;
+  gap: 72px;
   align-items: center;
   flex: 1;
 }
 
 .brand-panel {
-  padding-bottom: 82px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  min-width: 0;
+}
+
+.brand-lockup {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.brand-mark {
+  border-radius: 999px;
+  background: #1877f2;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  letter-spacing: 0;
+  box-shadow: 0 6px 16px rgba(24, 119, 242, 0.22);
+}
+
+.brand-mark {
+  width: 68px;
+  height: 68px;
+  font-size: 42px;
+  line-height: 1;
 }
 
 .brand-panel h1 {
-  margin: 0 0 8px;
+  margin: 0;
   color: #1877f2;
-  font-size: 64px;
+  font-size: 56px;
   line-height: 1;
   font-weight: 800;
   letter-spacing: 0;
 }
 
 .brand-panel p {
-  margin: 0;
-  max-width: 520px;
-  font-size: 28px;
-  line-height: 32px;
+  margin: 8px 0 0;
+  max-width: 560px;
   color: #1c1e21;
+  font-size: 24px;
+  line-height: 32px;
 }
 
 .login-panel {
@@ -46,72 +74,105 @@
 
 .login-card {
   background: #ffffff;
+  border: 1px solid #dddfe2;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 8px 16px rgba(0, 0, 0, 0.1);
-  padding: 16px 16px 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.login-card input {
-  width: 100%;
-  height: 52px;
-  box-sizing: border-box;
-  border: 1px solid #dddfe2;
-  border-radius: 6px;
-  padding: 14px 16px;
-  font-size: 17px;
+.login-card-header {
+  margin-bottom: 4px;
+}
+
+.login-card-header h2 {
+  margin: 0;
+  color: #050505;
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.login-card-header p {
+  margin: 2px 0 0;
+  color: #65676b;
+  font-size: 14px;
   line-height: 20px;
-  color: #1d2129;
-  outline: none;
+}
+
+.input-shell {
+  height: 52px;
+  border: 1px solid #dddfe2;
+  border-radius: 8px;
   background: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
 }
 
-.login-card input::placeholder {
-  color: #8a8d91;
-}
-
-.login-card input:focus {
+.input-shell:focus-within {
   border-color: #1877f2;
   box-shadow: 0 0 0 2px #e7f3ff;
 }
 
-.password-field {
-  position: relative;
+.input-shell .material-symbols-outlined {
+  color: #65676b;
+  font-size: 21px;
+  flex: 0 0 auto;
+}
+
+.input-shell input {
+  min-width: 0;
+  flex: 1;
+  height: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #050505;
+  font-size: 16px;
+  line-height: 20px;
+}
+
+.input-shell input::placeholder {
+  color: #65676b;
 }
 
 .password-field input {
-  padding-right: 72px;
+  padding-right: 8px;
 }
 
 .password-toggle {
-  position: absolute;
-  top: 50%;
-  right: 8px;
-  transform: translateY(-50%);
   border: 0;
   background: transparent;
   color: #1877f2;
   font-size: 14px;
   font-weight: 700;
-  padding: 8px;
+  padding: 8px 4px;
   border-radius: 6px;
-}
-
-.password-toggle:active {
-  transform: translateY(-50%);
+  flex: 0 0 auto;
 }
 
 .login-error {
   margin: 0;
   padding: 10px 12px;
-  border-radius: 6px;
+  border-radius: 8px;
   background: #fff4f2;
   color: #b00020;
   border: 1px solid #ffd4cc;
   font-size: 14px;
   line-height: 20px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.login-error .material-symbols-outlined {
+  font-size: 20px;
+  flex: 0 0 auto;
 }
 
 .login-button {
@@ -120,10 +181,14 @@
   border-radius: 6px;
   background: #1877f2;
   color: #ffffff;
-  font-size: 20px;
+  font-size: 18px;
   line-height: 24px;
   font-weight: 700;
   padding: 0 16px;
+}
+
+.login-button:hover:not(:disabled) {
+  background: #166fe5;
 }
 
 .forgot-link {
@@ -146,7 +211,7 @@
 }
 
 .create-button {
-  min-height: 48px;
+  min-height: 46px;
   border-radius: 6px;
   background: #42b72a;
   color: #ffffff;
@@ -155,31 +220,37 @@
   justify-content: center;
   align-self: center;
   padding: 0 18px;
-  font-size: 17px;
+  font-size: 16px;
   line-height: 20px;
   font-weight: 700;
   text-decoration: none;
 }
 
+.create-button:hover {
+  background: #36a420;
+}
+
 .login-caption {
-  margin: 28px 0 0;
+  margin: 22px 0 0;
   text-align: center;
   font-size: 14px;
   line-height: 20px;
+  color: #1c1e21;
 }
 
 .login-footer {
   background: #ffffff;
-  min-height: 84px;
-  padding: 24px 32px;
+  min-height: 76px;
+  padding: 22px 32px;
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 16px;
   flex-wrap: wrap;
-  color: #737373;
+  color: #65676b;
   font-size: 12px;
   line-height: 16px;
+  border-top: 1px solid #dddfe2;
 }
 
 .sr-only {
@@ -194,55 +265,66 @@
   border: 0;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 980px) {
   .login-shell {
     grid-template-columns: 1fr;
-    gap: 32px;
-    padding: 40px 0;
-    width: min(432px, calc(100% - 32px));
+    gap: 28px;
+    padding: 36px 0;
+    width: min(460px, calc(100% - 32px));
   }
 
-  .brand-panel {
-    padding-bottom: 0;
-    text-align: center;
-  }
-
-  .brand-panel h1 {
-    font-size: 48px;
-  }
-
-  .brand-panel p {
-    max-width: none;
-    font-size: 22px;
-    line-height: 28px;
-  }
-}
-
-@media (max-width: 420px) {
-  .login-shell {
-    width: calc(100% - 24px);
-    padding: 28px 0;
+  .brand-lockup {
+    justify-content: center;
+    text-align: left;
   }
 
   .brand-panel h1 {
-    font-size: 42px;
+    font-size: 44px;
   }
 
   .brand-panel p {
-    font-size: 19px;
+    max-width: 360px;
+    font-size: 18px;
     line-height: 25px;
   }
 
-  .login-card {
-    padding: 14px;
+}
+
+@media (max-width: 460px) {
+  .login-shell {
+    width: calc(100% - 24px);
+    padding: 24px 0;
   }
 
-  .login-card input {
+  .brand-lockup {
+    align-items: flex-start;
+  }
+
+  .brand-mark {
+    width: 54px;
+    height: 54px;
+    font-size: 34px;
+  }
+
+  .brand-panel h1 {
+    font-size: 38px;
+  }
+
+  .brand-panel p {
     font-size: 16px;
+    line-height: 22px;
+  }
+
+  .login-card {
+    padding: 16px;
+  }
+
+  .input-shell {
+    height: 50px;
   }
 
   .login-footer {
-    padding: 20px 16px;
+    padding: 18px 16px;
     gap: 10px 14px;
   }
 }
