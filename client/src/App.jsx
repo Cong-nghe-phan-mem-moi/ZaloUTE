@@ -8,6 +8,7 @@ import Home from "./pages/Home";
 import LoginPage from "./pages/LoginPage";
 import ForgotPassword from "./pages/ForgotPassword";
 import ProfilePage from "./pages/ProfilePage";
+import PostTestPage from "./pages/PostTestPage";
 
 function App() {
   const dispatch = useAppDispatch()
@@ -32,6 +33,10 @@ function App() {
       dispatch(setCurrentPage('profile'))
     } else if (otherProfileMatch) {
       dispatch(setCurrentPage('other-profile'))
+    } else if (path === '/edit-profile') {
+      dispatch(setCurrentPage('edit-profile'))
+    } else if (path === '/post-test') {
+      dispatch(setCurrentPage('post-test'))
     }
   }, [dispatch, path])
 
@@ -49,6 +54,8 @@ function App() {
         return <ProfilePage />;
       case "other-profile":
         return <ProfilePage userId={otherProfileId} />;
+      case "post-test":
+        return <PostTestPage />;
       case "register":
       default:
         return <Register />;
