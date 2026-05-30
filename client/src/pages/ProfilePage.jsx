@@ -1,16 +1,17 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { fetchUserProfile, updateUserProfile } from '../store/slices/userSlice';
-import { userAPI } from '../services/api';
-import TopAppBar from '../components/layout/TopAppBar';
-import ProfileHeader from '../components/profile/ProfileHeader';
-import FriendsGrid from '../components/profile/FriendsGrid';
-import AboutCard from '../components/profile/AboutCard';
-import RecentActivityCard from '../components/profile/RecentActivityCard';
-import EditProfileModal from '../components/profile/EditProfileModal';
-import FAB from '../components/common/FAB';
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { fetchUserProfile, updateUserProfile } from "../store/slices/userSlice";
+import { userAPI } from "../services/api";
+import TopAppBar from "../components/layout/TopAppBar";
+import ProfileHeader from "../components/profile/ProfileHeader";
+import FriendsGrid from "../components/profile/FriendsGrid";
+import AboutCard from "../components/profile/AboutCard";
+import RecentActivityCard from "../components/profile/RecentActivityCard";
+import EditProfileModal from "../components/profile/EditProfileModal";
+import FAB from "../components/common/FAB";
 
-const getProfileId = (profile) => profile?.userId || profile?._id || profile?.id;
+const getProfileId = (profile) =>
+  profile?.userId || profile?._id || profile?.id;
 
 const ProfilePage = ({ userId }) => {
   const dispatch = useAppDispatch();
@@ -18,59 +19,57 @@ const ProfilePage = ({ userId }) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [otherProfile, setOtherProfile] = useState(null);
   const [otherLoading, setOtherLoading] = useState(false);
-  const [otherError, setOtherError] = useState('');
+  const [otherError, setOtherError] = useState("");
   const [friendRequestLoading, setFriendRequestLoading] = useState(false);
   const [acceptRequestLoading, setAcceptRequestLoading] = useState(false);
-  const [notice, setNotice] = useState('');
+  const [rejectRequestLoading, setRejectRequestLoading] = useState(false);
+  const [cancelRequestLoading, setCancelRequestLoading] = useState(false);
+  const [unfriendLoading, setUnfriendLoading] = useState(false);
+  const [notice, setNotice] = useState("");
 
   const isOwnProfile = !userId;
   const currentProfile = isOwnProfile ? profile : otherProfile;
+
+  const loadOtherProfile = useCallback(async () => {
+    if (!userId) {
+      return;
+    }
+
+    setOtherLoading(true);
+    setOtherError("");
+
+    try {
+      const response = await userAPI.getOtherProfile(userId);
+      setOtherProfile(response.data?.data || null);
+    } catch (err) {
+      setOtherProfile(null);
+      setOtherError(
+        err.response?.data?.message || "Khong the tai trang ca nhan.",
+      );
+    } finally {
+      setOtherLoading(false);
+    }
+  }, [userId]);
 
   useEffect(() => {
     dispatch(fetchUserProfile());
   }, [dispatch]);
 
   useEffect(() => {
-    if (!userId) {
-      return;
-    }
+    setNotice("");
+    loadOtherProfile();
+  }, [loadOtherProfile]);
 
-    let isCurrent = true;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setOtherLoading(true);
-    setOtherError('');
-    setNotice('');
-
-    userAPI
-      .getOtherProfile(userId)
-      .then((response) => {
-        if (isCurrent) {
-          setOtherProfile(response.data?.data || null);
-        }
-      })
-      .catch((err) => {
-        if (isCurrent) {
-          setOtherProfile(null);
-          setOtherError(err.response?.data?.message || 'Khong the tai trang ca nhan.');
-        }
-      })
-      .finally(() => {
-        if (isCurrent) {
-          setOtherLoading(false);
-        }
-      });
-
-    return () => {
-      isCurrent = false;
-    };
-  }, [userId]);
+  const refreshProfilesAfterAction = useCallback(async () => {
+    await Promise.all([dispatch(fetchUserProfile()), loadOtherProfile()]);
+  }, [dispatch, loadOtherProfile]);
 
   const handleSaveProfile = async (formData) => {
     try {
       await dispatch(updateUserProfile(formData)).unwrap();
       setIsEditModalOpen(false);
     } catch (err) {
-      console.error('Failed to update profile:', err);
+      console.error("Failed to update profile:", err);
     }
   };
 
@@ -79,16 +78,16 @@ const ProfilePage = ({ userId }) => {
     if (!receiverId || friendRequestLoading) return;
 
     setFriendRequestLoading(true);
-    setNotice('');
+    setNotice("");
 
     try {
       const response = await userAPI.sendFriendRequest(receiverId);
-      setOtherProfile((current) =>
-        current ? { ...current, relation: 'sent_request' } : current,
-      );
-      setNotice(response.data?.message || 'Friend request sent.');
+      await refreshProfilesAfterAction();
+      setNotice(response.data?.message || "Friend request sent.");
     } catch (err) {
-      setNotice(err.response?.data?.message || 'Khong the gui loi moi ket ban.');
+      setNotice(
+        err.response?.data?.message || "Khong the gui loi moi ket ban.",
+      );
     } finally {
       setFriendRequestLoading(false);
     }
@@ -99,50 +98,91 @@ const ProfilePage = ({ userId }) => {
     if (!senderId || acceptRequestLoading) return;
 
     setAcceptRequestLoading(true);
-    setNotice('');
+    setNotice("");
 
     try {
       const response = await userAPI.acceptFriendRequest(senderId);
-      const myId = getProfileId(profile);
-
-      setOtherProfile((current) => {
-        if (!current) return current;
-
-        const currentFriends = Array.isArray(current.friends) ? current.friends : null;
-        const nextFriends =
-          currentFriends && myId && !currentFriends.some((friendId) => friendId?.toString() === myId?.toString())
-            ? [...currentFriends, myId]
-            : currentFriends;
-
-        return {
-          ...current,
-          relation: 'friend',
-          friends: nextFriends || current.friends,
-          friendsCount:
-            typeof current.friendsCount === 'number'
-              ? current.friendsCount + 1
-              : current.friendsCount,
-        };
-      });
-
-      setNotice(response.data?.message || 'Friend request accepted.');
+      await refreshProfilesAfterAction();
+      setNotice(response.data?.message || "Friend request accepted.");
     } catch (err) {
-      setNotice(err.response?.data?.message || 'Khong the chap nhan loi moi ket ban.');
+      setNotice(
+        err.response?.data?.message || "Khong the chap nhan loi moi ket ban.",
+      );
     } finally {
       setAcceptRequestLoading(false);
     }
   };
 
+  const handleRejectFriendRequest = async () => {
+    const senderId = getProfileId(otherProfile);
+    if (!senderId || rejectRequestLoading) return;
+
+    setRejectRequestLoading(true);
+    setNotice("");
+
+    try {
+      const response = await userAPI.rejectFriendRequest(senderId);
+      await refreshProfilesAfterAction();
+      setNotice(response.data?.message || "Friend request rejected.");
+    } catch (err) {
+      setNotice(
+        err.response?.data?.message || "Khong the tu choi loi moi ket ban.",
+      );
+    } finally {
+      setRejectRequestLoading(false);
+    }
+  };
+
+  const handleCancelFriendRequest = async () => {
+    const receiverId = getProfileId(otherProfile);
+    if (!receiverId || cancelRequestLoading) return;
+
+    setCancelRequestLoading(true);
+    setNotice("");
+
+    try {
+      const response = await userAPI.cancelFriendRequest(receiverId);
+      await refreshProfilesAfterAction();
+      setNotice(response.data?.message || "Friend request cancelled.");
+    } catch (err) {
+      setNotice(
+        err.response?.data?.message || "Khong the huy loi moi ket ban.",
+      );
+    } finally {
+      setCancelRequestLoading(false);
+    }
+  };
+
+  const handleUnfriend = async () => {
+    const friendId = getProfileId(otherProfile);
+    if (!friendId || unfriendLoading) return;
+
+    setUnfriendLoading(true);
+    setNotice("");
+
+    try {
+      const response = await userAPI.unfriend(friendId);
+      await refreshProfilesAfterAction();
+      setNotice(response.data?.message || "Friend removed.");
+    } catch (err) {
+      setNotice(err.response?.data?.message || "Khong the huy ket ban.");
+    } finally {
+      setUnfriendLoading(false);
+    }
+  };
+
   const displayProfile = useMemo(() => {
     const source = currentProfile || {};
-    const name = source.fullName || 'ZaloUTE User';
-    const email = source.email || source.account?.email || '';
+    const name = source.fullName || "ZaloUTE User";
+    const email = source.email || source.account?.email || "";
     const friendsCount = source.friendsCount ?? source.friends?.length ?? 0;
 
     return {
       name,
-      username: email ? `@${email.split('@')[0]}` : `@${name.toLowerCase().replace(/\s+/g, '')}`,
-      bio: source.bio || (isOwnProfile ? '' : 'No bio yet.'),
+      username: email
+        ? `@${email.split("@")[0]}`
+        : `@${name.toLowerCase().replace(/\s+/g, "")}`,
+      bio: source.bio || (isOwnProfile ? "" : "No bio yet."),
       coverImage: source.coverImage || null,
       profileImage: source.avatar || null,
       stats: {
@@ -151,7 +191,7 @@ const ProfilePage = ({ userId }) => {
         photos: 0,
       },
       isOnline: source.isOnline || false,
-      relation: source.relation || 'none',
+      relation: source.relation || "none",
     };
   }, [currentProfile, isOwnProfile]);
 
@@ -159,30 +199,60 @@ const ProfilePage = ({ userId }) => {
     const source = currentProfile || {};
 
     return [
-      { icon: 'call', title: 'Phone Number', value: source.phone || 'Not updated' },
-      { icon: 'person', title: 'Gender', value: source.gender || 'Not updated' },
       {
-        icon: 'cake',
-        title: 'Birthday',
-        value: source.dateOfBirth ? new Date(source.dateOfBirth).toLocaleDateString() : 'Not updated',
+        icon: "call",
+        title: "Phone Number",
+        value: source.phone || "Not updated",
       },
-      { icon: 'location_on', title: 'Lives in', value: source.address || 'Not updated' },
       {
-        icon: 'history',
-        title: 'Member since',
+        icon: "person",
+        title: "Gender",
+        value: source.gender || "Not updated",
+      },
+      {
+        icon: "cake",
+        title: "Birthday",
+        value: source.dateOfBirth
+          ? new Date(source.dateOfBirth).toLocaleDateString()
+          : "Not updated",
+      },
+      {
+        icon: "location_on",
+        title: "Lives in",
+        value: source.address || "Not updated",
+      },
+      {
+        icon: "history",
+        title: "Member since",
         value: source.createdAt
-          ? `Joined ${new Date(source.createdAt).toLocaleDateString('en-US', {
-              month: 'long',
-              year: 'numeric',
+          ? `Joined ${new Date(source.createdAt).toLocaleDateString("en-US", {
+              month: "long",
+              year: "numeric",
             })}`
-          : 'Not updated',
+          : "Not updated",
       },
     ];
   }, [currentProfile]);
 
-  const friendsData = [];
+  const friendsData = useMemo(() => {
+    const sourceFriends = currentProfile?.friends;
+
+    if (!Array.isArray(sourceFriends)) {
+      return [];
+    }
+
+    return sourceFriends
+      .map((friend) => ({
+        id: friend?.id || friend?._id || friend?.userId || friend,
+        name: friend?.fullName || friend?.name || "Friend",
+        image: friend?.avatar || friend?.image || null,
+      }))
+      .filter((friend) => friend.id);
+  }, [currentProfile]);
   const activities = [];
-  const pageLoading = isOwnProfile ? loading && !profile : otherLoading && !otherProfile;
+  const pageLoading = isOwnProfile
+    ? loading && !profile
+    : otherLoading && !otherProfile;
   const pageError = isOwnProfile ? error : otherError;
 
   if (pageLoading) {
@@ -200,13 +270,19 @@ const ProfilePage = ({ userId }) => {
         {pageError ? (
           <div className="mb-4 bg-white text-red-600 p-4 rounded-lg border border-red-100 flex items-center gap-3 shadow-sm">
             <span className="material-symbols-outlined">error</span>
-            <span>{typeof pageError === 'string' ? pageError : pageError.message || 'Error occurred'}</span>
+            <span>
+              {typeof pageError === "string"
+                ? pageError
+                : pageError.message || "Error occurred"}
+            </span>
           </div>
         ) : null}
 
         {notice ? (
           <div className="mb-4 bg-white text-[#050505] p-4 rounded-lg border border-[#dddfe2] flex items-center gap-3 shadow-sm">
-            <span className="material-symbols-outlined text-[#1877f2]">info</span>
+            <span className="material-symbols-outlined text-[#1877f2]">
+              info
+            </span>
             <span>{notice}</span>
           </div>
         ) : null}
@@ -221,9 +297,18 @@ const ProfilePage = ({ userId }) => {
               sendingFriendRequest={friendRequestLoading}
               onAcceptFriendRequest={handleAcceptFriendRequest}
               acceptingFriendRequest={acceptRequestLoading}
+              onRejectFriendRequest={handleRejectFriendRequest}
+              rejectingFriendRequest={rejectRequestLoading}
+              onCancelFriendRequest={handleCancelFriendRequest}
+              cancellingFriendRequest={cancelRequestLoading}
+              onUnfriend={handleUnfriend}
+              unfriending={unfriendLoading}
             />
             <ComposerCard profile={profile} />
-            <FriendsGrid friends={friendsData} totalFriends={displayProfile.stats.friends} />
+            <FriendsGrid
+              friends={friendsData}
+              totalFriends={displayProfile.stats.friends}
+            />
           </div>
 
           <div className="lg:col-span-4 space-y-4">
@@ -231,9 +316,15 @@ const ProfilePage = ({ userId }) => {
             <RecentActivityCard activities={activities} />
             <div className="px-2">
               <div className="flex flex-wrap gap-x-4 gap-y-2 text-[#65676b] text-xs">
-                <a className="hover:underline" href="#">Privacy</a>
-                <a className="hover:underline" href="#">Terms</a>
-                <a className="hover:underline" href="#">Cookies</a>
+                <a className="hover:underline" href="#">
+                  Privacy
+                </a>
+                <a className="hover:underline" href="#">
+                  Terms
+                </a>
+                <a className="hover:underline" href="#">
+                  Cookies
+                </a>
                 <span>ZaloUTE 2026</span>
               </div>
             </div>
@@ -261,7 +352,11 @@ const ComposerCard = ({ profile }) => (
     <div className="flex items-center gap-3">
       <div className="w-10 h-10 rounded-full bg-[#e4e6eb] overflow-hidden flex items-center justify-center text-[#65676b]">
         {profile?.avatar ? (
-          <img className="w-full h-full object-cover" src={profile.avatar} alt={profile.fullName || 'Profile'} />
+          <img
+            className="w-full h-full object-cover"
+            src={profile.avatar}
+            alt={profile.fullName || "Profile"}
+          />
         ) : (
           <span className="material-symbols-outlined">person</span>
         )}
@@ -272,7 +367,11 @@ const ComposerCard = ({ profile }) => (
     </div>
     <div className="border-t border-[#dddfe2] mt-4 pt-2 grid grid-cols-3 gap-2">
       <ComposerAction icon="videocam" label="Live" color="text-red-500" />
-      <ComposerAction icon="photo_library" label="Photo" color="text-green-600" />
+      <ComposerAction
+        icon="photo_library"
+        label="Photo"
+        color="text-green-600"
+      />
       <ComposerAction icon="mood" label="Feeling" color="text-yellow-500" />
     </div>
   </div>
@@ -280,7 +379,9 @@ const ComposerCard = ({ profile }) => (
 
 const ComposerAction = ({ icon, label, color }) => (
   <button className="h-10 rounded-lg hover:bg-[#f0f2f5] flex items-center justify-center gap-2 font-semibold text-sm text-[#65676b]">
-    <span className={`material-symbols-outlined text-[22px] ${color}`}>{icon}</span>
+    <span className={`material-symbols-outlined text-[22px] ${color}`}>
+      {icon}
+    </span>
     {label}
   </button>
 );

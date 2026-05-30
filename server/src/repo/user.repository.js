@@ -13,7 +13,7 @@ async function linkAccountToUser(userId, accountId) {
   return await User.findByIdAndUpdate(
     userId,
     { account: accountId },
-    { returnDocument: "after" } // Mongoose v6+ dùng new: true hoặc returnDocument
+    { returnDocument: "after" }, // Mongoose v6+ dùng new: true hoặc returnDocument
   );
 }
 
@@ -37,7 +37,9 @@ async function updateProfile(userId, updateData) {
 async function getUserById(userId) {
   try {
     console.log("getUserById - userId:", userId);
-    const user = await User.findById(userId).populate("account");
+    const user = await User.findById(userId)
+      .populate("account")
+      .populate("friends", "fullName avatar isOnline lastActive");
     console.log("getUserById - user found:", !!user, user?.fullName);
     return user;
   } catch (error) {
@@ -65,7 +67,7 @@ async function findUsers(condition, skip, limit) {
   return await User.find(condition)
     .skip(skip)
     .limit(limit)
-    .select("id fullName avatar friends")
+    .select("id fullName avatar friends");
 }
 
 async function countUsers(condition) {
@@ -73,24 +75,31 @@ async function countUsers(condition) {
 }
 
 async function getOtherUserById(userId) {
-  return await User.findById(userId).select("-account");
+  return await User.findById(userId)
+    .select("-account")
+    .populate("friends", "fullName avatar isOnline lastActive");
 }
-
 
 async function addFriend(userId, friendId) {
   return await User.updateOne(
-    { _id: userId},
-    { $addToSet: { friends: friendId } }
-  )
+    { _id: userId },
+    { $addToSet: { friends: friendId } },
+  );
+}
+
+async function removeFriend(userId, friendId) {
+  return await User.updateOne(
+    { _id: userId },
+    { $pull: { friends: friendId } },
+  );
 }
 
 async function setUserOffline(userId, updateData) {
   return await User.findByIdAndUpdate(userId, updateData, {
     returnDocument: "after",
     runValidators: true,
-   });
+  });
 }
-
 
 module.exports = {
   createUser,
@@ -104,5 +113,6 @@ module.exports = {
   countUsers,
   getOtherUserById,
   addFriend,
-  setUserOffline
+  removeFriend,
+  setUserOffline,
 };

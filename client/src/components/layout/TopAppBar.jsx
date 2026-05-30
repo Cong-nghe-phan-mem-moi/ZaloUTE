@@ -1,20 +1,23 @@
-import { useEffect, useRef, useState } from 'react';
-import { userAPI } from '../../services/api';
-import { useAppDispatch } from '../../store/hooks';
-import { clearProfile } from '../../store/slices/userSlice';
+import { useEffect, useRef, useState } from "react";
+import { userAPI } from "../../services/api";
+import { useAppDispatch } from "../../store/hooks";
+import { clearProfile } from "../../store/slices/userSlice";
 
-const getInitials = (name = '') =>
+const getInitials = (name = "") =>
   name
     .trim()
     .split(/\s+/)
     .slice(0, 2)
     .map((part) => part[0])
-    .join('')
-    .toUpperCase() || 'U';
+    .join("")
+    .toUpperCase() || "U";
 
 const TopAppBar = ({ profile }) => {
   const dispatch = useAppDispatch();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const pathname = window.location.pathname;
+  const isHomePage = pathname === "/home";
+  const isFriendRequestsPage = pathname === "/friend-requests";
 
   const handleLogout = async () => {
     if (isLoggingOut) return;
@@ -24,11 +27,11 @@ const TopAppBar = ({ profile }) => {
     try {
       await userAPI.logout();
     } catch (error) {
-      console.error('Logout failed:', error);
+      console.error("Logout failed:", error);
     } finally {
-      localStorage.removeItem('token');
+      localStorage.removeItem("token");
       dispatch(clearProfile());
-      window.location.assign('/login');
+      window.location.assign("/login");
     }
   };
 
@@ -47,8 +50,13 @@ const TopAppBar = ({ profile }) => {
         </div>
 
         <nav className="hidden md:flex items-center justify-center gap-2 absolute left-1/2 -translate-x-1/2">
-          <NavIcon icon="home" label="Home" href="/home" active />
-          <NavIcon icon="group" label="Friends" href="/home" />
+          <NavIcon icon="home" label="Home" href="/home" active={isHomePage} />
+          <NavIcon
+            icon="group"
+            label="Friends"
+            href="/friend-requests"
+            active={isFriendRequestsPage}
+          />
           <NavIcon icon="forum" label="Messages" href="/home" />
           <NavIcon icon="smart_display" label="Watch" href="/home" />
         </nav>
@@ -58,7 +66,7 @@ const TopAppBar = ({ profile }) => {
           <CircleButton icon="notifications" label="Notifications" />
           <CircleButton
             icon="logout"
-            label={isLoggingOut ? 'Logging out' : 'Log out'}
+            label={isLoggingOut ? "Logging out" : "Log out"}
             onClick={handleLogout}
             disabled={isLoggingOut}
           />
@@ -66,9 +74,13 @@ const TopAppBar = ({ profile }) => {
             href="/user/profile"
             className="hidden sm:flex items-center gap-2 rounded-full hover:bg-[#f0f2f5] p-1 pr-3 text-[#050505]"
           >
-            <Avatar image={profile?.avatar} name={profile?.fullName} size="sm" />
+            <Avatar
+              image={profile?.avatar}
+              name={profile?.fullName}
+              size="sm"
+            />
             <span className="font-semibold text-sm max-w-28 truncate">
-              {profile?.fullName?.split(' ')?.slice(-1)?.[0] || 'Profile'}
+              {profile?.fullName?.split(" ")?.slice(-1)?.[0] || "Profile"}
             </span>
           </a>
         </div>
@@ -78,10 +90,10 @@ const TopAppBar = ({ profile }) => {
 };
 
 const SearchBox = () => {
-  const [keyword, setKeyword] = useState('');
+  const [keyword, setKeyword] = useState("");
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const searchRef = useRef(null);
 
@@ -92,8 +104,8 @@ const SearchBox = () => {
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   useEffect(() => {
@@ -106,7 +118,7 @@ const SearchBox = () => {
     let isCurrent = true;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
-    setError('');
+    setError("");
 
     const timer = window.setTimeout(async () => {
       try {
@@ -116,7 +128,9 @@ const SearchBox = () => {
       } catch (err) {
         if (!isCurrent) return;
         setResults([]);
-        setError(err.response?.data?.message || 'Khong the tim kiem nguoi dung.');
+        setError(
+          err.response?.data?.message || "Khong the tim kiem nguoi dung.",
+        );
       } finally {
         if (isCurrent) {
           setLoading(false);
@@ -134,7 +148,7 @@ const SearchBox = () => {
   const shouldShowDropdown = isOpen && keyword.trim().length >= 2;
 
   return (
-    <div className="relative w-full max-w-[280px]" ref={searchRef}>
+    <div className="relative w-full max-w-70" ref={searchRef}>
       <div className="h-10 bg-[#f0f2f5] rounded-full flex items-center gap-2 px-3 text-[#65676b]">
         <span className="material-symbols-outlined text-[20px]">search</span>
         <input
@@ -149,7 +163,7 @@ const SearchBox = () => {
 
             if (nextKeyword.trim().length < 2) {
               setResults([]);
-              setError('');
+              setError("");
               setLoading(false);
             }
           }}
@@ -159,7 +173,9 @@ const SearchBox = () => {
 
       {shouldShowDropdown ? (
         <div className="absolute left-0 top-12 w-[min(360px,calc(100vw-24px))] bg-white rounded-lg shadow-2xl border border-[#dddfe2] p-2">
-          <div className="px-2 py-2 text-sm font-semibold text-[#65676b]">Search results</div>
+          <div className="px-2 py-2 text-sm font-semibold text-[#65676b]">
+            Search results
+          </div>
 
           {loading ? (
             <div className="flex items-center gap-3 px-2 py-3 text-[#65676b]">
@@ -173,11 +189,15 @@ const SearchBox = () => {
           ) : null}
 
           {!loading && !error && results.length === 0 ? (
-            <p className="px-2 py-3 text-sm text-[#65676b]">Khong tim thay nguoi dung phu hop.</p>
+            <p className="px-2 py-3 text-sm text-[#65676b]">
+              Khong tim thay nguoi dung phu hop.
+            </p>
           ) : null}
 
           {!loading && !error
-            ? results.map((user) => <SearchResultItem key={user.id} user={user} />)
+            ? results.map((user) => (
+                <SearchResultItem key={user.id} user={user} />
+              ))
             : null}
         </div>
       ) : null}
@@ -193,7 +213,15 @@ const SearchResultItem = ({ user }) => (
     <Avatar image={user.avatar} name={user.fullName} />
     <div className="min-w-0">
       <p className="font-semibold text-[15px] truncate">{user.fullName}</p>
-      <p className="text-xs text-[#65676b]">{user.isFriend ? 'Friend' : 'View profile'}</p>
+      <p className="text-xs text-[#65676b]">
+        {user.relation === "friend"
+          ? "Friend"
+          : user.relation === "sent_request"
+            ? "Request sent"
+            : user.relation === "received_request"
+              ? "Respond to request"
+              : "View profile"}
+      </p>
     </div>
   </a>
 );
@@ -202,7 +230,9 @@ const NavIcon = ({ icon, label, href, active = false }) => (
   <a
     href={href}
     className={`h-12 w-24 rounded-lg flex items-center justify-center ${
-      active ? 'text-[#1877f2] border-b-4 border-[#1877f2]' : 'text-[#65676b] hover:bg-[#f0f2f5]'
+      active
+        ? "text-[#1877f2] border-b-4 border-[#1877f2]"
+        : "text-[#65676b] hover:bg-[#f0f2f5]"
     }`}
     title={label}
     aria-label={label}
@@ -224,13 +254,19 @@ const CircleButton = ({ icon, label, onClick, disabled = false }) => (
   </button>
 );
 
-const Avatar = ({ image, name, size = 'md' }) => {
-  const sizeClass = size === 'sm' ? 'w-8 h-8 text-xs' : 'w-10 h-10 text-sm';
+const Avatar = ({ image, name, size = "md" }) => {
+  const sizeClass = size === "sm" ? "w-8 h-8 text-xs" : "w-10 h-10 text-sm";
 
   return (
-    <div className={`${sizeClass} rounded-full overflow-hidden bg-[#dbe7ff] text-[#1877f2] flex items-center justify-center font-bold shrink-0`}>
+    <div
+      className={`${sizeClass} rounded-full overflow-hidden bg-[#dbe7ff] text-[#1877f2] flex items-center justify-center font-bold shrink-0`}
+    >
       {image ? (
-        <img className="w-full h-full object-cover" src={image} alt={name || 'User'} />
+        <img
+          className="w-full h-full object-cover"
+          src={image}
+          alt={name || "User"}
+        />
       ) : (
         <span>{getInitials(name)}</span>
       )}
