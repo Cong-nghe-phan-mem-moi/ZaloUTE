@@ -1,6 +1,6 @@
-const UserRepository = require('../repo/user.repository');
-const AuthRepository = require('../repo/auth.repository');
-const FriendRequestRepo = require('../repo/friendRequest.repository');
+const UserRepository = require("../repo/user.repository");
+const AuthRepository = require("../repo/auth.repository");
+const FriendRequestService = require("./friendRequest.service");
 
 // Hàm Helper tạo lỗi chuẩn Node.js (Giữ được Stack Trace để dễ debug sau này)
 const throwError = (statusCode, code, message) => {
@@ -23,34 +23,54 @@ const buildProfileResponse = (user) => ({
   isOnline: user.isOnline,
   lastActive: user.lastActive,
   friendsCount: user.friends?.length || 0,
+  friends: (user.friends || []).map((friend) => {
+    const friendId = friend?._id || friend?.id || friend;
+
+    return {
+      id: friendId?.toString?.() || friendId,
+      fullName: friend.fullName || friend.name || "Unknown",
+      avatar: friend.avatar || friend.image || null,
+      isOnline: friend.isOnline || false,
+      lastActive: friend.lastActive || null,
+    };
+  }),
   createdAt: user.createdAt,
   updatedAt: user.updatedAt,
 });
 
 async function editProfile(userId, updateData) {
   const user = await UserRepository.getUserById(userId);
-  if (!user) throwError(404, 'USER_NOT_FOUND', 'User not found');
+  if (!user) throwError(404, "USER_NOT_FOUND", "User not found");
 
   // Xử lý cập nhật Email (Nằm ở collection Account)
   if (updateData.email) {
-    if (!user.account) throwError(400, 'ACCOUNT_NOT_FOUND', 'Account not found');
+    if (!user.account)
+      throwError(400, "ACCOUNT_NOT_FOUND", "Account not found");
 
     const normalizedEmail = updateData.email.trim().toLowerCase();
-    
+
     // TỐI ƯU LOGIC: Chỉ query DB check trùng lặp nếu người dùng THỰC SỰ nhập email mới
     if (normalizedEmail !== user.account.email) {
-      const existingAccount = await AuthRepository.findAccountByEmail(normalizedEmail);
-      
+      const existingAccount =
+        await AuthRepository.findAccountByEmail(normalizedEmail);
+
       if (existingAccount) {
-        throwError(400, 'EMAIL_ALREADY_IN_USE', 'Email is already in use by another user');
+        throwError(
+          400,
+          "EMAIL_ALREADY_IN_USE",
+          "Email is already in use by another user",
+        );
       }
-      
+
       // Nếu không trùng với ai, tiến hành update
-      await AuthRepository.updateAccountEmail(user.account._id, normalizedEmail);
+      await AuthRepository.updateAccountEmail(
+        user.account._id,
+        normalizedEmail,
+      );
     }
-    
+
     // Phải xóa email khỏi updateData để không bị ném nhầm sang update bên bảng User
-    delete updateData.email; 
+    delete updateData.email;
   }
 
   // Xử lý cập nhật các trường còn lại (Nằm ở collection User)
@@ -60,18 +80,19 @@ async function editProfile(userId, updateData) {
 
   // Lấy lại User sau khi update để có data mới nhất (Bao gồm cả account email mới nếu có)
   const updatedUser = await UserRepository.getUserById(userId);
-  if (!updatedUser) throwError(500, 'UPDATE_FAILED', 'Failed to update user profile');
+  if (!updatedUser)
+    throwError(500, "UPDATE_FAILED", "Failed to update user profile");
 
   return {
     success: true,
-    message: 'Profile updated successfully',
+    message: "Profile updated successfully",
     data: buildProfileResponse(updatedUser),
   };
 }
 
-async function getMyProfile(userId) { 
+async function getMyProfile(userId) {
   const user = await UserRepository.getUserById(userId);
-  if (!user) throwError(404, 'USER_NOT_FOUND', 'User not found');
+  if (!user) throwError(404, "USER_NOT_FOUND", "User not found");
 
   return {
     success: true,
@@ -81,7 +102,12 @@ async function getMyProfile(userId) {
 
 async function getMyProfileByRole(userId, role) {
   const user = await UserRepository.getProfileByRole(userId, role);
-  if (!user) throwError(403, 'FORBIDDEN', 'You do not have permission to access this resource');
+  if (!user)
+    throwError(
+      403,
+      "FORBIDDEN",
+      "You do not have permission to access this resource",
+    );
 
   return {
     success: true,
@@ -91,24 +117,26 @@ async function getMyProfileByRole(userId, role) {
 
 async function getOtherUserProfile(userId, myId) {
   const user = await UserRepository.getOtherUserById(userId);
-  if (!user) throwError(404, 'USER_NOT_FOUND', 'User not found');
-  const isFriend = user.friends.some(friendId => friendId.equals(myId));
+  if (!user) throwError(404, "USER_NOT_FOUND", "User not found");
 
   const userObj = user.toObject();
-  userObj.relation = isFriend ? 'friend' : 'none';
+  userObj.relation = await FriendRequestService.getFriendRelation(
+    userObj,
+    myId,
+  );
 
   return userObj;
 }
 
 async function searchUsers(keyword, page, limit, myId) {
   // 1. Kiểm tra keyword là sđt hay tên
-  let queryCondition = { _id: {$ne: myId} };
+  let queryCondition = { _id: { $ne: myId } };
   const isPhone = /^\d{10, 11}$/.test(keyword);
-  
+
   if (isPhone) {
     queryCondition.phone = keyword;
   } else {
-    queryCondition.searchName = {$regex: keyword, $options: 'i'};
+    queryCondition.searchName = { $regex: keyword, $options: "i" };
   }
 
   console.log(`searchUsers - queryCondition:`, queryCondition);
@@ -121,31 +149,47 @@ async function searchUsers(keyword, page, limit, myId) {
   const total = await UserRepository.countUsers(queryCondition);
   // console.log(`searchUsers - keyword: ${keyword}, isPhone: ${isPhone}, total found: ${total}`);
 
-  // 4. Quan hệ 
-  let usersWithRelation = users.map(user => {
-    const isFriend = user.friends.some(friendId => friendId.equals(myId));
+  // 4. Quan hệ
+  const usersWithRelation = await Promise.all(
+    users.map(async (user) => {
+      const relation = await FriendRequestService.getFriendRelation(user, myId);
 
-    return {
-      id: user._id,
-      fullName: user.fullName,
-      avatar: user.avatar,
-      isFriend: isFriend,
-    }
-  })
-  usersWithRelation.sort((a, b) => b.isFriend - a.isFriend);
-  
+      return {
+        id: user._id,
+        fullName: user.fullName,
+        avatar: user.avatar,
+        isFriend: relation === "friend",
+        relation,
+      };
+    }),
+  );
+
+  const relationPriority = {
+    friend: 3,
+    received_request: 2,
+    sent_request: 1,
+    none: 0,
+  };
+
+  usersWithRelation.sort(
+    (a, b) => relationPriority[b.relation] - relationPriority[a.relation],
+  );
+
   return {
     data: usersWithRelation,
     pagination: {
       currentPage: page,
       totalPages: Math.ceil(total / limit),
       totalItems: total,
-    }
+    },
   };
 }
 
 async function logout(userId) {
-  await UserRepository.setUserOffline(userId, { isOnline: false, lastActive: new Date() });
+  await UserRepository.setUserOffline(userId, {
+    isOnline: false,
+    lastActive: new Date(),
+  });
 }
 
 module.exports = {
@@ -154,5 +198,5 @@ module.exports = {
   searchUsers,
   getMyProfileByRole,
   getOtherUserProfile,
-  logout
+  logout,
 };
