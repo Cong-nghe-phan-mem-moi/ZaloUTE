@@ -1,7 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
-  currentPage: "register",
+  currentPage: "login",
 };
 
 const uiSlice = createSlice({
