@@ -14,7 +14,7 @@ import FriendRequests from "./pages/FriendRequests";
 function App() {
   const dispatch = useAppDispatch();
   const currentPage = useAppSelector(
-    (state) => state.ui?.currentPage || "register",
+    (state) => state.ui?.currentPage || "login",
   );
   const path = window.location.pathname;
   const otherProfileId = path.match(/^\/users\/profile\/([^/]+)$/)?.[1] || null;
@@ -22,10 +22,10 @@ function App() {
   useEffect(() => {
     const otherProfileMatch = path.match(/^\/users\/profile\/([^/]+)$/);
 
-    if (path === "/" || path === "/register") {
-      dispatch(setCurrentPage("register"));
-    } else if (path === "/login") {
+    if (path === "/" || path === "/login") {
       dispatch(setCurrentPage("login"));
+    } else if (path === "/register") {
+      dispatch(setCurrentPage("register"));
     } else if (path === "/verify-otp") {
       dispatch(setCurrentPage("verify-otp"));
     } else if (path === "/forgot-password") {
@@ -69,8 +69,9 @@ function App() {
       case "post-test":
         return <PostTestPage />;
       case "register":
-      default:
         return <Register />;
+      default:
+        return <LoginPage />;
     }
   };
 

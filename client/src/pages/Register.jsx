@@ -125,6 +125,16 @@ function Register() {
       <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6 py-12">
         <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-lg">
           <div className="space-y-6">
+            <div className="flex justify-start">
+              <a
+                href="/login"
+                className="inline-flex items-center gap-2 rounded-lg px-2 py-1 text-sm font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+              >
+                <span aria-hidden="true">&lt;</span>
+                Quay về đăng nhập
+              </a>
+            </div>
+
             <div>
               <h1 className="text-2xl font-semibold text-slate-900">
                 {step === 'register' && 'Đăng ký tài khoản'}
