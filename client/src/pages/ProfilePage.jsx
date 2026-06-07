@@ -2,13 +2,15 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { fetchUserProfile, updateUserProfile } from "../store/slices/userSlice";
 import { userAPI } from "../services/api";
-import TopAppBar from "../components/layout/TopAppBar";
+import Composer from "../components/home/Composer";
+import HomeHeader from "../components/home/HomeHeader";
 import ProfileHeader from "../components/profile/ProfileHeader";
 import FriendsGrid from "../components/profile/FriendsGrid";
 import AboutCard from "../components/profile/AboutCard";
 import RecentActivityCard from "../components/profile/RecentActivityCard";
 import EditProfileModal from "../components/profile/EditProfileModal";
 import FAB from "../components/common/FAB";
+import { PostList } from "../components/Post";
 
 const getProfileId = (profile) =>
   profile?.userId || profile?._id || profile?.id;
@@ -56,8 +58,12 @@ const ProfilePage = ({ userId }) => {
   }, [dispatch]);
 
   useEffect(() => {
-    setNotice("");
-    loadOtherProfile();
+    const timer = window.setTimeout(() => {
+      setNotice("");
+      loadOtherProfile();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, [loadOtherProfile]);
 
   const refreshProfilesAfterAction = useCallback(async () => {
@@ -257,80 +263,82 @@ const ProfilePage = ({ userId }) => {
 
   if (pageLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#f0f2f5]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#1877f2]"></div>
+      <div className="min-h-screen bg-gradient-to-br from-[#0f49b5] via-[#1e63d6] to-[#3b82f6] px-4 py-6 text-[#111827]">
+        <div className="mx-auto flex min-h-[760px] max-w-[1320px] items-center justify-center overflow-hidden rounded-[28px] bg-[#f2f3f5] shadow-2xl">
+          <div className="h-12 w-12 animate-spin rounded-full border-2 border-[#1877f2] border-t-transparent" />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-[#f0f2f5] text-[#050505] min-h-screen">
-      <TopAppBar profile={profile} />
-      <main className="mx-auto px-4 py-6 max-w-6xl">
-        {pageError ? (
-          <div className="mb-4 bg-white text-red-600 p-4 rounded-lg border border-red-100 flex items-center gap-3 shadow-sm">
-            <span className="material-symbols-outlined">error</span>
-            <span>
-              {typeof pageError === "string"
-                ? pageError
-                : pageError.message || "Error occurred"}
-            </span>
-          </div>
-        ) : null}
+    <div className="min-h-screen bg-gradient-to-br from-[#0f49b5] via-[#1e63d6] to-[#3b82f6] px-4 py-6 text-[#111827]">
+      <div className="mx-auto max-w-[1320px] overflow-hidden rounded-[28px] bg-white shadow-2xl">
+        <HomeHeader profile={profile} />
 
-        {notice ? (
-          <div className="mb-4 bg-white text-[#050505] p-4 rounded-lg border border-[#dddfe2] flex items-center gap-3 shadow-sm">
-            <span className="material-symbols-outlined text-[#1877f2]">
-              info
-            </span>
-            <span>{notice}</span>
-          </div>
-        ) : null}
+        <main className="min-h-[760px] bg-[#f2f3f5] px-5 py-5">
+          <div className="mx-auto max-w-6xl space-y-5">
+            {pageError ? (
+              <StatusCard
+                icon="error"
+                tone="error"
+                message={
+                  typeof pageError === "string"
+                    ? pageError
+                    : pageError.message || "Error occurred"
+                }
+              />
+            ) : null}
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-          <div className="lg:col-span-8 space-y-4">
-            <ProfileHeader
-              profileData={displayProfile}
-              onEdit={() => setIsEditModalOpen(true)}
-              isOwnProfile={isOwnProfile}
-              onSendFriendRequest={handleSendFriendRequest}
-              sendingFriendRequest={friendRequestLoading}
-              onAcceptFriendRequest={handleAcceptFriendRequest}
-              acceptingFriendRequest={acceptRequestLoading}
-              onRejectFriendRequest={handleRejectFriendRequest}
-              rejectingFriendRequest={rejectRequestLoading}
-              onCancelFriendRequest={handleCancelFriendRequest}
-              cancellingFriendRequest={cancelRequestLoading}
-              onUnfriend={handleUnfriend}
-              unfriending={unfriendLoading}
-            />
-            <ComposerCard profile={profile} />
-            <FriendsGrid
-              friends={friendsData}
-              totalFriends={displayProfile.stats.friends}
-            />
-          </div>
+            {notice ? <StatusCard icon="info" message={notice} /> : null}
 
-          <div className="lg:col-span-4 space-y-4">
-            <AboutCard aboutData={aboutData} />
-            <RecentActivityCard activities={activities} />
-            <div className="px-2">
-              <div className="flex flex-wrap gap-x-4 gap-y-2 text-[#65676b] text-xs">
-                <a className="hover:underline" href="#">
-                  Privacy
-                </a>
-                <a className="hover:underline" href="#">
-                  Terms
-                </a>
-                <a className="hover:underline" href="#">
-                  Cookies
-                </a>
-                <span>ZaloUTE 2026</span>
+            <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
+              <div className="space-y-5 lg:col-span-8">
+                <ProfileHeader
+                  profileData={displayProfile}
+                  onEdit={() => setIsEditModalOpen(true)}
+                  isOwnProfile={isOwnProfile}
+                  onSendFriendRequest={handleSendFriendRequest}
+                  sendingFriendRequest={friendRequestLoading}
+                  onAcceptFriendRequest={handleAcceptFriendRequest}
+                  acceptingFriendRequest={acceptRequestLoading}
+                  onRejectFriendRequest={handleRejectFriendRequest}
+                  rejectingFriendRequest={rejectRequestLoading}
+                  onCancelFriendRequest={handleCancelFriendRequest}
+                  cancellingFriendRequest={cancelRequestLoading}
+                  onUnfriend={handleUnfriend}
+                  unfriending={unfriendLoading}
+                />
+                {isOwnProfile ? <Composer profile={profile} /> : null}
+                {isOwnProfile ? <PostList /> : null}
+                <FriendsGrid
+                  friends={friendsData}
+                  totalFriends={displayProfile.stats.friends}
+                />
+              </div>
+
+              <div className="space-y-5 lg:col-span-4">
+                <AboutCard aboutData={aboutData} />
+                <RecentActivityCard activities={activities} />
+                <div className="px-2">
+                  <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-[#6b7280]">
+                    <a className="hover:underline" href="#">
+                      Privacy
+                    </a>
+                    <a className="hover:underline" href="#">
+                      Terms
+                    </a>
+                    <a className="hover:underline" href="#">
+                      Cookies
+                    </a>
+                    <span>ZaloUTE 2026</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </main>
+        </main>
+      </div>
 
       {isOwnProfile ? (
         <>
@@ -347,43 +355,21 @@ const ProfilePage = ({ userId }) => {
   );
 };
 
-const ComposerCard = ({ profile }) => (
-  <div className="bg-white rounded-lg shadow-sm border border-[#dddfe2] p-4">
-    <div className="flex items-center gap-3">
-      <div className="w-10 h-10 rounded-full bg-[#e4e6eb] overflow-hidden flex items-center justify-center text-[#65676b]">
-        {profile?.avatar ? (
-          <img
-            className="w-full h-full object-cover"
-            src={profile.avatar}
-            alt={profile.fullName || "Profile"}
-          />
-        ) : (
-          <span className="material-symbols-outlined">person</span>
-        )}
-      </div>
-      <button className="flex-1 h-10 rounded-full bg-[#f0f2f5] hover:bg-[#e4e6eb] text-left px-4 text-[#65676b]">
-        What's on your mind?
-      </button>
-    </div>
-    <div className="border-t border-[#dddfe2] mt-4 pt-2 grid grid-cols-3 gap-2">
-      <ComposerAction icon="videocam" label="Live" color="text-red-500" />
-      <ComposerAction
-        icon="photo_library"
-        label="Photo"
-        color="text-green-600"
-      />
-      <ComposerAction icon="mood" label="Feeling" color="text-yellow-500" />
-    </div>
-  </div>
-);
-
-const ComposerAction = ({ icon, label, color }) => (
-  <button className="h-10 rounded-lg hover:bg-[#f0f2f5] flex items-center justify-center gap-2 font-semibold text-sm text-[#65676b]">
-    <span className={`material-symbols-outlined text-[22px] ${color}`}>
+const StatusCard = ({ icon, message, tone = "neutral" }) => (
+  <section
+    className={`flex items-center gap-3 rounded bg-white p-4 text-sm font-semibold shadow-sm ${
+      tone === "error" ? "text-red-600" : "text-[#111827]"
+    }`}
+  >
+    <span
+      className={`material-symbols-outlined text-[20px] ${
+        tone === "error" ? "" : "text-[#1877f2]"
+      }`}
+    >
       {icon}
     </span>
-    {label}
-  </button>
+    <span>{message}</span>
+  </section>
 );
 
 export default ProfilePage;

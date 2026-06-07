@@ -10,6 +10,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ProfilePage from "./pages/ProfilePage";
 import PostTestPage from "./pages/PostTestPage";
 import FriendRequests from "./pages/FriendRequests";
+import Friends from "./pages/Friends";
 
 function App() {
   const dispatch = useAppDispatch();
@@ -32,6 +33,8 @@ function App() {
       dispatch(setCurrentPage("forgot-password"));
     } else if (path === "/home") {
       dispatch(setCurrentPage("home"));
+    } else if (path === "/friends") {
+      dispatch(setCurrentPage("friends"));
     } else if (path === "/friend-requests") {
       dispatch(setCurrentPage("friend-requests"));
     } else if (
@@ -60,6 +63,8 @@ function App() {
         return <ForgotPassword />;
       case "home":
         return <Home />;
+      case "friends":
+        return <Friends />;
       case "friend-requests":
         return <FriendRequests />;
       case "profile":

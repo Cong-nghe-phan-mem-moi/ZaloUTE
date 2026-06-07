@@ -34,25 +34,23 @@ const ProfileHeader = ({
   } = profileData;
 
   return (
-    <div className="bg-white rounded-lg shadow-sm overflow-hidden transition-all duration-500 border border-[#dddfe2]">
-      {/* Cover Image */}
+    <div className="overflow-hidden rounded bg-white shadow-sm">
       <CoverImage coverImage={coverImage} isOwnProfile={isOwnProfile} />
 
-      {/* Profile Info */}
-      <div className="px-8 pb-8">
-        <div className="relative -mt-20 mb-6 flex items-end justify-between flex-wrap gap-4">
-          <div className="flex items-end gap-6 flex-wrap">
+      <div className="px-5 pb-7 sm:px-8">
+        <div className="relative -mt-16 mb-6 flex flex-wrap items-end justify-between gap-4">
+          <div className="flex flex-wrap items-end gap-5">
             <ProfileAvatar profileImage={profileImage} isOnline={isOnline} />
-            <div className="mb-4">
-              <h1 className="font-headline-lg text-3xl text-on-surface tracking-tight">
+            <div className="mb-3 min-w-0">
+              <h1 className="truncate text-3xl font-bold text-[#111827]">
                 {name}
               </h1>
-              <p className="text-on-surface-variant font-body-md flex items-center gap-2">
+              <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-[#6b7280]">
                 <span className="font-medium">{username}</span>
-                <span className="w-1 h-1 bg-outline-variant rounded-full"></span>
+                <span className="h-1 w-1 rounded-full bg-[#d1d5db]" />
                 <span
                   className={
-                    isOnline ? "text-green-600" : "text-on-surface-variant/60"
+                    isOnline ? "text-emerald-600" : "text-[#9ca3af]"
                   }
                 >
                   {isOnline ? "Active now" : "Offline"}
@@ -77,12 +75,12 @@ const ProfileHeader = ({
           />
         </div>
 
-        {/* Bio */}
-        <p className="text-on-surface font-body-lg max-w-2xl mb-8 leading-relaxed opacity-90">
-          {bio}
-        </p>
+        {bio ? (
+          <p className="mb-7 max-w-2xl text-sm leading-6 text-[#4b5563]">
+            {bio}
+          </p>
+        ) : null}
 
-        {/* Stats */}
         <StatsSection stats={stats} />
       </div>
     </div>
@@ -90,17 +88,17 @@ const ProfileHeader = ({
 };
 
 const CoverImage = ({ coverImage, isOwnProfile }) => (
-  <div className="relative h-64 w-full bg-gradient-to-b from-[#d8dadf] to-[#f0f2f5]">
+  <div className="relative h-56 w-full bg-gradient-to-br from-[#dbeafe] via-[#bfdbfe] to-[#93c5fd] sm:h-60">
     {coverImage && (
       <img
-        className="w-full h-full object-cover"
+        className="h-full w-full object-cover"
         src={coverImage}
         alt="Profile cover"
       />
     )}
 
     {isOwnProfile ? (
-      <button className="absolute bottom-4 right-4 bg-white hover:bg-[#f0f2f5] text-[#050505] rounded-md px-4 py-2 flex items-center gap-2 transition-colors font-semibold text-sm shadow-sm">
+      <button className="absolute bottom-4 right-4 flex items-center gap-2 rounded-md bg-white px-4 py-2 text-sm font-semibold text-[#111827] shadow-sm hover:bg-[#f2f3f5]">
         <span className="material-symbols-outlined text-[18px]">
           photo_camera
         </span>
@@ -112,21 +110,21 @@ const CoverImage = ({ coverImage, isOwnProfile }) => (
 
 const ProfileAvatar = ({ profileImage, isOnline }) => (
   <div className="relative group">
-    <div className="w-40 h-40 rounded-full border-4 border-white overflow-hidden bg-[#e4e6eb] shadow-premium transition-transform duration-300 group-hover:scale-[1.02]">
+    <div className="h-32 w-32 overflow-hidden rounded-full border-4 border-white bg-[#facc15] text-[#7c2d12] shadow-md transition-transform duration-300 group-hover:scale-[1.02] sm:h-36 sm:w-36">
       {profileImage ? (
         <img
-          className="w-full h-full object-cover"
+          className="h-full w-full object-cover"
           src={profileImage}
           alt="Profile"
         />
       ) : (
-        <div className="w-full h-full flex items-center justify-center bg-primary/10 text-primary">
+        <div className="flex h-full w-full items-center justify-center">
           <span className="material-symbols-outlined text-4xl">person</span>
         </div>
       )}
     </div>
     {isOnline && (
-      <div className="absolute bottom-4 right-4 w-6 h-6 bg-green-500 border-4 border-surface-container-lowest rounded-full shadow-sm"></div>
+      <div className="absolute bottom-3 right-3 h-6 w-6 rounded-full border-4 border-white bg-emerald-500 shadow-sm" />
     )}
   </div>
 );
@@ -168,12 +166,12 @@ const ActionButtons = ({
     const handleSecondaryAction = isAcceptAction ? onRejectFriendRequest : null;
 
     return (
-      <div className="flex gap-2 mb-2 flex-wrap">
+      <div className="mb-2 flex flex-wrap gap-2">
         <button
           type="button"
           onClick={handlePrimaryAction}
           disabled={action.disabled || isBusy}
-          className={`rounded-md px-5 py-2 font-semibold text-sm transition-colors flex items-center gap-2 ${
+          className={`flex items-center gap-2 rounded-md px-5 py-2 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
             isUnfriendAction
               ? "bg-[#dc3545] hover:bg-[#c82333] text-white"
               : "bg-[#1877f2] hover:bg-[#166fe5] text-white"
@@ -198,7 +196,7 @@ const ActionButtons = ({
             type="button"
             onClick={handleSecondaryAction}
             disabled={rejectingFriendRequest}
-            className="bg-[#e4e6eb] hover:bg-[#d8dadf] text-[#050505] rounded-md px-5 py-2 font-semibold text-sm transition-colors flex items-center gap-2"
+            className="flex items-center gap-2 rounded-md bg-[#e5e7eb] px-5 py-2 text-sm font-semibold text-[#111827] transition-colors hover:bg-[#d1d5db] disabled:cursor-not-allowed disabled:opacity-60"
           >
             <span className="material-symbols-outlined text-[18px]">
               {rejectingFriendRequest ? "sync" : "close"}
@@ -207,7 +205,7 @@ const ActionButtons = ({
           </button>
         ) : null}
 
-        <button className="bg-[#e4e6eb] hover:bg-[#d8dadf] text-[#050505] rounded-md px-5 py-2 transition-colors font-semibold text-sm flex items-center gap-2">
+        <button className="flex items-center gap-2 rounded-md bg-[#e5e7eb] px-5 py-2 text-sm font-semibold text-[#111827] transition-colors hover:bg-[#d1d5db]">
           <span className="material-symbols-outlined text-[18px]">chat</span>
           Message
         </button>
@@ -216,16 +214,16 @@ const ActionButtons = ({
   }
 
   return (
-    <div className="flex gap-2 mb-2">
+    <div className="mb-2 flex gap-2">
       <button
         onClick={onEdit}
-        className="bg-[#1877f2] hover:bg-[#166fe5] text-white rounded-md px-5 py-2 font-semibold text-sm transition-colors flex items-center gap-2"
+        className="flex items-center gap-2 rounded-md bg-[#1877f2] px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#166fe5]"
       >
         <span className="material-symbols-outlined text-[18px]">edit</span>
         Edit profile
       </button>
 
-      <button className="bg-[#e4e6eb] hover:bg-[#d8dadf] text-[#050505] rounded-md px-4 py-2 transition-colors">
+      <button className="rounded-md bg-[#e5e7eb] px-4 py-2 text-[#111827] transition-colors hover:bg-[#d1d5db]">
         <span className="material-symbols-outlined">share</span>
       </button>
     </div>
@@ -233,7 +231,7 @@ const ActionButtons = ({
 };
 
 const StatsSection = ({ stats }) => (
-  <div className="flex gap-8 border-t border-outline-variant pt-6">
+  <div className="flex gap-8 border-t border-[#e5e7eb] pt-6">
     <StatCard value={stats.friends} label="Friends" />
     <StatCard value={stats.posts} label="Posts" />
     <StatCard value={stats.photos} label="Photos" />

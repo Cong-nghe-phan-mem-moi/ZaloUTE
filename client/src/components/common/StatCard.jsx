@@ -1,12 +1,14 @@
-import React from 'react';
-
 const StatCard = ({ value, label, isHighlight = false }) => {
   return (
     <div className="text-center">
-      <p className={`font-headline-md text-headline-md ${isHighlight ? 'text-primary' : 'text-on-surface'}`}>
+      <p
+        className={`text-xl font-bold ${
+          isHighlight ? "text-[#1877f2]" : "text-[#111827]"
+        }`}
+      >
         {value}
       </p>
-      <p className="text-on-surface-variant font-label-sm text-label-sm">{label}</p>
+      <p className="text-xs font-semibold text-[#6b7280]">{label}</p>
     </div>
   );
 };
