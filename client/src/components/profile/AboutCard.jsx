@@ -2,9 +2,8 @@ import AboutItem from '../common/AboutItem';
 
 const AboutCard = ({ aboutData }) => {
   return (
-    <div className="bg-white rounded-lg shadow-sm p-6 border border-[#dddfe2]">
-
-      <h2 className="font-headline-md text-headline-md text-[#050505] mb-6">About</h2>
+    <div className="rounded bg-white p-5 shadow-sm">
+      <h2 className="mb-5 text-base font-bold text-[#111827]">About</h2>
       <ul className="space-y-5">
         {aboutData.map((item, index) => (
           <AboutItem key={index} item={item} />
