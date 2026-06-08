@@ -1,29 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+
+const getInitialFormData = (initialData) => ({
+  fullName: initialData?.fullName || '',
+  bio: initialData?.bio || '',
+  phone: initialData?.phone || '',
+  gender: initialData?.gender || 'male',
+  address: initialData?.address || '',
+  dateOfBirth: initialData?.dateOfBirth
+    ? initialData.dateOfBirth.split('T')[0]
+    : '',
+});
 
 const EditProfileModal = ({ isOpen, onClose, onSave, initialData }) => {
-  const [formData, setFormData] = useState({
-    fullName: '',
-    bio: '',
-    phone: '',
-    gender: 'male',
-    address: '',
-    dateOfBirth: ''
-  });
+  const [formData, setFormData] = useState(() => getInitialFormData(initialData));
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (initialData) {
-      setFormData({
-        fullName: initialData.fullName || '',
-        bio: initialData.bio || '',
-        phone: initialData.phone || '',
-        gender: initialData.gender || 'male',
-        address: initialData.address || '',
-        dateOfBirth: initialData.dateOfBirth ? initialData.dateOfBirth.split('T')[0] : ''
-      });
-    }
-    setError(null);
+    if (!isOpen) return undefined;
+
+    const timer = window.setTimeout(() => {
+      setFormData(getInitialFormData(initialData));
+      setError(null);
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, [initialData, isOpen]);
 
   if (!isOpen) return null;
@@ -48,66 +49,71 @@ const EditProfileModal = ({ isOpen, onClose, onSave, initialData }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-surface-container-lowest w-full max-w-lg rounded-2xl shadow-premium overflow-hidden">
-        <div className="px-6 py-4 border-b border-outline-variant flex items-center justify-between">
-          <h2 className="text-xl font-bold text-on-surface">Edit Profile</h2>
-          <button onClick={onClose} disabled={isSaving} className="text-on-surface-variant hover:bg-surface-variant rounded-full p-2 transition-colors disabled:opacity-50">
+      <div className="w-full max-w-lg overflow-hidden rounded-xl bg-white shadow-2xl">
+        <div className="flex items-center justify-between border-b border-[#e5e7eb] px-6 py-4">
+          <h2 className="text-xl font-bold text-[#111827]">Edit Profile</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isSaving}
+            className="rounded-full p-2 text-[#6b7280] transition-colors hover:bg-[#f2f3f5] disabled:opacity-50"
+          >
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {error && (
-            <div className="p-3 rounded-xl bg-error-container text-on-error-container text-sm flex items-center gap-2">
+            <div className="flex items-center gap-2 rounded-md bg-rose-50 p-3 text-sm text-rose-600">
               <span className="material-symbols-outlined text-sm">error</span>
               {error}
             </div>
           )}
 
           <div className="space-y-1">
-            <label className="text-sm font-medium text-on-surface-variant">Full Name</label>
+            <label className="text-sm font-semibold text-[#6b7280]">Full Name</label>
             <input
               type="text"
               name="fullName"
               value={formData.fullName}
               onChange={handleChange}
-              className="w-full bg-surface-container rounded-xl px-4 py-2 border border-outline focus:border-primary outline-none transition-colors"
+              className="w-full rounded-md border border-[#d1d5db] bg-[#f9fafb] px-4 py-2 text-sm text-[#111827] outline-none transition-colors focus:border-[#1877f2]"
               required
               disabled={isSaving}
             />
           </div>
 
           <div className="space-y-1">
-            <label className="text-sm font-medium text-on-surface-variant">Bio</label>
+            <label className="text-sm font-semibold text-[#6b7280]">Bio</label>
             <textarea
               name="bio"
               value={formData.bio}
               onChange={handleChange}
               rows="3"
-              className="w-full bg-surface-container rounded-xl px-4 py-2 border border-outline focus:border-primary outline-none transition-colors resize-none"
+              className="w-full resize-none rounded-md border border-[#d1d5db] bg-[#f9fafb] px-4 py-2 text-sm text-[#111827] outline-none transition-colors focus:border-[#1877f2]"
               disabled={isSaving}
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1">
-              <label className="text-sm font-medium text-on-surface-variant">Phone Number</label>
+              <label className="text-sm font-semibold text-[#6b7280]">Phone Number</label>
               <input
                 type="text"
                 name="phone"
                 value={formData.phone}
                 onChange={handleChange}
-                className="w-full bg-surface-container rounded-xl px-4 py-2 border border-outline focus:border-primary outline-none transition-colors"
+                className="w-full rounded-md border border-[#d1d5db] bg-[#f9fafb] px-4 py-2 text-sm text-[#111827] outline-none transition-colors focus:border-[#1877f2]"
                 disabled={isSaving}
               />
             </div>
             <div className="space-y-1">
-              <label className="text-sm font-medium text-on-surface-variant">Gender</label>
+              <label className="text-sm font-semibold text-[#6b7280]">Gender</label>
               <select
                 name="gender"
                 value={formData.gender}
                 onChange={handleChange}
-                className="w-full bg-surface-container rounded-xl px-4 py-2 border border-outline focus:border-primary outline-none transition-colors"
+                className="w-full rounded-md border border-[#d1d5db] bg-[#f9fafb] px-4 py-2 text-sm text-[#111827] outline-none transition-colors focus:border-[#1877f2]"
                 disabled={isSaving}
               >
                 <option value="male">Male</option>
@@ -117,44 +123,44 @@ const EditProfileModal = ({ isOpen, onClose, onSave, initialData }) => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1">
-              <label className="text-sm font-medium text-on-surface-variant">Birthday</label>
+              <label className="text-sm font-semibold text-[#6b7280]">Birthday</label>
               <input
                 type="date"
                 name="dateOfBirth"
                 value={formData.dateOfBirth}
                 onChange={handleChange}
-                className="w-full bg-surface-container rounded-xl px-4 py-2 border border-outline focus:border-primary outline-none transition-colors"
+                className="w-full rounded-md border border-[#d1d5db] bg-[#f9fafb] px-4 py-2 text-sm text-[#111827] outline-none transition-colors focus:border-[#1877f2]"
                 disabled={isSaving}
               />
             </div>
             <div className="space-y-1">
-              <label className="text-sm font-medium text-on-surface-variant">Address</label>
+              <label className="text-sm font-semibold text-[#6b7280]">Address</label>
               <input
                 type="text"
                 name="address"
                 value={formData.address}
                 onChange={handleChange}
-                className="w-full bg-surface-container rounded-xl px-4 py-2 border border-outline focus:border-primary outline-none transition-colors"
+                className="w-full rounded-md border border-[#d1d5db] bg-[#f9fafb] px-4 py-2 text-sm text-[#111827] outline-none transition-colors focus:border-[#1877f2]"
                 disabled={isSaving}
               />
             </div>
           </div>
 
-          <div className="pt-4 flex gap-3">
+          <div className="flex gap-3 pt-4">
             <button
               type="button"
               onClick={onClose}
               disabled={isSaving}
-              className="flex-1 px-4 py-2 rounded-xl border border-outline text-on-surface hover:bg-surface-variant transition-colors disabled:opacity-50"
+              className="flex-1 rounded-md border border-[#d1d5db] px-4 py-2 text-sm font-semibold text-[#111827] transition-colors hover:bg-[#f2f3f5] disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSaving}
-              className="flex-1 px-4 py-2 rounded-xl bg-primary text-on-primary font-medium hover:bg-on-primary-fixed-variant transition-colors shadow-sm disabled:opacity-70 flex items-center justify-center gap-2"
+              className="flex flex-1 items-center justify-center gap-2 rounded-md bg-[#1877f2] px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#166fe5] disabled:opacity-70"
             >
               {isSaving ? (
                 <>
