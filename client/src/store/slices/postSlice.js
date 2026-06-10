@@ -1,4 +1,4 @@
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
+﻿import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 import { postAPI } from '../../services/api'
 
 const initialState = {
@@ -17,7 +17,7 @@ const initialState = {
   },
 }
 
-// 4.1 Tạo bài viết
+// Create post
 export const createPost = createAsyncThunk(
   'posts/createPost',
   async (formDataOrContent, { rejectWithValue }) => {
@@ -26,13 +26,13 @@ export const createPost = createAsyncThunk(
       return response.data.data
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || 'Không thể tạo bài viết',
+        error.response?.data?.message || 'Unable to create post',
       )
     }
   },
 )
 
-// 4.4 Xem news feed
+// 4.4 View news feed
 export const getNewsFeed = createAsyncThunk(
   'posts/getNewsFeed',
   async ({ page = 1, limit = 10 }, { rejectWithValue }) => {
@@ -41,7 +41,7 @@ export const getNewsFeed = createAsyncThunk(
       return response.data.data
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || 'Không thể tải news feed',
+        error.response?.data?.message || 'Unable to load news feed',
       )
     }
   },
@@ -56,13 +56,13 @@ export const getPost = createAsyncThunk(
       return response.data.data
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || 'Không thể tải bài viết',
+        error.response?.data?.message || 'Unable to load post',
       )
     }
   },
 )
 
-// 4.2 Chỉnh sửa bài viết
+// Update post
 export const updatePost = createAsyncThunk(
   'posts/updatePost',
   async ({ postId, formData, content, media }, { rejectWithValue }) => {
@@ -78,13 +78,13 @@ export const updatePost = createAsyncThunk(
       return response.data.data
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || 'Không thể chỉnh sửa bài viết',
+        error.response?.data?.message || 'Unable to update post',
       )
     }
   },
 )
 
-// 4.3 Xóa bài viết
+// Delete post
 export const deletePost = createAsyncThunk(
   'posts/deletePost',
   async (postId, { rejectWithValue }) => {
@@ -93,7 +93,7 @@ export const deletePost = createAsyncThunk(
       return postId
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || 'Không thể xóa bài viết',
+        error.response?.data?.message || 'Unable to delete post',
       )
     }
   },
@@ -108,13 +108,13 @@ export const toggleLike = createAsyncThunk(
       return response.data.data
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || 'Không thể thích bài viết',
+        error.response?.data?.message || 'Unable to like post',
       )
     }
   },
 )
 
-// 4.5 Xem danh sách like
+// Get post likes
 export const getPostLikes = createAsyncThunk(
   'posts/getPostLikes',
   async ({ postId, page = 1, limit = 10 }, { rejectWithValue }) => {
@@ -123,13 +123,13 @@ export const getPostLikes = createAsyncThunk(
       return response.data.data
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || 'Không thể tải danh sách like',
+        error.response?.data?.message || 'Unable to load likes',
       )
     }
   },
 )
 
-// 4.6 Xem danh sách bình luận
+// Get post comments
 export const getPostComments = createAsyncThunk(
   'posts/getPostComments',
   async ({ postId, page = 1, limit = 10 }, { rejectWithValue }) => {
@@ -138,7 +138,7 @@ export const getPostComments = createAsyncThunk(
       return response.data.data
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || 'Không thể tải danh sách bình luận',
+        error.response?.data?.message || 'Unable to load comments',
       )
     }
   },
@@ -153,7 +153,7 @@ export const searchPosts = createAsyncThunk(
       return response.data.data
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || 'Không thể tìm kiếm bài viết',
+        error.response?.data?.message || 'Unable to search posts',
       )
     }
   },
@@ -168,7 +168,7 @@ export const getPostsByAuthor = createAsyncThunk(
       return response.data.data
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || 'Không thể tải bài viết của tác giả',
+        error.response?.data?.message || 'Unable to load posts by author',
       )
     }
   },
@@ -197,7 +197,7 @@ const postSlice = createSlice({
       .addCase(createPost.fulfilled, (state, action) => {
         state.loading = false
         state.posts.unshift(action.payload)
-        state.message = 'Tạo bài viết thành công'
+        state.message = 'Post created successfully'
       })
       .addCase(createPost.rejected, (state, action) => {
         state.loading = false
@@ -251,7 +251,7 @@ const postSlice = createSlice({
           state.posts[index] = action.payload
         }
         state.currentPost = action.payload
-        state.message = 'Chỉnh sửa bài viết thành công'
+        state.message = 'Post updated successfully'
       })
       .addCase(updatePost.rejected, (state, action) => {
         state.loading = false
@@ -267,7 +267,7 @@ const postSlice = createSlice({
       .addCase(deletePost.fulfilled, (state, action) => {
         state.loading = false
         state.posts = state.posts.filter((p) => p._id !== action.payload)
-        state.message = 'Xóa bài viết thành công'
+        state.message = 'Post deleted successfully'
       })
       .addCase(deletePost.rejected, (state, action) => {
         state.loading = false
@@ -348,7 +348,11 @@ const postSlice = createSlice({
       })
       .addCase(getPostsByAuthor.fulfilled, (state, action) => {
         state.loading = false
-        state.posts = action.payload.posts
+        if (action.meta.arg.page === 1) {
+          state.posts = action.payload.posts
+        } else {
+          state.posts = [...state.posts, ...action.payload.posts]
+        }
         state.pagination = action.payload.pagination
       })
       .addCase(getPostsByAuthor.rejected, (state, action) => {

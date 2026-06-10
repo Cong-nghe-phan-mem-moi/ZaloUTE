@@ -1,4 +1,4 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+﻿import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { commentAPI } from "../../services/api";
 
 const initialState = {
@@ -15,7 +15,7 @@ const initialState = {
   },
 };
 
-// Thêm bình luận
+// Add comment
 export const createComment = createAsyncThunk(
   "comments/createComment",
   async ({ postId, content, replyTo }, { rejectWithValue }) => {
@@ -24,13 +24,13 @@ export const createComment = createAsyncThunk(
       return response.data.data;
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Không thể thêm bình luận",
+        error.response?.data?.message || "Unable to add comment",
       );
     }
   },
 );
 
-// Lấy bình luận của bài viết
+// Get post comments
 export const getPostComments = createAsyncThunk(
   "comments/getPostComments",
   async ({ postId, page = 1, limit = 20 }, { rejectWithValue }) => {
@@ -39,13 +39,13 @@ export const getPostComments = createAsyncThunk(
       return response.data.data;
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Không thể tải bình luận",
+        error.response?.data?.message || "Unable to load comments",
       );
     }
   },
 );
 
-// Chỉnh sửa bình luận
+// Update comment
 export const updateComment = createAsyncThunk(
   "comments/updateComment",
   async ({ commentId, content }, { rejectWithValue }) => {
@@ -54,13 +54,13 @@ export const updateComment = createAsyncThunk(
       return response.data.data;
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Không thể chỉnh sửa bình luận",
+        error.response?.data?.message || "Unable to update comment",
       );
     }
   },
 );
 
-// Xóa bình luận
+// Delete comment
 export const deleteComment = createAsyncThunk(
   "comments/deleteComment",
   async (commentId, { rejectWithValue }) => {
@@ -69,13 +69,13 @@ export const deleteComment = createAsyncThunk(
       return commentId;
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Không thể xóa bình luận",
+        error.response?.data?.message || "Unable to delete comment",
       );
     }
   },
 );
 
-// Like/Unlike bình luận
+// Like/Unlike comment
 export const toggleLike = createAsyncThunk(
   "comments/toggleLike",
   async (commentId, { rejectWithValue }) => {
@@ -84,13 +84,13 @@ export const toggleLike = createAsyncThunk(
       return response.data.data;
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Không thể thích bình luận",
+        error.response?.data?.message || "Unable to like comment",
       );
     }
   },
 );
 
-// Lấy reply của bình luận
+// Get comment replies
 export const getCommentReplies = createAsyncThunk(
   "comments/getCommentReplies",
   async ({ commentId, page = 1, limit = 10 }, { rejectWithValue }) => {
@@ -103,7 +103,7 @@ export const getCommentReplies = createAsyncThunk(
       return response.data.data;
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Không thể tải reply",
+        error.response?.data?.message || "Unable to load replies",
       );
     }
   },
@@ -129,7 +129,7 @@ const commentSlice = createSlice({
       })
       .addCase(createComment.fulfilled, (state, action) => {
         state.loading = false;
-        state.message = "Bình luận được thêm thành công";
+        state.message = "Comment added successfully";
         state.comments.unshift(action.payload);
       })
       .addCase(createComment.rejected, (state, action) => {
@@ -161,7 +161,7 @@ const commentSlice = createSlice({
       })
       .addCase(updateComment.fulfilled, (state, action) => {
         state.loading = false;
-        state.message = "Bình luận được cập nhật thành công";
+        state.message = "Comment updated successfully";
         const index = state.comments.findIndex(
           (c) => c._id === action.payload._id,
         );
@@ -182,7 +182,7 @@ const commentSlice = createSlice({
       })
       .addCase(deleteComment.fulfilled, (state, action) => {
         state.loading = false;
-        state.message = "Bình luận được xóa thành công";
+        state.message = "Comment deleted successfully";
         state.comments = state.comments.filter((c) => c._id !== action.payload);
       })
       .addCase(deleteComment.rejected, (state, action) => {

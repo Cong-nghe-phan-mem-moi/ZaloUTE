@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+﻿import { useCallback, useEffect, useMemo, useState } from "react";
 import HomeAvatar from "../components/home/HomeAvatar";
 import HomeHeader from "../components/home/HomeHeader";
 import LeftSidebar from "../components/home/LeftSidebar";
@@ -33,7 +33,7 @@ const FriendRequests = () => {
     } catch (err) {
       setError(
         err.response?.data?.message ||
-          "Khong the tai danh sach loi moi ket ban.",
+          "Unable to load friend requests.",
       );
     } finally {
       setLoading(false);
@@ -65,7 +65,7 @@ const FriendRequests = () => {
       setNotice(response.data?.message || "Friend request accepted.");
     } catch (err) {
       setNotice(
-        err.response?.data?.message || "Khong the chap nhan loi moi ket ban.",
+        err.response?.data?.message || "Unable to accept friend request.",
       );
     } finally {
       setActionLoadingId("");
@@ -84,7 +84,7 @@ const FriendRequests = () => {
       setNotice(response.data?.message || "Friend request rejected.");
     } catch (err) {
       setNotice(
-        err.response?.data?.message || "Khong the tu choi loi moi ket ban.",
+        err.response?.data?.message || "Unable to reject friend request.",
       );
     } finally {
       setActionLoadingId("");
@@ -103,7 +103,7 @@ const FriendRequests = () => {
       setNotice(response.data?.message || "Friend request cancelled.");
     } catch (err) {
       setNotice(
-        err.response?.data?.message || "Khong the huy loi moi ket ban.",
+        err.response?.data?.message || "Unable to cancel friend request.",
       );
     } finally {
       setActionLoadingId("");

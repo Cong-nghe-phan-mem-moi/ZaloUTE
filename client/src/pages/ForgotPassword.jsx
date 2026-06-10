@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+﻿import { useEffect } from 'react'
 import { useAppDispatch, useAppSelector } from '../store/hooks'
 import {
   clearStatus,
@@ -11,9 +11,9 @@ import {
 } from '../store/slices/forgotPasswordSlice'
 
 const steps = [
-  { id: 'email', label: 'Nhập email' },
-  { id: 'otp', label: 'Xác thực OTP' },
-  { id: 'reset', label: 'Mật khẩu mới' },
+  { id: 'email', label: 'Enter email' },
+  { id: 'otp', label: 'Verify OTP' },
+  { id: 'reset', label: 'New password' },
 ]
 
 const StepItem = ({ isActive, isComplete, label, index }) => (
@@ -78,7 +78,7 @@ function ForgotPassword() {
   const handleEmailSubmit = (event) => {
     event.preventDefault()
     if (!email.trim()) {
-      dispatch(setError('Vui lòng nhập email để nhận OTP.'))
+      dispatch(setError('Please enter your email to receive an OTP.'))
       return
     }
     dispatch(requestResetOtp(email))
@@ -87,7 +87,7 @@ function ForgotPassword() {
   const handleOtpSubmit = (event) => {
     event.preventDefault()
     if (!otp.trim()) {
-      dispatch(setError('Vui lòng nhập mã OTP đã nhận.'))
+      dispatch(setError('Please enter the OTP you received.'))
       return
     }
     dispatch(verifyResetOtp({ email, otp }))
@@ -96,11 +96,11 @@ function ForgotPassword() {
   const handleResetSubmit = (event) => {
     event.preventDefault()
     if (!newPassword || newPassword.length < 8) {
-      dispatch(setError('Mật khẩu mới phải có ít nhất 8 ký tự.'))
+      dispatch(setError('New password must be at least 8 characters.'))
       return
     }
     if (newPassword !== confirmPassword) {
-      dispatch(setError('Mật khẩu nhập lại chưa khớp.'))
+      dispatch(setError('Password confirmation does not match.'))
       return
     }
     dispatch(submitResetPassword({ newPassword, resetToken }))
@@ -120,21 +120,21 @@ function ForgotPassword() {
             </div>
             <div className="space-y-3">
               <h1 className="text-3xl font-semibold text-slate-900 sm:text-4xl">
-                Quên mật khẩu?
+                Forgot password?
               </h1>
               <p className="text-base text-slate-600">
-                Lấy lại tài khoản nhanh chóng bằng OTP xác thực và tạo mật khẩu mới
-                an toàn.
+                Recover your account quickly with OTP verification and create a new password
+                securely.
               </p>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold text-slate-800">Tiến trình</p>
+                <p className="text-sm font-semibold text-slate-800">Progress</p>
                 <span className="text-xs text-slate-400">
-                  {step === 'email' && 'Bước 1/3'}
-                  {step === 'otp' && 'Bước 2/3'}
-                  {step === 'reset' && 'Bước 3/3'}
-                  {step === 'success' && 'Hoàn tất'}
+                  {step === 'email' && 'Step 1/3'}
+                  {step === 'otp' && 'Step 2/3'}
+                  {step === 'reset' && 'Step 3/3'}
+                  {step === 'success' && 'Completed'}
                 </span>
               </div>
               <div className="mt-4 space-y-4">
@@ -150,10 +150,10 @@ function ForgotPassword() {
               </div>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="text-sm font-semibold text-slate-800">Bảo mật</p>
+              <p className="text-sm font-semibold text-slate-800">Security</p>
               <p className="mt-2 text-sm text-slate-500">
-                OTP có hiệu lực trong 10 phút. Mật khẩu mới cần có chữ hoa, chữ
-                thường, số và ký tự đặc biệt.
+                The OTP is valid for 10 minutes. Your new password must include uppercase and lowercase letters,
+                a number, and a special character.
               </p>
             </div>
           </section>
@@ -162,20 +162,20 @@ function ForgotPassword() {
             <div className="space-y-6">
               <div>
                 <h2 className="text-xl font-semibold text-slate-900">
-                  {step === 'email' && 'Nhập email để nhận OTP'}
-                  {step === 'otp' && 'Xác thực OTP'}
-                  {step === 'reset' && 'Tạo mật khẩu mới'}
-                  {step === 'success' && 'Hoàn tất'}
+                  {step === 'email' && 'Enter your email to receive an OTP'}
+                  {step === 'otp' && 'Verify OTP'}
+                  {step === 'reset' && 'Create a new password'}
+                  {step === 'success' && 'Completed'}
                 </h2>
                 <p className="mt-2 text-sm text-slate-500">
                   {step === 'email' &&
-                    'Email đã đăng ký sẽ nhận mã OTP xác thực.'}
+                    'The registered email will receive a verification OTP.'}
                   {step === 'otp' &&
-                    'Kiểm tra hộp thư để lấy mã OTP gồm 6 chữ số.'}
+                    'Check your inbox for the 6-digit OTP.'}
                   {step === 'reset' &&
-                    'Thiết lập mật khẩu mới mạnh để bảo vệ tài khoản.'}
+                    'Set a strong new password to protect your account.'}
                   {step === 'success' &&
-                    'Bạn đã đặt lại mật khẩu thành công. Hãy đăng nhập lại để tiếp tục.'}
+                    'Your password has been reset successfully. Please log in again to continue.'}
                 </p>
               </div>
 
@@ -201,7 +201,7 @@ function ForgotPassword() {
                     disabled={loading}
                     className="w-full rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {loading ? 'Đang gửi OTP...' : 'Gửi OTP'}
+                    {loading ? 'Sending OTP...' : 'Send OTP'}
                   </button>
                 </form>
               )}
@@ -210,13 +210,13 @@ function ForgotPassword() {
                 <form className="space-y-4" onSubmit={handleOtpSubmit}>
                   <div>
                     <label className="text-xs font-medium text-slate-500">
-                      Mã OTP
+                      OTP code
                     </label>
                     <input
                       type="text"
                       value={otp}
                       onChange={onChange('otp')}
-                      placeholder="Nhập mã OTP"
+                      placeholder="Enter OTP"
                       className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200"
                     />
                     <p className="mt-2 text-xs text-slate-400">
@@ -230,14 +230,14 @@ function ForgotPassword() {
                       disabled={loading}
                       className="flex-1 rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-600 transition hover:border-indigo-300 hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      Gửi lại OTP
+                      Resend OTP
                     </button>
                     <button
                       type="submit"
                       disabled={loading}
                       className="flex-1 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      {loading ? 'Đang xác thực...' : 'Xác thực'}
+                      {loading ? 'Verifying...' : 'Verify'}
                     </button>
                   </div>
                 </form>
@@ -247,25 +247,25 @@ function ForgotPassword() {
                 <form className="space-y-4" onSubmit={handleResetSubmit}>
                   <div>
                     <label className="text-xs font-medium text-slate-500">
-                      Mật khẩu mới
+                      New password
                     </label>
                     <input
                       type="password"
                       value={newPassword}
                       onChange={onChange('newPassword')}
-                      placeholder="Nhập mật khẩu mới"
+                      placeholder="Enter new password"
                       className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200"
                     />
                   </div>
                   <div>
                     <label className="text-xs font-medium text-slate-500">
-                      Nhập lại mật khẩu
+                      Confirm password
                     </label>
                     <input
                       type="password"
                       value={confirmPassword}
                       onChange={onChange('confirmPassword')}
-                      placeholder="Nhập lại mật khẩu mới"
+                      placeholder="Confirm new password"
                       className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200"
                     />
                   </div>
@@ -274,7 +274,7 @@ function ForgotPassword() {
                     disabled={loading}
                     className="w-full rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {loading ? 'Đang cập nhật...' : 'Đặt lại mật khẩu'}
+                    {loading ? 'Updating...' : 'Reset password'}
                   </button>
                 </form>
               )}
@@ -282,14 +282,14 @@ function ForgotPassword() {
               {step === 'success' && (
                 <div className="space-y-4">
                   <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm text-emerald-700">
-                    {message || 'Bạn có thể đăng nhập bằng mật khẩu mới.'}
+                    {message || 'You can now log in with your new password.'}
                   </div>
                   <button
                     type="button"
                     onClick={handleRestart}
                     className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-600 transition hover:border-indigo-300 hover:text-slate-800"
                   >
-                    Quay lại đầu
+                    Start over
                   </button>
                 </div>
               )}

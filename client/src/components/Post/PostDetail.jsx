@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+﻿import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { getPost, toggleLike } from "../../store/slices/postSlice";
 import { formatDistanceToNow } from "date-fns";
@@ -36,7 +36,7 @@ const PostDetail = ({ postId, onClose }) => {
   if (!currentPost) {
     return (
       <div className="p-4 text-center text-gray-500">
-        Không tìm thấy bài viết
+        Post not found
       </div>
     );
   }
@@ -68,7 +68,7 @@ const PostDetail = ({ postId, onClose }) => {
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 text-2xl"
           >
-            ×
+            x
           </button>
         )}
       </div>
@@ -116,8 +116,8 @@ const PostDetail = ({ postId, onClose }) => {
 
       {/* Stats */}
       <div className="px-4 py-3 border-t border-b text-sm text-gray-600 flex justify-between">
-        <div>{currentPost.likes?.length || 0} lượt thích</div>
-        <div>{currentPost.commentCount || 0} bình luận</div>
+        <div>{currentPost.likes?.length || 0} likes</div>
+        <div>{currentPost.commentCount || 0} comments</div>
       </div>
 
       {/* Actions */}
@@ -130,16 +130,13 @@ const PostDetail = ({ postId, onClose }) => {
               : "hover:bg-gray-100"
           }`}
         >
-          <span>👍</span>
-          {currentPost.isLiked ? "Bỏ thích" : "Thích"}
+          {currentPost.isLiked ? "Unlike" : "Like"}
         </button>
         <button className="flex-1 py-2 rounded-lg hover:bg-gray-100 transition flex items-center justify-center gap-2">
-          <span>💬</span>
-          Bình luận
+          Comment
         </button>
         <button className="flex-1 py-2 rounded-lg hover:bg-gray-100 transition flex items-center justify-center gap-2">
-          <span>↗️</span>
-          Chia sẻ
+          Share
         </button>
       </div>
 

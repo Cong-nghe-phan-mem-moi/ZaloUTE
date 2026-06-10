@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+﻿import { useEffect, useMemo } from "react";
 import Composer from "../components/home/Composer";
 import HomeHeader from "../components/home/HomeHeader";
 import LeftSidebar from "../components/home/LeftSidebar";
@@ -30,6 +30,16 @@ export default function Home() {
     }));
   }, [profile]);
 
+  const friendIds = useMemo(() => {
+    if (!Array.isArray(profile?.friends)) {
+      return [];
+    }
+
+    return profile.friends
+      .map((friend) => friend?.userId || friend?._id || friend?.id || friend)
+      .filter(Boolean);
+  }, [profile]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0f49b5] via-[#1e63d6] to-[#3b82f6] px-4 py-6 text-[#111827]">
       <div className="mx-auto max-w-[1320px] overflow-hidden rounded-[28px] bg-white shadow-2xl">
@@ -41,7 +51,11 @@ export default function Home() {
           <section className="space-y-5 px-5 py-5">
             <Stories />
             <Composer profile={profile} />
-            <PostList />
+            <PostList
+              allowedAuthorIds={friendIds}
+              emptyMessage="No posts from friends yet"
+              emptyDetail="The home feed only shows posts from your friends."
+            />
           </section>
 
           <RightSidebar contacts={contacts} profile={profile} />

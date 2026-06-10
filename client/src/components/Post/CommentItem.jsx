@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   updateComment,
@@ -19,7 +19,7 @@ const CommentItem = ({ comment, postId }) => {
 
   const handleUpdateComment = async () => {
     if (!editContent.trim()) {
-      alert("Nội dung bình luận không được để trống");
+      alert("Comment content cannot be empty.");
       return;
     }
 
@@ -31,7 +31,7 @@ const CommentItem = ({ comment, postId }) => {
   };
 
   const handleDeleteComment = () => {
-    if (window.confirm("Bạn có chắc muốn xóa bình luận này?")) {
+    if (window.confirm("Are you sure you want to delete this comment?")) {
       dispatch(deleteComment(comment._id));
     }
   };
@@ -83,7 +83,7 @@ const CommentItem = ({ comment, postId }) => {
                   onClick={handleUpdateComment}
                   className="px-3 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600"
                 >
-                  Lưu
+                  Save
                 </button>
                 <button
                   onClick={() => {
@@ -92,7 +92,7 @@ const CommentItem = ({ comment, postId }) => {
                   }}
                   className="px-3 py-1 bg-gray-300 text-gray-700 rounded text-xs hover:bg-gray-400"
                 >
-                  Hủy
+                  Cancel
                 </button>
               </div>
             </div>
@@ -111,11 +111,11 @@ const CommentItem = ({ comment, postId }) => {
                 : "text-gray-500 hover:text-blue-500"
             }`}
           >
-            👍 {comment?.likes?.length || 0}
+            Like {comment?.likes?.length || 0}
           </button>
 
           <button className="text-gray-500 hover:text-blue-500 transition">
-            💬 Phản hồi
+            Reply
           </button>
 
           {isAuthor && (
@@ -124,13 +124,13 @@ const CommentItem = ({ comment, postId }) => {
                 onClick={() => setIsEditing(true)}
                 className="text-gray-500 hover:text-blue-500 transition"
               >
-                ✎ Sửa
+                Edit
               </button>
               <button
                 onClick={handleDeleteComment}
                 className="text-gray-500 hover:text-red-500 transition"
               >
-                🗑️ Xóa
+                Delete
               </button>
             </>
           )}
@@ -142,7 +142,7 @@ const CommentItem = ({ comment, postId }) => {
             onClick={() => setShowReplies(!showReplies)}
             className="text-xs text-blue-500 hover:text-blue-600 mt-2"
           >
-            {showReplies ? "Ẩn" : "Xem"} {comment?.replyCount} phản hồi
+            {showReplies ? "Hide" : "View"} {comment?.replyCount} replies
           </button>
         )}
       </div>

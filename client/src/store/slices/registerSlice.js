@@ -1,4 +1,4 @@
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
+﻿import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 import { registerAPI } from '../../services/api'
 
 const initialState = {
@@ -21,7 +21,7 @@ export const submitRegister = createAsyncThunk(
       return response.data
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || 'Đăng ký thất bại. Vui lòng thử lại.',
+        error.response?.data?.message || 'Registration failed. Please try again.',
       )
     }
   },
@@ -35,7 +35,7 @@ export const submitVerifyOtp = createAsyncThunk(
       return response.data
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || 'Xác thực OTP thất bại.',
+        error.response?.data?.message || 'OTP verification failed.',
       )
     }
   },
@@ -71,7 +71,7 @@ const registerSlice = createSlice({
       .addCase(submitRegister.fulfilled, (state, action) => {
         state.loading = false
         state.step = 'verify-otp'
-        state.message = action.payload?.message || 'Đăng ký thành công! Vui lòng xác thực OTP'
+        state.message = action.payload?.message || 'Registration successful! Please verify your OTP'
       })
       .addCase(submitRegister.rejected, (state, action) => {
         state.loading = false
@@ -85,7 +85,7 @@ const registerSlice = createSlice({
       .addCase(submitVerifyOtp.fulfilled, (state, action) => {
         state.loading = false
         state.step = 'success'
-        state.message = action.payload?.message || 'Xác thực OTP thành công!'
+        state.message = action.payload?.message || 'OTP verified successfully!'
       })
       .addCase(submitVerifyOtp.rejected, (state, action) => {
         state.loading = false

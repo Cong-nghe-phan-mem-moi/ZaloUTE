@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   createComment,
@@ -28,12 +28,12 @@ const CommentSection = ({ postId, onCommentAdded }) => {
     e.preventDefault();
 
     if (!content.trim()) {
-      alert("Vui lòng nhập nội dung bình luận");
+      alert("Please enter a comment.");
       return;
     }
 
     if (content.length > 1000) {
-      alert("Bình luận không được vượt quá 1000 ký tự");
+      alert("Comments cannot exceed 1000 characters.");
       return;
     }
 
@@ -46,7 +46,7 @@ const CommentSection = ({ postId, onCommentAdded }) => {
   if (!currentUser) {
     return (
       <div className="bg-white rounded-lg p-4 text-center text-gray-500">
-        <p>Vui lòng đăng nhập để bình luận</p>
+        <p>Please log in to comment.</p>
       </div>
     );
   }
@@ -77,7 +77,7 @@ const CommentSection = ({ postId, onCommentAdded }) => {
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="Viết bình luận..."
+              placeholder="Write a comment..."
               className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               rows={2}
               maxLength={1000}
@@ -91,7 +91,7 @@ const CommentSection = ({ postId, onCommentAdded }) => {
                 disabled={!content.trim() || loading}
                 className="px-4 py-1 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white rounded-lg font-medium transition text-sm disabled:cursor-not-allowed"
               >
-                {loading ? "Đang gửi..." : "Bình luận"}
+                {loading ? "Sending..." : "Comment"}
               </button>
             </div>
           </div>
@@ -104,7 +104,7 @@ const CommentSection = ({ postId, onCommentAdded }) => {
 
         {comments.length === 0 && !loading && (
           <p className="text-center text-gray-500 py-4">
-            Chưa có bình luận nào
+            No comments yet
           </p>
         )}
 
@@ -118,7 +118,7 @@ const CommentSection = ({ postId, onCommentAdded }) => {
             onClick={() => setPage((p) => p + 1)}
             className="w-full py-2 text-blue-500 hover:text-blue-600 font-medium transition text-sm"
           >
-            Xem thêm bình luận
+            Load more comments
           </button>
         )}
       </div>

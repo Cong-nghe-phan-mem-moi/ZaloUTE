@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import { userAPI } from "../../services/api";
 import { useAppDispatch } from "../../store/hooks";
 import { clearProfile } from "../../store/slices/userSlice";
@@ -108,7 +108,7 @@ const SearchBox = () => {
       } catch (err) {
         if (!isCurrent) return;
         setResults([]);
-        setError(err.response?.data?.message || "Khong the tim kiem nguoi dung.");
+        setError(err.response?.data?.message || "Unable to search users.");
       } finally {
         if (isCurrent) {
           setLoading(false);
@@ -161,7 +161,7 @@ const SearchBox = () => {
           {loading ? (
             <div className="flex items-center gap-3 px-2 py-3 text-[#65676b]">
               <span className="h-5 w-5 animate-spin rounded-full border-2 border-[#1877f2] border-t-transparent" />
-              <span className="text-sm">Dang tim...</span>
+              <span className="text-sm">Searching...</span>
             </div>
           ) : null}
 
@@ -171,7 +171,7 @@ const SearchBox = () => {
 
           {!loading && !error && results.length === 0 ? (
             <p className="px-2 py-3 text-sm text-[#65676b]">
-              Khong tim thay nguoi dung phu hop.
+              No matching users found.
             </p>
           ) : null}
 

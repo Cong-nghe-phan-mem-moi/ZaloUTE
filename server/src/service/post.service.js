@@ -1,5 +1,6 @@
 const PostRepository = require('../repo/post.repository');
 const Comment = require('../models/comment.model');
+const User = require('../models/user.model');
 
 class PostService {
   // 4.1 Tạo bài viết
@@ -86,8 +87,35 @@ class PostService {
 
     const skip = (page - 1) * limit;
 
-    const posts = await PostRepository.getAllPosts(skip, limit);
-    const total = await PostRepository.getPostCount();
+    if (!userId) {
+      return {
+        posts: [],
+        pagination: {
+          page,
+          limit,
+          total: 0,
+          totalPages: 0,
+        },
+      };
+    }
+
+    const user = await User.findById(userId).select('friends');
+    const friendIds = user?.friends || [];
+
+    if (friendIds.length === 0) {
+      return {
+        posts: [],
+        pagination: {
+          page,
+          limit,
+          total: 0,
+          totalPages: 0,
+        },
+      };
+    }
+
+    const posts = await PostRepository.getPostsByAuthors(friendIds, skip, limit);
+    const total = await PostRepository.getPostsByAuthorsCount(friendIds);
 
     // Add isLiked flag for current user
     const postsWithLikeStatus = posts.map((post) => {

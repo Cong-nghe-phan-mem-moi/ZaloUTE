@@ -1,4 +1,4 @@
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
+﻿import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 import {
   requestPasswordResetOtp,
   resetPassword,
@@ -30,7 +30,7 @@ export const requestResetOtp = createAsyncThunk(
       return response.data
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || 'Không thể gửi OTP. Vui lòng thử lại.',
+        error.response?.data?.message || 'Unable to send OTP. Please try again.',
       )
     }
   },
@@ -44,7 +44,7 @@ export const verifyResetOtp = createAsyncThunk(
       return response.data
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || 'Xác thực OTP thất bại.',
+        error.response?.data?.message || 'OTP verification failed.',
       )
     }
   },
@@ -58,7 +58,7 @@ export const submitResetPassword = createAsyncThunk(
       return response.data
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || 'Đặt lại mật khẩu thất bại.',
+        error.response?.data?.message || 'Password reset failed.',
       )
     }
   },
@@ -99,7 +99,7 @@ const forgotPasswordSlice = createSlice({
       .addCase(requestResetOtp.fulfilled, (state, action) => {
         state.loading = false
         state.step = 'otp'
-        state.message = action.payload?.message || 'OTP đã được gửi.'
+        state.message = action.payload?.message || 'OTP has been sent.'
       })
       .addCase(requestResetOtp.rejected, (state, action) => {
         state.loading = false
@@ -113,7 +113,7 @@ const forgotPasswordSlice = createSlice({
       .addCase(verifyResetOtp.fulfilled, (state, action) => {
         state.loading = false
         state.step = 'reset'
-        state.message = action.payload?.message || 'Xác thực OTP thành công.'
+        state.message = action.payload?.message || 'OTP verified successfully.'
         state.resetToken = action.payload?.data?.resetToken || ''
         if (state.resetToken && typeof window !== 'undefined') {
           sessionStorage.setItem('resetToken', state.resetToken)
@@ -132,7 +132,7 @@ const forgotPasswordSlice = createSlice({
         state.loading = false
         state.step = 'success'
         state.message =
-          action.payload?.message || 'Đặt lại mật khẩu thành công.'
+          action.payload?.message || 'Password reset successfully.'
         state.resetToken = ''
         if (typeof window !== 'undefined') {
           sessionStorage.removeItem('resetToken')

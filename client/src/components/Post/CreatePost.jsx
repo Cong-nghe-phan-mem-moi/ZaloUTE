@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+﻿import { useState, useRef, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { createPost, clearMessage, clearError } from '../../store/slices/postSlice';
 import Toast from '../common/Toast';
@@ -37,7 +37,7 @@ const CreatePost = ({ onPostCreated }) => {
     files.forEach((file) => {
       // Validate file size (max 10MB)
       if (file.size > 10 * 1024 * 1024) {
-        alert('File quá lớn (tối đa 10MB)');
+        alert('File is too large (max 10MB)');
         return;
       }
 
@@ -68,12 +68,12 @@ const CreatePost = ({ onPostCreated }) => {
 
   const handleSubmit = async () => {
     if (!content.trim()) {
-      alert('Vui lòng nhập nội dung bài viết');
+      alert('Please enter post content.');
       return;
     }
 
     if (content.length > 5000) {
-      alert('Bài viết không được vượt quá 5000 ký tự');
+      alert('Post content cannot exceed 5000 characters.');
       return;
     }
 
@@ -92,7 +92,7 @@ const CreatePost = ({ onPostCreated }) => {
   if (!currentUser) {
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4 text-center text-gray-500">
-        <p>Vui lòng đăng nhập để tạo bài viết</p>
+        <p>Please log in to create a post.</p>
       </div>
     );
   }
@@ -108,7 +108,7 @@ const CreatePost = ({ onPostCreated }) => {
         />
         <input
           type="text"
-          placeholder={`${currentUser?.fullName}, bạn đang nghĩ gì thế?`}
+          placeholder={`${currentUser?.fullName}, what are you thinking?`}
           onClick={() => document.getElementById('content-input').focus()}
           className="flex-1 px-4 py-2 bg-gray-100 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-text"
           readOnly
@@ -124,7 +124,7 @@ const CreatePost = ({ onPostCreated }) => {
         id="content-input"
         value={content}
         onChange={(e) => setContent(e.target.value)}
-        placeholder="Bạn đang nghĩ gì thế?"
+        placeholder="What are you thinking?"
         className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none mb-4"
         rows={3}
         maxLength={5000}
@@ -159,7 +159,7 @@ const CreatePost = ({ onPostCreated }) => {
                 onClick={() => handleRemoveMedia(index)}
                 className="absolute top-1 right-1 bg-black bg-opacity-50 text-white rounded-full w-7 h-7 flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
               >
-                ×
+                x
               </button>
             </div>
           ))}
@@ -182,18 +182,15 @@ const CreatePost = ({ onPostCreated }) => {
           <button
             onClick={() => fileInputRef.current?.click()}
             className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition"
-            title="Thêm ảnh/video"
+            title="Add photo/video"
           >
-            <span className="text-lg">🖼️</span>
-            <span className="hidden sm:inline">Ảnh/Video</span>
+            <span className="hidden sm:inline">Photo/Video</span>
           </button>
-          <button className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition" title="Cảm xúc">
-            <span className="text-lg">😊</span>
-            <span className="hidden sm:inline">Cảm xúc</span>
+          <button className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition" title="Feeling">
+            <span className="hidden sm:inline">Feeling</span>
           </button>
-          <button className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition" title="Vị trí">
-            <span className="text-lg">📍</span>
-            <span className="hidden sm:inline">Vị trí</span>
+          <button className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition" title="Location">
+            <span className="hidden sm:inline">Location</span>
           </button>
         </div>
 
@@ -202,7 +199,7 @@ const CreatePost = ({ onPostCreated }) => {
           disabled={!content.trim() || loading}
           className="px-8 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white rounded-lg font-medium transition disabled:cursor-not-allowed"
         >
-          {loading ? 'Đang đăng...' : 'Đăng'}
+          {loading ? 'Posting...' : 'Post'}
         </button>
       </div>
     </div>
