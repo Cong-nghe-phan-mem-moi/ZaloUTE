@@ -1,16 +1,16 @@
-const CommentRepository = require("../repo/comment.repository");
+﻿const CommentRepository = require("../repo/comment.repository");
 const Post = require("../models/post.model");
 const NotificationService = require("./notification.service");
 
 class CommentService {
-  // Thêm bình luận
+  // ThÃªm bÃ¬nh luáº­n
   static async createComment(postId, userId, content, replyTo = null) {
     if (!content || content.trim().length === 0) {
-      throw new Error("Nội dung bình luận không được để trống");
+      throw new Error("Operation failed");
     }
 
     if (content.trim().length > 1000) {
-      throw new Error("Nội dung bình luận không được vượt quá 1000 ký tự");
+      throw new Error("Operation failed");
     }
 
     const commentData = {
@@ -54,23 +54,23 @@ class CommentService {
     return await CommentRepository.findCommentById(comment._id);
   }
 
-  // Chỉnh sửa bình luận
+  // Chá»‰nh sá»­a bÃ¬nh luáº­n
   static async updateComment(commentId, userId, content) {
     const comment = await CommentRepository.findCommentById(commentId);
     if (!comment) {
-      throw new Error("Bình luận không tồn tại");
+      throw new Error("Operation failed");
     }
 
     if (comment.author._id.toString() !== userId) {
-      throw new Error("Bạn không có quyền chỉnh sửa bình luận này");
+      throw new Error("Operation failed");
     }
 
     if (!content || content.trim().length === 0) {
-      throw new Error("Nội dung bình luận không được để trống");
+      throw new Error("Operation failed");
     }
 
     if (content.trim().length > 1000) {
-      throw new Error("Nội dung bình luận không được vượt quá 1000 ký tự");
+      throw new Error("Operation failed");
     }
 
     return await CommentRepository.updateComment(commentId, {
@@ -78,15 +78,15 @@ class CommentService {
     });
   }
 
-  // Xóa bình luận
+  // XÃ³a bÃ¬nh luáº­n
   static async deleteComment(commentId, userId) {
     const comment = await CommentRepository.findCommentById(commentId);
     if (!comment) {
-      throw new Error("Bình luận không tồn tại");
+      throw new Error("Operation failed");
     }
 
     if (comment.author._id.toString() !== userId) {
-      throw new Error("Bạn không có quyền xóa bình luận này");
+      throw new Error("Operation failed");
     }
 
     const result = await CommentRepository.deleteComment(commentId);
@@ -97,11 +97,11 @@ class CommentService {
     return result;
   }
 
-  // Like bình luận
+  // Like bÃ¬nh luáº­n
   static async toggleLikeComment(commentId, userId) {
     const comment = await CommentRepository.findCommentById(commentId);
     if (!comment) {
-      throw new Error("Bình luận không tồn tại");
+      throw new Error("Operation failed");
     }
 
     const likeIndex = comment.likes.findIndex(
@@ -132,7 +132,7 @@ class CommentService {
     };
   }
 
-  // Lấy các bình luận của một bài viết
+  // Láº¥y cÃ¡c bÃ¬nh luáº­n cá»§a má»™t bÃ i viáº¿t
   static async getPostComments(postId, page = 1, limit = 20) {
     if (page < 1) page = 1;
     if (limit < 1 || limit > 100) limit = 20;
@@ -166,7 +166,7 @@ class CommentService {
     };
   }
 
-  // Lấy các reply của một bình luận
+  // Láº¥y cÃ¡c reply cá»§a má»™t bÃ¬nh luáº­n
   static async getCommentReplies(commentId, page = 1, limit = 10) {
     if (page < 1) page = 1;
     if (limit < 1 || limit > 50) limit = 10;
@@ -202,3 +202,6 @@ class CommentService {
 }
 
 module.exports = CommentService;
+
+
+

@@ -8,7 +8,12 @@ const upload = require('../middleware/uploadMiddleware');
 router.use(authMiddleware);
 
 // 4.1 Tạo bài viết (with file upload)
-router.post('/', upload.array('media', 10), PostController.createPost);
+router.post(
+  '/',
+  upload.postMedia,
+  upload.handleUploadError,
+  PostController.createPost,
+);
 
 // 4.4 Xem news feed
 router.get('/feed', PostController.getNewsFeed);
@@ -23,7 +28,12 @@ router.get('/author/:authorId', PostController.getPostsByAuthor);
 router.get('/:postId', PostController.getPost);
 
 // 4.2 Chỉnh sửa bài viết (with file upload)
-router.put('/:postId', upload.array('media', 10), PostController.updatePost);
+router.put(
+  '/:postId',
+  upload.postMedia,
+  upload.handleUploadError,
+  PostController.updatePost,
+);
 
 // 4.3 Xóa bài viết
 router.delete('/:postId', PostController.deletePost);

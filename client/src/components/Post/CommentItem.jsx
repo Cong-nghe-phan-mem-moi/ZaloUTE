@@ -7,7 +7,7 @@ import {
 } from "../../store/slices/commentSlice";
 import { commentAPI } from "../../services/api";
 import { formatDistanceToNow } from "date-fns";
-import { vi } from "date-fns/locale";
+import { enUS } from "date-fns/locale";
 
 const MAX_COMMENT_LENGTH = 1000;
 
@@ -145,7 +145,7 @@ const CommentItem = ({ comment, postId, onReplyAdded, depth = 0 }) => {
           <span className="text-xs text-gray-500">
             {formatDistanceToNow(new Date(comment?.createdAt), {
               addSuffix: true,
-              locale: vi,
+              locale: enUS,
             })}
           </span>
         </div>

@@ -62,8 +62,32 @@ class NotificationService {
     const receiverId = getId(receiver);
     const senderId = getId(sender);
 
-    if (!receiverId) return null;
-    if (senderId && receiverId.toString() === senderId.toString()) return null;
+    if (!receiverId) {
+      console.warn("Notification skipped: missing receiver", {
+        receiver,
+        sender,
+        type,
+      });
+      return null;
+    }
+
+    if (senderId && receiverId.toString() === senderId.toString()) {
+      console.warn("Notification skipped: sender and receiver are the same", {
+        receiverId: receiverId.toString(),
+        senderId: senderId.toString(),
+        type,
+      });
+      return null;
+    }
+
+    console.log("Creating notification:", {
+      receiverId: receiverId.toString(),
+      senderId: senderId?.toString?.() || null,
+      type,
+      content,
+      relatedId: relatedId?.toString?.() || relatedId || null,
+      relatedType,
+    });
 
     const notification = await Notification.create({
       receiver: receiverId,
@@ -144,6 +168,12 @@ class NotificationService {
 
   static attachWebSocketServer(server) {
     const wss = new WebSocketServer({ noServer: true });
+    const closeUnauthorized = (request, socket, head, reason = "Unauthorized") => {
+      console.warn(`Notification websocket rejected: ${reason}`);
+      wss.handleUpgrade(request, socket, head, (ws) => {
+        ws.close(1008, reason);
+      });
+    };
 
     server.on("upgrade", (request, socket, head) => {
       const url = new URL(request.url, `http://${request.headers.host}`);
@@ -153,8 +183,7 @@ class NotificationService {
 
       const token = url.searchParams.get("token");
       if (!token) {
-        socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
-        socket.destroy();
+        closeUnauthorized(request, socket, head, "Missing token");
         return;
       }
 
@@ -162,8 +191,12 @@ class NotificationService {
       try {
         user = jwt.verify(token, process.env.JWT_SECRET);
       } catch (error) {
-        socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
-        socket.destroy();
+        closeUnauthorized(request, socket, head, error.message || "Invalid token");
+        return;
+      }
+
+      if (!user?.userId) {
+        closeUnauthorized(request, socket, head, "Missing user id");
         return;
       }
 

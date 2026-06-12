@@ -1,4 +1,4 @@
-const nodemailer = require("nodemailer");
+﻿const nodemailer = require("nodemailer");
 
 const smtpPort = Number(process.env.SMTP_PORT || 587);
 
@@ -34,13 +34,13 @@ const sendOTPEmail = async (email, otp) => {
         process.env.SMTP_USER ||
         process.env.EMAIL_USER,
       to: email,
-      subject: "Xác thực OTP đăng ký tài khoản",
+      subject: "ZaloUTE notification",
       html: `
-        <h2>Xác thực OTP</h2>
-        <p>Mã OTP của bạn là:</p>
+        <h2>Notification</h2>
+        <p>Please review this notification.</p>
         <h1 style="color: #007bff; font-size: 32px; letter-spacing: 5px;">${otp}</h1>
-        <p>Mã OTP này sẽ hết hạn trong <strong>10 phút</strong>.</p>
-        <p>Nếu bạn không yêu cầu mã này, vui lòng bỏ qua.</p>
+        <p>This OTP will expire in <strong>10 minutes</strong>.</p>
+        <p>Please review this notification.</p>
       `,
     };
 
@@ -65,13 +65,13 @@ const sendPasswordResetOTP = async (email, otp) => {
         process.env.SMTP_USER ||
         process.env.EMAIL_USER,
       to: email,
-      subject: "OTP đặt lại mật khẩu",
+      subject: "ZaloUTE notification",
       html: `
-        <h2>Đặt lại mật khẩu</h2>
-        <p>Mã OTP đặt lại mật khẩu của bạn là:</p>
+        <h2>Notification</h2>
+        <p>Please review this notification.</p>
         <h1 style="color: #dc3545; font-size: 32px; letter-spacing: 5px;">${otp}</h1>
-        <p>Mã OTP này sẽ hết hạn trong <strong>10 phút</strong>.</p>
-        <p>Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.</p>
+        <p>This OTP will expire in <strong>10 minutes</strong>.</p>
+        <p>Please review this notification.</p>
       `,
     };
 
@@ -88,3 +88,6 @@ module.exports = {
   sendPasswordResetOTP,
   transporter,
 };
+
+
+

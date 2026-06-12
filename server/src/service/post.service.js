@@ -1,4 +1,4 @@
-const PostRepository = require('../repo/post.repository');
+﻿const PostRepository = require('../repo/post.repository');
 const Comment = require('../models/comment.model');
 const NotificationService = require('./notification.service');
 const User = require('../models/user.model');
@@ -22,20 +22,21 @@ const buildPostsResponse = async (posts, userId = null) =>
   await Promise.all(posts.map((post) => buildPostResponse(post, userId)));
 
 class PostService {
-  // 4.1 Tạo bài viết
+  // 4.1 Táº¡o bÃ i viáº¿t
   static async createPost(userId, content, media = []) {
+    const trimmedContent = content?.trim() || '';
     // Validate content
-    if (!content || content.trim().length === 0) {
-      throw new Error('Nội dung bài viết không được để trống');
+    if (trimmedContent.length === 0 && (!media || media.length === 0)) {
+      throw new Error('Operation failed');
     }
 
-    if (content.trim().length > 5000) {
-      throw new Error('Nội dung bài viết không được vượt quá 5000 ký tự');
+    if (trimmedContent.length > 5000) {
+      throw new Error('Operation failed');
     }
 
     const postData = {
       author: userId,
-      content: content.trim(),
+      content: trimmedContent,
       media: media || [],
       likes: [],
       commentCount: 0,
@@ -45,31 +46,36 @@ class PostService {
     return await PostRepository.findPostById(post._id);
   }
 
-  // 4.2 Chỉnh sửa bài viết
+  // 4.2 Chá»‰nh sá»­a bÃ i viáº¿t
   static async updatePost(postId, userId, content, media = []) {
+    const trimmedContent = content?.trim() || '';
     // Find post
     const post = await PostRepository.findPostById(postId);
     if (!post) {
-      throw new Error('Bài viết không tồn tại');
+      throw new Error('Operation failed');
     }
 
     // Check authorization
     if (post.author._id.toString() !== userId) {
-      throw new Error('Bạn không có quyền chỉnh sửa bài viết này');
+      throw new Error('Operation failed');
     }
 
     // Validate content
-    if (content) {
-      if (content.trim().length === 0) {
-        throw new Error('Nội dung bài viết không được để trống');
+    if (content !== undefined) {
+      if (trimmedContent.length < 0) {
+        throw new Error('Operation failed');
       }
-      if (content.trim().length > 5000) {
-        throw new Error('Nội dung bài viết không được vượt quá 5000 ký tự');
+      if (trimmedContent.length > 5000) {
+        throw new Error('Operation failed');
       }
     }
 
+    if (trimmedContent.length === 0 && (!media || media.length === 0)) {
+      throw new Error('Post must include content or media');
+    }
+
     const updateData = {};
-    if (content) updateData.content = content.trim();
+    updateData.content = trimmedContent;
     // Always update media array (empty or with items)
     if (media.length > 0 || media.length === 0) {
       updateData.media = media;
@@ -78,17 +84,17 @@ class PostService {
     return await PostRepository.updatePost(postId, updateData);
   }
 
-  // 4.3 Xóa bài viết
+  // 4.3 XÃ³a bÃ i viáº¿t
   static async deletePost(postId, userId) {
     // Find post
     const post = await PostRepository.findPostById(postId);
     if (!post) {
-      throw new Error('Bài viết không tồn tại');
+      throw new Error('Operation failed');
     }
 
     // Check authorization
     if (post.author._id.toString() !== userId) {
-      throw new Error('Bạn không có quyền xóa bài viết này');
+      throw new Error('Operation failed');
     }
 
     // Delete associated comments
@@ -153,7 +159,7 @@ class PostService {
   static async toggleLike(postId, userId) {
     const post = await PostRepository.findPostById(postId);
     if (!post) {
-      throw new Error('Bài viết không tồn tại');
+      throw new Error('Operation failed');
     }
 
     const likeIndex = post.likes.findIndex((like) => like._id.toString() === userId);
@@ -182,7 +188,7 @@ class PostService {
     };
   }
 
-  // 4.5 Xem danh sách like
+  // 4.5 Xem danh sÃ¡ch like
   static async getPostLikes(postId, page = 1, limit = 10) {
     // Validate pagination
     if (page < 1) page = 1;
@@ -192,7 +198,7 @@ class PostService {
 
     const post = await PostRepository.findPostById(postId);
     if (!post) {
-      throw new Error('Bài viết không tồn tại');
+      throw new Error('Operation failed');
     }
 
     const likes = await PostRepository.getPostLikes(postId, skip, limit);
@@ -209,7 +215,7 @@ class PostService {
     };
   }
 
-  // 4.6 Xem danh sách bình luận
+  // 4.6 Xem danh sÃ¡ch bÃ¬nh luáº­n
   static async getPostComments(postId, page = 1, limit = 10) {
     // Validate pagination
     if (page < 1) page = 1;
@@ -219,7 +225,7 @@ class PostService {
 
     const post = await PostRepository.findPostById(postId);
     if (!post) {
-      throw new Error('Bài viết không tồn tại');
+      throw new Error('Operation failed');
     }
 
     const comments = await Comment.find({ post: postId })
@@ -245,7 +251,7 @@ class PostService {
   static async getPost(postId, userId = null) {
     const post = await PostRepository.findPostById(postId);
     if (!post) {
-      throw new Error('Bài viết không tồn tại');
+      throw new Error('Operation failed');
     }
 
     return await buildPostResponse(post, userId);
@@ -282,7 +288,7 @@ class PostService {
     if (limit < 1 || limit > 50) limit = 10;
 
     if (!keyword || keyword.trim().length === 0) {
-      throw new Error('Từ khóa tìm kiếm không được để trống');
+      throw new Error('Operation failed');
     }
 
     const skip = (page - 1) * limit;
@@ -313,3 +319,6 @@ class PostService {
 }
 
 module.exports = PostService;
+
+
+

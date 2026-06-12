@@ -5,7 +5,7 @@ import HomeAvatar from "./HomeAvatar";
 
 const Composer = ({ profile }) => {
   const dispatch = useAppDispatch();
-  const { loading, error, message } = useAppSelector((state) => state.posts);
+  const { loading } = useAppSelector((state) => state.posts);
   const fileInputRef = useRef(null);
   const [content, setContent] = useState("");
   const [files, setFiles] = useState([]);
@@ -16,6 +16,16 @@ const Composer = ({ profile }) => {
     setFiles(Array.from(event.target.files || []));
   };
 
+  const handleRemoveFile = (indexToRemove) => {
+    setFiles((currentFiles) =>
+      currentFiles.filter((_, index) => index !== indexToRemove),
+    );
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
 
@@ -24,7 +34,7 @@ const Composer = ({ profile }) => {
     }
 
     const formData = new FormData();
-    formData.append("content", content.trim() || "Shared media");
+    formData.append("content", content.trim());
     files.forEach((file) => formData.append("media", file));
 
     try {
@@ -67,23 +77,7 @@ const Composer = ({ profile }) => {
           onChange={(event) => setContent(event.target.value)}
         />
 
-        {files.length > 0 ? (
-          <div className="mt-3 rounded-md bg-[#f2f3f5] px-3 py-2 text-sm text-[#4b5563]">
-            {files.length} file selected
-          </div>
-        ) : null}
-
-        {error ? (
-          <div className="mt-3 rounded-md bg-rose-50 px-3 py-2 text-sm text-rose-600">
-            {error}
-          </div>
-        ) : null}
-
-        {message ? (
-          <div className="mt-3 rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-            {message}
-          </div>
-        ) : null}
+        <SelectedMediaPreview files={files} onRemove={handleRemoveFile} />
 
         <input
           ref={fileInputRef}
@@ -134,6 +128,100 @@ const Composer = ({ profile }) => {
     </section>
   );
 };
+
+const SelectedMediaPreview = ({ files, onRemove }) => {
+  if (files.length === 0) {
+    return null;
+  }
+
+  const visibleFiles = files.slice(0, 4);
+  const remainingCount = files.length - visibleFiles.length;
+  const isSingleImage = files.length === 1 && files[0].type.startsWith("image/");
+
+  if (isSingleImage) {
+    const previewUrl = URL.createObjectURL(files[0]);
+
+    return (
+      <div className="mt-4 overflow-hidden rounded-lg bg-[#f2f3f5]">
+        <div className="group relative">
+          <img
+            src={previewUrl}
+            alt={files[0].name}
+            className="max-h-[420px] w-full object-cover"
+            onLoad={() => URL.revokeObjectURL(previewUrl)}
+          />
+          <RemovePreviewButton
+            label={`Remove ${files[0].name}`}
+            onClick={() => onRemove(0)}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-4 grid grid-cols-2 gap-1">
+      {visibleFiles.map((file, index) => {
+        const previewUrl = URL.createObjectURL(file);
+        const isImage = file.type.startsWith("image/");
+
+        return (
+          <div
+            key={`${file.name}-${file.lastModified}-${index}`}
+            className={`group relative overflow-hidden rounded-lg bg-[#f2f3f5] ${getPreviewTileClass(
+              files.length,
+              index,
+            )}`}
+          >
+            {isImage ? (
+              <img
+                src={previewUrl}
+                alt={file.name}
+                className="h-full w-full object-cover"
+                onLoad={() => URL.revokeObjectURL(previewUrl)}
+              />
+            ) : (
+              <video
+                src={previewUrl}
+                controls
+                className="h-full w-full bg-black object-cover"
+                onLoadedData={() => URL.revokeObjectURL(previewUrl)}
+              />
+            )}
+            <RemovePreviewButton
+              label={`Remove ${file.name}`}
+              onClick={() => onRemove(index)}
+            />
+            {remainingCount > 0 && index === visibleFiles.length - 1 ? (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/55 text-4xl font-bold text-white">
+                +{remainingCount}
+              </div>
+            ) : null}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+const getPreviewTileClass = (count, index) => {
+  if (count === 3 && index === 0) {
+    return "col-span-2 h-64";
+  }
+
+  return "h-48";
+};
+
+const RemovePreviewButton = ({ label, onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white opacity-100 hover:bg-black/75 sm:opacity-0 sm:group-hover:opacity-100"
+    aria-label={label}
+  >
+    <span className="material-symbols-outlined text-[18px]">close</span>
+  </button>
+);
 
 const ComposerAction = ({ icon, label, color, type = "button", onClick }) => (
   <button

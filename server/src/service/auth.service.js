@@ -1,4 +1,4 @@
-const bcrypt = require("bcrypt");
+﻿const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const AuthRepository = require("../repo/auth.repository");
 const UserRepository = require("../repo/user.repository");
@@ -19,7 +19,7 @@ const validateOtp = async (otpDoc, otp) => {
     throw {
       statusCode: 400,
       code: "OTP_NOT_FOUND",
-      message: "OTP không tồn tại hoặc đã hết hạn.",
+      message: "Operation failed",
     };
   }
 
@@ -28,7 +28,7 @@ const validateOtp = async (otpDoc, otp) => {
     throw {
       statusCode: 400,
       code: "OTP_EXPIRED",
-      message: "OTP đã hết hạn. Vui lòng yêu cầu lại.",
+      message: "Operation failed",
     };
   }
 
@@ -36,7 +36,7 @@ const validateOtp = async (otpDoc, otp) => {
     throw {
       statusCode: 429,
       code: "OTP_ATTEMPTS_EXCEEDED",
-      message: "Bạn đã nhập sai OTP quá nhiều lần. Vui lòng yêu cầu lại.",
+      message: "Operation failed",
     };
   }
 
@@ -45,7 +45,7 @@ const validateOtp = async (otpDoc, otp) => {
     throw {
       statusCode: 400,
       code: "OTP_INVALID",
-      message: "OTP không chính xác.",
+      message: "Operation failed",
     };
   }
 };
@@ -75,7 +75,7 @@ const register = async (fullName, email, password) => {
     throw {
       statusCode: 400,
       code: "EMAIL_ALREADY_REGISTERED",
-      message: "Email này đã được đăng ký",
+      message: "Operation failed",
     };
   }
 
@@ -102,7 +102,7 @@ const register = async (fullName, email, password) => {
       throw {
         statusCode: 500,
         code: "EMAIL_SEND_FAILED",
-        message: "Không thể gửi email. Vui lòng thử lại.",
+        message: "Operation failed",
       };
     }
   } catch (error) {
@@ -122,11 +122,11 @@ const register = async (fullName, email, password) => {
 
   return {
     success: true,
-    message: "Đăng ký thành công! Vui lòng xác thực OTP",
+    message: "Operation failed",
     data: {
       email: normalizedEmail,
       status: "pending",
-      message: "OTP đã được gửi đến email của bạn",
+      message: "Operation failed",
     },
   };
 };
@@ -139,7 +139,7 @@ const verifyOTP = async (email, otp) => {
     throw {
       statusCode: 404,
       code: "USER_NOT_FOUND",
-      message: "Người dùng không tồn tại",
+      message: "Operation failed",
     };
   }
 
@@ -147,7 +147,7 @@ const verifyOTP = async (email, otp) => {
     throw {
       statusCode: 400,
       code: "ALREADY_VERIFIED",
-      message: "Tài khoản đã được xác thực",
+      message: "Operation failed",
     };
   }
 
@@ -155,7 +155,7 @@ const verifyOTP = async (email, otp) => {
     throw {
       statusCode: 400,
       code: "ACCOUNT_STATUS_INVALID",
-      message: "Tài khoản không ở trạng thái chờ xác thực",
+      message: "Operation failed",
     };
   }
 
@@ -174,7 +174,7 @@ const verifyOTP = async (email, otp) => {
 
   return {
     success: true,
-    message: "Xác thực OTP thành công!",
+    message: "Operation failed",
     data: { email: activeAccount.email, status: activeAccount.status },
   };
 };
@@ -198,7 +198,7 @@ const login = async (email, password) => {
       statusCode: 400,
       code: "ACCOUNT_PENDING",
       message:
-        "Tài khoản chưa được xác thực. Vui lòng kiểm tra email để xác thực OTP!!!",
+        "Operation failed",
     };
   }
 
@@ -206,7 +206,7 @@ const login = async (email, password) => {
     throw {
       statusCode: 403,
       code: "ACCOUNT_NOT_ACTIVE",
-      message: "Tài khoản không được phép đăng nhập.",
+      message: "Operation failed",
     };
   }
 
@@ -225,7 +225,7 @@ const login = async (email, password) => {
     throw {
       statusCode: 500,
       code: "ACCOUNT_USER_NOT_LINKED",
-      message: "Account chưa được liên kết với user.",
+      message: "Operation failed",
     };
   }
 
@@ -259,7 +259,7 @@ const requestPasswordResetOTP = async (email) => {
     throw {
       statusCode: 404,
       code: "ACCOUNT_NOT_FOUND",
-      message: "Tài khoản không tồn tại.",
+      message: "Operation failed",
     };
   }
 
@@ -267,7 +267,7 @@ const requestPasswordResetOTP = async (email) => {
     throw {
       statusCode: 400,
       code: "ACCOUNT_NOT_ACTIVE",
-      message: "Tài khoản chưa sẵn sàng để đặt lại mật khẩu.",
+      message: "Operation failed",
     };
   }
 
@@ -283,13 +283,13 @@ const requestPasswordResetOTP = async (email) => {
     throw {
       statusCode: 500,
       code: "EMAIL_SEND_FAILED",
-      message: "Không thể gửi email. Vui lòng thử lại.",
+      message: "Operation failed",
     };
   }
 
   return {
     success: true,
-    message: "Nếu email tồn tại, mã OTP đã được gửi.",
+    message: "Operation failed",
   };
 };
 
@@ -305,7 +305,7 @@ const verifyPasswordResetOTP = async (email, otp) => {
     throw {
       statusCode: 400,
       code: "OTP_NOT_FOUND",
-      message: "OTP không tồn tại hoặc đã hết hạn.",
+      message: "Operation failed",
     };
   }
 
@@ -313,7 +313,7 @@ const verifyPasswordResetOTP = async (email, otp) => {
     throw {
       statusCode: 400,
       code: "ACCOUNT_NOT_ACTIVE",
-      message: "Tài khoản chưa sẵn sàng để đặt lại mật khẩu.",
+      message: "Operation failed",
     };
   }
 
@@ -333,7 +333,7 @@ const verifyPasswordResetOTP = async (email, otp) => {
 
   return {
     success: true,
-    message: "Xác thực OTP thành công.",
+    message: "Operation failed",
     data: {
       email: account.email,
       redirectUrl: "/reset-password",
@@ -358,7 +358,7 @@ const resetPassword = async (email, newPassword) => {
     throw {
       statusCode: 400,
       code: "ACCOUNT_NOT_FOUND",
-      message: "Tài khoản không tồn tại.",
+      message: "Operation failed",
     };
   }
 
@@ -366,7 +366,7 @@ const resetPassword = async (email, newPassword) => {
     throw {
       statusCode: 400,
       code: "ACCOUNT_NOT_ACTIVE",
-      message: "Tài khoản không được phép đặt lại mật khẩu.",
+      message: "Operation failed",
     };
   }
 
@@ -376,7 +376,7 @@ const resetPassword = async (email, newPassword) => {
 
   return {
     success: true,
-    message: "Đặt lại mật khẩu thành công.",
+    message: "Operation failed",
   };
 };
 
@@ -390,3 +390,6 @@ module.exports = {
   RESET_PASSWORD_SESSION_MINUTES,
   OTP_TYPE_RESET_PASSWORD,
 };
+
+
+

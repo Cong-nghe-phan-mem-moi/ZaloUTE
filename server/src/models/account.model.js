@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+﻿const mongoose = require('mongoose');
 
 const accountSchema = new mongoose.Schema({
     email: {
@@ -7,7 +7,7 @@ const accountSchema = new mongoose.Schema({
         unique: true,
         trim: true,
         lowercase: true,
-        match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Vui lòng nhập email hợp lệ']
+        match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Vui lÃ²ng nháº­p email há»£p lá»‡']
     },
     passwordHash: {
         type: String,
@@ -32,3 +32,6 @@ const accountSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 module.exports = mongoose.model('Account', accountSchema);
+
+
+

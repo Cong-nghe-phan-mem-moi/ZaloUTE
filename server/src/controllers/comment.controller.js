@@ -1,7 +1,7 @@
-const CommentService = require("../service/comment.service");
+﻿const CommentService = require("../service/comment.service");
 
 class CommentController {
-  // Thêm bình luận
+  // ThÃªm bÃ¬nh luáº­n
   static async createComment(req, res) {
     try {
       const { postId } = req.params;
@@ -17,19 +17,19 @@ class CommentController {
 
       return res.status(201).json({
         success: true,
-        message: "Thêm bình luận thành công",
+        message: "Operation failed",
         data: comment,
       });
     } catch (error) {
       console.error("Error creating comment:", error);
       return res.status(400).json({
         success: false,
-        message: error.message || "Lỗi khi thêm bình luận",
+        message: error.message || "Operation failed",
       });
     }
   }
 
-  // Chỉnh sửa bình luận
+  // Chá»‰nh sá»­a bÃ¬nh luáº­n
   static async updateComment(req, res) {
     try {
       const { commentId } = req.params;
@@ -44,20 +44,20 @@ class CommentController {
 
       return res.status(200).json({
         success: true,
-        message: "Chỉnh sửa bình luận thành công",
+        message: "Operation failed",
         data: comment,
       });
     } catch (error) {
       console.error("Error updating comment:", error);
 
-      if (error.message.includes("không tồn tại")) {
+      if (error.message.includes("Operation failed")) {
         return res.status(404).json({
           success: false,
           message: error.message,
         });
       }
 
-      if (error.message.includes("không có quyền")) {
+      if (error.message.includes("Operation failed")) {
         return res.status(403).json({
           success: false,
           message: error.message,
@@ -66,12 +66,12 @@ class CommentController {
 
       return res.status(400).json({
         success: false,
-        message: error.message || "Lỗi khi chỉnh sửa bình luận",
+        message: error.message || "Operation failed",
       });
     }
   }
 
-  // Xóa bình luận
+  // XÃ³a bÃ¬nh luáº­n
   static async deleteComment(req, res) {
     try {
       const { commentId } = req.params;
@@ -81,19 +81,19 @@ class CommentController {
 
       return res.status(200).json({
         success: true,
-        message: "Xóa bình luận thành công",
+        message: "Operation failed",
       });
     } catch (error) {
       console.error("Error deleting comment:", error);
 
-      if (error.message.includes("không tồn tại")) {
+      if (error.message.includes("Operation failed")) {
         return res.status(404).json({
           success: false,
           message: error.message,
         });
       }
 
-      if (error.message.includes("không có quyền")) {
+      if (error.message.includes("Operation failed")) {
         return res.status(403).json({
           success: false,
           message: error.message,
@@ -102,12 +102,12 @@ class CommentController {
 
       return res.status(400).json({
         success: false,
-        message: error.message || "Lỗi khi xóa bình luận",
+        message: error.message || "Operation failed",
       });
     }
   }
 
-  // Like/Unlike bình luận
+  // Like/Unlike bÃ¬nh luáº­n
   static async toggleLikeComment(req, res) {
     try {
       const { commentId } = req.params;
@@ -117,13 +117,13 @@ class CommentController {
 
       return res.status(200).json({
         success: true,
-        message: result.isLiked ? "Thích bình luận" : "Bỏ thích bình luận",
+        message: result.isLiked ? "Liked" : "Unliked",
         data: result,
       });
     } catch (error) {
       console.error("Error toggling comment like:", error);
 
-      if (error.message.includes("không tồn tại")) {
+      if (error.message.includes("Operation failed")) {
         return res.status(404).json({
           success: false,
           message: error.message,
@@ -132,12 +132,12 @@ class CommentController {
 
       return res.status(400).json({
         success: false,
-        message: error.message || "Lỗi khi like bình luận",
+        message: error.message || "Operation failed",
       });
     }
   }
 
-  // Lấy bình luận của bài viết
+  // Láº¥y bÃ¬nh luáº­n cá»§a bÃ i viáº¿t
   static async getPostComments(req, res) {
     try {
       const { postId } = req.params;
@@ -157,12 +157,12 @@ class CommentController {
       console.error("Error fetching comments:", error);
       return res.status(400).json({
         success: false,
-        message: error.message || "Lỗi khi lấy bình luận",
+        message: error.message || "Operation failed",
       });
     }
   }
 
-  // Lấy reply của một bình luận
+  // Láº¥y reply cá»§a má»™t bÃ¬nh luáº­n
   static async getCommentReplies(req, res) {
     try {
       const { commentId } = req.params;
@@ -182,10 +182,13 @@ class CommentController {
       console.error("Error fetching replies:", error);
       return res.status(400).json({
         success: false,
-        message: error.message || "Lỗi khi lấy reply",
+        message: error.message || "Operation failed",
       });
     }
   }
 }
 
 module.exports = CommentController;
+
+
+

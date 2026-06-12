@@ -5,17 +5,103 @@ import {
   getPostsByAuthor,
   toggleLike,
   deletePost,
-  clearError,
   resetPosts,
 } from "../../store/slices/postSlice";
 import { formatDistanceToNow } from "date-fns";
-import { vi } from "date-fns/locale";
+import { enUS } from "date-fns/locale";
 import LoadingSpinner from "../common/LoadingSpinner";
-import ErrorMessage from "../common/ErrorMessage";
 import PostDetail from "./PostDetail";
 import EditPost from "./EditPost";
 
 const getUserId = (user) => user?.userId || user?._id || user?.id;
+
+const getMediaGridClass = (count) => {
+  if (count === 2) {
+    return "grid-cols-2";
+  }
+
+  return "grid-cols-2";
+};
+
+const getMediaTileClass = (count, index) => {
+  if (count === 1) {
+    return "max-h-[620px]";
+  }
+
+  if (count === 3 && index === 0) {
+    return "col-span-2 h-80";
+  }
+
+  return "h-56";
+};
+
+const PostMediaPreview = ({ media }) => {
+  if (!Array.isArray(media) || media.length === 0) {
+    return null;
+  }
+
+  const visibleMedia = media.slice(0, 4);
+  const remainingCount = media.length - visibleMedia.length;
+  const isSingleImage = media.length === 1 && media[0]?.type === "image";
+
+  if (isSingleImage) {
+    return (
+      <div className="mb-3 overflow-hidden rounded-lg bg-gray-100">
+        <img
+          src={media[0].url}
+          alt="Post media"
+          className="max-h-[620px] w-full object-cover"
+          onError={(event) => {
+            event.target.style.display = "none";
+          }}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className={`mb-3 grid gap-1 ${getMediaGridClass(media.length)}`}>
+      {visibleMedia.map((item, index) => (
+        <div
+          key={`${item.url || "media"}-${index}`}
+          className={`relative overflow-hidden rounded-lg bg-gray-200 ${getMediaTileClass(
+            media.length,
+            index,
+          )}`}
+        >
+          {item.type === "image" ? (
+            <img
+              src={item.url}
+              alt={`Post media ${index + 1}`}
+              className="h-full w-full object-cover"
+              onError={(event) => {
+                event.target.style.display = "none";
+              }}
+            />
+          ) : (
+            <video
+              src={item.url}
+              controls
+              preload="metadata"
+              onClick={(event) => event.stopPropagation()}
+              onMouseDown={(event) => event.stopPropagation()}
+              className="h-full w-full object-cover"
+              onError={(event) => {
+                event.target.style.display = "none";
+              }}
+            />
+          )}
+
+          {remainingCount > 0 && index === visibleMedia.length - 1 ? (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/55 text-4xl font-bold text-white">
+              +{remainingCount}
+            </div>
+          ) : null}
+        </div>
+      ))}
+    </div>
+  );
+};
 
 const PostList = ({
   authorId = null,
@@ -25,7 +111,7 @@ const PostList = ({
   emptyDetail = "Add friends to see their posts.",
 }) => {
   const dispatch = useDispatch();
-  const { posts, loading, error, pagination } = useSelector(
+  const { posts, loading, pagination } = useSelector(
     (state) => state.posts,
   );
   const currentUser = useSelector((state) => state.user?.profile);
@@ -118,14 +204,6 @@ const PostList = ({
 
   if (loading && visiblePosts.length === 0) return <LoadingSpinner />;
 
-  if (error) {
-    return (
-      <div className="max-w-2xl mx-auto p-4">
-        <ErrorMessage message={error} onClose={() => dispatch(clearError())} />
-      </div>
-    );
-  }
-
   return (
     <div className="max-w-4xl mx-auto space-y-4 pb-8">
       {visiblePosts.length === 0 ? (
@@ -161,7 +239,7 @@ const PostList = ({
                     >
                       {formatDistanceToNow(new Date(post.createdAt), {
                         addSuffix: true,
-                        locale: vi,
+                        locale: enUS,
                       })}
                     </p>
                   </div>
@@ -189,48 +267,13 @@ const PostList = ({
                 className="p-4 cursor-pointer hover:bg-gray-50 transition"
                 onClick={() => setSelectedPostId(post._id)}
               >
-                <p className="text-gray-800 text-base leading-relaxed mb-3 line-clamp-5">
-                  {post.content}
-                </p>
+                {post.content ? (
+                  <p className="text-gray-800 text-base leading-relaxed mb-3 line-clamp-5">
+                    {post.content}
+                  </p>
+                ) : null}
 
-                {post.media && post.media.length > 0 && (
-                  <div className="mb-3 grid gap-2 grid-cols-2">
-                    {post.media.slice(0, 4).map((item, index) => (
-                      <div
-                        key={index}
-                        className="rounded-lg overflow-hidden bg-gray-200 relative"
-                      >
-                        {item.type === "image" ? (
-                          <img
-                            src={item.url}
-                            alt={`Post media ${index}`}
-                            className="w-full h-48 object-cover"
-                            onError={(event) => {
-                              event.target.style.display = "none";
-                            }}
-                          />
-                        ) : (
-                          <video
-                            src={item.url}
-                            controls
-                            preload="metadata"
-                            onClick={(event) => event.stopPropagation()}
-                            onMouseDown={(event) => event.stopPropagation()}
-                            className="w-full h-48 object-cover"
-                            onError={(event) => {
-                              event.target.style.display = "none";
-                            }}
-                          />
-                        )}
-                        {post.media.length > 4 && index === 3 && (
-                          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center text-white text-xl font-bold">
-                            +{post.media.length - 4}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <PostMediaPreview media={post.media} />
               </div>
 
               <div className="px-4 py-2 border-t border-b border-gray-100 text-sm text-gray-600 flex justify-between">

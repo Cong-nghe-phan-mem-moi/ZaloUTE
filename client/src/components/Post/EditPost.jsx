@@ -1,11 +1,10 @@
 ﻿import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { updatePost } from "../../store/slices/postSlice";
-import ErrorMessage from "../common/ErrorMessage";
 
 const EditPost = ({ post, isOpen, onClose, onPostUpdated }) => {
   const dispatch = useDispatch();
-  const { loading, error, message } = useSelector((state) => state.posts);
+  const { loading, message } = useSelector((state) => state.posts);
 
   const [content, setContent] = useState("");
   const [media, setMedia] = useState([]);
@@ -72,8 +71,8 @@ const EditPost = ({ post, isOpen, onClose, onPostUpdated }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!content.trim()) {
-      alert("Please enter post content.");
+    if (!content.trim() && media.length === 0) {
+      alert("Please enter post content or add media.");
       return;
     }
 
@@ -121,8 +120,6 @@ const EditPost = ({ post, isOpen, onClose, onPostUpdated }) => {
         </div>
 
         <form onSubmit={handleSubmit} className="p-4">
-          {error && <ErrorMessage message={error} />}
-
           {/* Content textarea */}
           <textarea
             value={content}
