@@ -1,5 +1,6 @@
 const FriendRequestRepo = require("../repo/friendRequest.repository");
 const UserRepository = require("../repo/user.repository");
+const NotificationService = require("./notification.service");
 
 const hasFriend = (user, friendId) =>
   user.friends?.some(
@@ -100,6 +101,15 @@ async function sendFriendRequest(senderId, receiverId) {
     senderId,
     receiverId,
   );
+
+  await NotificationService.createNotification({
+    receiver: receiverId,
+    sender: senderId,
+    type: "friend_request",
+    content: "sent you a friend request",
+    relatedId: newRequest._id,
+    relatedType: "FriendRequest",
+  });
 
   return {
     success: true,

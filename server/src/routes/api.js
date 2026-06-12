@@ -4,6 +4,7 @@ const UserController = require("../controllers/user.controller");
 const authRoutes = require("./auth.route");
 const postRoutes = require("./post.route");
 const commentRoutes = require("./comment.route");
+const notificationRoutes = require("./notification.route");
 const { authMiddleware, authorize } = require("../middleware/authMiddleware");
 const { validateEditProfile } = require("../middleware/validateRequest");
 const { editProfileLimiter } = require("../middleware/rateLimiter");
@@ -59,6 +60,7 @@ router.put(
 
 // Comment Routes
 router.use("/comments", commentRoutes);
+router.use("/notifications", notificationRoutes);
 
 // Authentication routes
 router.use("/auth", authRoutes);

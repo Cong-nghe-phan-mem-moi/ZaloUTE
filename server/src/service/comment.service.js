@@ -1,5 +1,6 @@
 const CommentRepository = require("../repo/comment.repository");
 const Post = require("../models/post.model");
+const NotificationService = require("./notification.service");
 
 class CommentService {
   // Thêm bình luận
@@ -24,7 +25,33 @@ class CommentService {
 
     // Increment comment count (only for top-level comments)
     if (!replyTo) {
-      await Post.findByIdAndUpdate(postId, { $inc: { commentCount: 1 } });
+      const post = await Post.findByIdAndUpdate(
+        postId,
+        { $inc: { commentCount: 1 } },
+        { new: true },
+      );
+
+      await NotificationService.createNotification({
+        receiver: post?.author,
+        sender: userId,
+        type: "post_comment",
+        content: "commented on your post",
+        preview: content.trim(),
+        relatedId: postId,
+        relatedType: "Post",
+      });
+    } else {
+      const parentComment = await CommentRepository.findCommentById(replyTo);
+
+      await NotificationService.createNotification({
+        receiver: parentComment?.author?._id || parentComment?.author,
+        sender: userId,
+        type: "comment_reply",
+        content: "replied to your comment",
+        preview: content.trim(),
+        relatedId: parentComment?._id || replyTo,
+        relatedType: "Comment",
+      });
     }
 
     return await CommentRepository.findCommentById(comment._id);
@@ -93,6 +120,14 @@ class CommentService {
     } else {
       // Like
       updatedComment = await CommentRepository.addLike(commentId, userId);
+      await NotificationService.createNotification({
+        receiver: comment.author?._id || comment.author,
+        sender: userId,
+        type: "comment_like",
+        content: "liked your comment",
+        relatedId: commentId,
+        relatedType: "Comment",
+      });
     }
 
     return {

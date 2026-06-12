@@ -1,5 +1,6 @@
 const PostRepository = require('../repo/post.repository');
 const Comment = require('../models/comment.model');
+const NotificationService = require('./notification.service');
 const User = require('../models/user.model');
 
 class PostService {
@@ -157,6 +158,14 @@ class PostService {
     } else {
       // Like
       updatedPost = await PostRepository.addLike(postId, userId);
+      await NotificationService.createNotification({
+        receiver: post.author?._id || post.author,
+        sender: userId,
+        type: 'post_like',
+        content: 'liked your post',
+        relatedId: postId,
+        relatedType: 'Post',
+      });
     }
 
     return {

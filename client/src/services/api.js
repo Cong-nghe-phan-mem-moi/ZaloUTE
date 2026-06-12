@@ -75,6 +75,14 @@ export const userAPI = {
   logout: () => api.post("/users/logout"),
 };
 
+export const notificationAPI = {
+  getNotifications: (page = 1, limit = 10) =>
+    api.get("/notifications", { params: { page, limit } }),
+  markAsRead: (notificationId) =>
+    api.put(`/notifications/${notificationId}/read`),
+  markAllAsRead: () => api.put("/notifications/read-all"),
+};
+
 export const authAPI = {
   login: (credentials) => api.post("/auth/login", credentials),
 };
