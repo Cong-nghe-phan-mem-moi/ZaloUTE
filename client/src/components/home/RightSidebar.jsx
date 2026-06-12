@@ -69,7 +69,7 @@ const RightSidebar = ({
   </aside>
 );
 
-const PanelTitle = ({ title, action, href = "/home" }) => (
+const PanelTitle = ({ title, action, href = "/" }) => (
   <div className="mb-5 flex items-center justify-between">
     <h2 className="text-base font-bold">{title}</h2>
     {action ? (

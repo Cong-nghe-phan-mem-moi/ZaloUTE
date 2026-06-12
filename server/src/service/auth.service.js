@@ -243,7 +243,7 @@ const login = async (email, password) => {
     expiresIn: process.env.JWT_EXPIRE || "1h",
   });
   const redirectUrl =
-    account.role === "admin" ? "/admin/profile" : "/user/profile";
+    account.role === "admin" ? "/admin/dashboard" : "/user/profile";
 
   return {
     token,

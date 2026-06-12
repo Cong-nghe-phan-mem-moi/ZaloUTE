@@ -83,6 +83,21 @@ export const notificationAPI = {
   markAllAsRead: () => api.put("/notifications/read-all"),
 };
 
+export const adminAPI = {
+  getStats: () => api.get("/admin/stats"),
+  getUsers: (params = {}) => api.get("/admin/users", { params }),
+  updateUserStatus: (userId, status) =>
+    api.put(`/admin/users/${userId}/status`, { status }),
+  deleteUser: (userId) => api.delete(`/admin/users/${userId}`),
+  getPosts: (params = {}) => api.get("/admin/posts", { params }),
+  deletePost: (postId) => api.delete(`/admin/posts/${postId}`),
+  getStickers: (params = {}) => api.get("/admin/stickers", { params }),
+  createSticker: (data) => api.post("/admin/stickers", data),
+  updateSticker: (stickerId, data) =>
+    api.put(`/admin/stickers/${stickerId}`, data),
+  deleteSticker: (stickerId) => api.delete(`/admin/stickers/${stickerId}`),
+};
+
 export const authAPI = {
   login: (credentials) => api.post("/auth/login", credentials),
 };
