@@ -13,14 +13,34 @@ const notificationSchema = new mongoose.Schema({
     },
     type: {
         type: String,
-        enum: ['friend_request', 'new_message', 'group_invite', 'mention', 'system'],
+        enum: [
+            'friend_request',
+            'post_like',
+            'post_comment',
+            'comment_reply',
+            'comment_like',
+            'new_message',
+            'group_invite',
+            'mention',
+            'system'
+        ],
         required: true
     },
     content: {
         type: String
     },
+    preview: {
+        type: String,
+        maxlength: 180,
+        default: null
+    },
     relatedId: {
         type: mongoose.Schema.Types.ObjectId
+    },
+    relatedType: {
+        type: String,
+        enum: ['Post', 'Comment', 'FriendRequest', 'User', null],
+        default: null
     },
     isRead: {
         type: Boolean,

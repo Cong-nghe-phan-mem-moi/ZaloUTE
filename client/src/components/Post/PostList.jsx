@@ -1,10 +1,12 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   getNewsFeed,
+  getPostsByAuthor,
   toggleLike,
   deletePost,
   clearError,
+  resetPosts,
 } from "../../store/slices/postSlice";
 import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
@@ -13,7 +15,15 @@ import ErrorMessage from "../common/ErrorMessage";
 import PostDetail from "./PostDetail";
 import EditPost from "./EditPost";
 
-const PostList = () => {
+const getUserId = (user) => user?.userId || user?._id || user?.id;
+
+const PostList = ({
+  authorId = null,
+  allowedAuthorIds = null,
+  refreshKey = 0,
+  emptyMessage = "No posts yet",
+  emptyDetail = "Add friends to see their posts.",
+}) => {
   const dispatch = useDispatch();
   const { posts, loading, error, pagination } = useSelector(
     (state) => state.posts,
@@ -23,16 +33,60 @@ const PostList = () => {
   const [editingPostId, setEditingPostId] = useState(null);
   const [page, setPage] = useState(1);
 
+  const allowedAuthorIdSet = useMemo(() => {
+    if (!Array.isArray(allowedAuthorIds)) {
+      return null;
+    }
+
+    return new Set(allowedAuthorIds.map(String));
+  }, [allowedAuthorIds]);
+
+  const visiblePosts = useMemo(() => {
+    if (!allowedAuthorIdSet) {
+      return posts;
+    }
+
+    return posts.filter((post) =>
+      allowedAuthorIdSet.has(String(post.author?._id)),
+    );
+  }, [allowedAuthorIdSet, posts]);
+
   useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setPage(1);
+    }, 0);
+
+    dispatch(resetPosts());
+
+    if (authorId) {
+      dispatch(getPostsByAuthor({ authorId, page: 1, limit: 10 }));
+      return () => window.clearTimeout(timer);
+    }
+
+    dispatch(getNewsFeed({ page: 1, limit: 10 }));
+
+    return () => window.clearTimeout(timer);
+  }, [authorId, dispatch, refreshKey]);
+
+  useEffect(() => {
+    if (page === 1) {
+      return;
+    }
+
+    if (authorId) {
+      dispatch(getPostsByAuthor({ authorId, page, limit: 10 }));
+      return;
+    }
+
     dispatch(getNewsFeed({ page, limit: 10 }));
-  }, [page, dispatch]);
+  }, [authorId, page, dispatch]);
 
   const handleToggleLike = (postId) => {
     dispatch(toggleLike(postId));
   };
 
   const handleDeletePost = (postId) => {
-    if (window.confirm("Bạn có chắc muốn xóa bài viết này?")) {
+    if (window.confirm("Are you sure you want to delete this post?")) {
       dispatch(deletePost(postId));
     }
   };
@@ -41,7 +95,28 @@ const PostList = () => {
     setPage((prev) => prev + 1);
   };
 
-  if (loading && posts.length === 0) return <LoadingSpinner />;
+  const handleOpenAuthorProfile = (post) => {
+    const authorProfileId = post.author?._id;
+    if (!authorProfileId) return;
+
+    const currentUserId = getUserId(currentUser);
+    const profileUrl =
+      currentUserId && String(currentUserId) === String(authorProfileId)
+        ? "/profile"
+        : `/users/profile/${authorProfileId}`;
+    window.location.assign(profileUrl);
+  };
+
+  const reloadCurrentList = () => {
+    if (authorId) {
+      dispatch(getPostsByAuthor({ authorId, page: 1, limit: page * 10 }));
+      return;
+    }
+
+    dispatch(getNewsFeed({ page: 1, limit: page * 10 }));
+  };
+
+  if (loading && visiblePosts.length === 0) return <LoadingSpinner />;
 
   if (error) {
     return (
@@ -51,43 +126,33 @@ const PostList = () => {
     );
   }
 
-  if (selectedPostId) {
-    return (
-      <div className="max-w-2xl mx-auto">
-        <PostDetail
-          postId={selectedPostId}
-          onClose={() => setSelectedPostId(null)}
-        />
-      </div>
-    );
-  }
-
   return (
-    <div className="max-w-2xl mx-auto space-y-4 pb-8">
-      {posts.length === 0 ? (
+    <div className="max-w-4xl mx-auto space-y-4 pb-8">
+      {visiblePosts.length === 0 ? (
         <div className="p-8 text-center text-gray-500 bg-white rounded-lg">
-          <p className="text-lg">Không có bài viết nào</p>
-          <p className="text-sm mt-2">
-            Hãy follow bạn bè để xem bài viết của họ
-          </p>
+          <p className="text-lg">{emptyMessage}</p>
+          <p className="text-sm mt-2">{emptyDetail}</p>
         </div>
       ) : (
         <>
-          {posts.map((post) => (
+          {visiblePosts.map((post) => (
             <div
               key={post._id}
               className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition overflow-hidden"
             >
-              {/* Header */}
               <div className="flex items-center justify-between p-4 border-b border-gray-100">
                 <div className="flex items-center gap-3 flex-1">
                   <img
                     src={post.author?.avatar || "/default-avatar.png"}
                     alt={post.author?.fullName}
                     className="w-12 h-12 rounded-full object-cover cursor-pointer hover:opacity-80"
+                    onClick={() => handleOpenAuthorProfile(post)}
                   />
                   <div className="flex-1">
-                    <h3 className="font-semibold text-gray-900 cursor-pointer hover:text-blue-600">
+                    <h3
+                      className="font-semibold text-gray-900 cursor-pointer hover:text-blue-600"
+                      onClick={() => handleOpenAuthorProfile(post)}
+                    >
                       {post.author?.fullName}
                     </h3>
                     <p
@@ -102,26 +167,24 @@ const PostList = () => {
                   </div>
                 </div>
 
-                {/* Menu */}
-                {currentUser?.userId === post.author?._id && (
+                {String(getUserId(currentUser)) === String(post.author?._id) && (
                   <div className="flex gap-2">
                     <button
                       onClick={() => setEditingPostId(post._id)}
                       className="text-gray-400 hover:text-gray-600 p-1 rounded hover:bg-gray-100"
                     >
-                      ✎
+                      Edit
                     </button>
                     <button
                       onClick={() => handleDeletePost(post._id)}
                       className="text-gray-400 hover:text-red-600 p-1 rounded hover:bg-gray-100"
                     >
-                      🗑
+                      Delete
                     </button>
                   </div>
                 )}
               </div>
 
-              {/* Content */}
               <div
                 className="p-4 cursor-pointer hover:bg-gray-50 transition"
                 onClick={() => setSelectedPostId(post._id)}
@@ -130,7 +193,6 @@ const PostList = () => {
                   {post.content}
                 </p>
 
-                {/* Media Preview */}
                 {post.media && post.media.length > 0 && (
                   <div className="mb-3 grid gap-2 grid-cols-2">
                     {post.media.slice(0, 4).map((item, index) => (
@@ -143,22 +205,20 @@ const PostList = () => {
                             src={item.url}
                             alt={`Post media ${index}`}
                             className="w-full h-48 object-cover"
-                            onError={(e) => {
-                              console.error(
-                                `Image failed to load: ${item.url}`,
-                              );
-                              e.target.style.display = "none";
+                            onError={(event) => {
+                              event.target.style.display = "none";
                             }}
                           />
                         ) : (
                           <video
                             src={item.url}
+                            controls
+                            preload="metadata"
+                            onClick={(event) => event.stopPropagation()}
+                            onMouseDown={(event) => event.stopPropagation()}
                             className="w-full h-48 object-cover"
-                            onError={(e) => {
-                              console.error(
-                                `Video failed to load: ${item.url}`,
-                              );
-                              e.target.style.display = "none";
+                            onError={(event) => {
+                              event.target.style.display = "none";
                             }}
                           />
                         )}
@@ -173,23 +233,21 @@ const PostList = () => {
                 )}
               </div>
 
-              {/* Stats */}
               <div className="px-4 py-2 border-t border-b border-gray-100 text-sm text-gray-600 flex justify-between">
                 <button
                   onClick={() => setSelectedPostId(post._id)}
                   className="hover:text-blue-500 transition"
                 >
-                  {post.likes?.length || 0} thích
+                  {post.likes?.length || 0} likes
                 </button>
                 <button
                   onClick={() => setSelectedPostId(post._id)}
                   className="hover:text-blue-500 transition"
                 >
-                  {post.commentCount || 0} bình luận
+                  {post.commentCount || 0} comments
                 </button>
               </div>
 
-              {/* Actions */}
               <div className="p-2 flex gap-1 text-gray-600">
                 <button
                   onClick={() => handleToggleLike(post._id)}
@@ -199,25 +257,21 @@ const PostList = () => {
                       : "hover:bg-gray-100 text-gray-600"
                   }`}
                 >
-                  <span className="text-lg">👍</span>
-                  {post.isLiked ? "Bỏ thích" : "Thích"}
+                  {post.isLiked ? "Unlike" : "Like"}
                 </button>
                 <button
                   onClick={() => setSelectedPostId(post._id)}
                   className="flex-1 py-2 rounded-lg hover:bg-gray-100 transition flex items-center justify-center gap-2 font-medium text-gray-600"
                 >
-                  <span className="text-lg">💬</span>
-                  Bình luận
+                  Comment
                 </button>
                 <button className="flex-1 py-2 rounded-lg hover:bg-gray-100 transition flex items-center justify-center gap-2 font-medium text-gray-600">
-                  <span className="text-lg">↗️</span>
-                  Chia sẻ
+                  Share
                 </button>
               </div>
             </div>
           ))}
 
-          {/* Load More Button */}
           {pagination && pagination.page < pagination.totalPages && (
             <div className="text-center py-4">
               <button
@@ -225,25 +279,23 @@ const PostList = () => {
                 disabled={loading}
                 className="px-8 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white rounded-lg font-medium transition"
               >
-                {loading ? "Đang tải..." : "Xem thêm"}
+                {loading ? "Loading..." : "Load more"}
               </button>
             </div>
           )}
         </>
       )}
 
-      {/* Edit Post Modal */}
       <EditPost
-        post={posts.find((p) => p._id === editingPostId)}
+        post={posts.find((post) => post._id === editingPostId)}
         isOpen={!!editingPostId}
         onClose={() => setEditingPostId(null)}
         onPostUpdated={() => {
           setEditingPostId(null);
-          dispatch(getNewsFeed({ page, limit: 10 }));
+          reloadCurrentList();
         }}
       />
 
-      {/* Post Detail Modal */}
       <PostDetail
         postId={selectedPostId}
         isOpen={!!selectedPostId}

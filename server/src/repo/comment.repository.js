@@ -38,10 +38,18 @@ class CommentRepository {
 
   // Xóa bình luận
   static async deleteComment(commentId) {
-    // Xóa các reply của bình luận này
-    await Comment.deleteMany({ replyTo: commentId });
-    // Xóa bình luận
-    return await Comment.findByIdAndDelete(commentId);
+    const idsToDelete = [commentId];
+    let parentIds = [commentId];
+
+    while (parentIds.length > 0) {
+      const replies = await Comment.find({
+        replyTo: { $in: parentIds },
+      }).select("_id");
+      parentIds = replies.map((reply) => reply._id);
+      idsToDelete.push(...parentIds);
+    }
+
+    return await Comment.deleteMany({ _id: { $in: idsToDelete } });
   }
 
   // Thêm like
@@ -77,7 +85,7 @@ class CommentRepository {
 
   // Đếm bình luận của bài viết
   static async getCommentCountByPost(postId) {
-    return await Comment.countDocuments({ post: postId, replyTo: null });
+    return await Comment.countDocuments({ post: postId });
   }
 
   // Lấy reply của một bình luận

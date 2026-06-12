@@ -35,6 +35,19 @@ class PostRepository {
     return await Post.countDocuments();
   }
 
+  static async getPostsByAuthors(authorIds, skip, limit) {
+    return await Post.find({ author: { $in: authorIds } })
+      .populate('author', '_id fullName avatar email')
+      .populate('likes', 'fullName avatar email')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+  }
+
+  static async getPostsByAuthorsCount(authorIds) {
+    return await Post.countDocuments({ author: { $in: authorIds } });
+  }
+
   static async getPostsByAuthor(authorId, skip, limit) {
     return await Post.find({ author: authorId })
       .populate('author', '_id fullName avatar email')

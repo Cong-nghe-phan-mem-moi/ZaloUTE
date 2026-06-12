@@ -1,4 +1,4 @@
-import axios from "axios";
+﻿import axios from "axios";
 
 const api = axios.create({
   baseURL: "/api",
@@ -45,6 +45,16 @@ api.interceptors.request.use(
 export const userAPI = {
   getProfile: () => api.get("/profile"),
   updateProfile: (data) => api.put("/profile", data),
+  uploadAvatar: (file) => {
+    const formData = new FormData();
+    formData.append("avatar", file);
+    return api.put("/profile/avatar", formData);
+  },
+  uploadCoverImage: (file) => {
+    const formData = new FormData();
+    formData.append("coverImage", file);
+    return api.put("/profile/cover-image", formData);
+  },
   searchUsers: (keyword, page = 1, limit = 8) =>
     api.get("/users/search", {
       params: { keyword, page, limit },
@@ -65,6 +75,14 @@ export const userAPI = {
   logout: () => api.post("/users/logout"),
 };
 
+export const notificationAPI = {
+  getNotifications: (page = 1, limit = 10) =>
+    api.get("/notifications", { params: { page, limit } }),
+  markAsRead: (notificationId) =>
+    api.put(`/notifications/${notificationId}/read`),
+  markAllAsRead: () => api.put("/notifications/read-all"),
+};
+
 export const authAPI = {
   login: (credentials) => api.post("/auth/login", credentials),
 };
@@ -77,7 +95,7 @@ export const registerAPI = {
 
 // Post API endpoints
 export const postAPI = {
-  // 4.1 Tạo bài viết
+  // Create post
   createPost: (formDataOrContent, media = []) => {
     // If first param is FormData, use it directly
     if (formDataOrContent instanceof FormData) {
@@ -92,14 +110,14 @@ export const postAPI = {
     return api.post("/posts", formData);
   },
 
-  // 4.4 Xem news feed
+  // Get news feed
   getNewsFeed: (page = 1, limit = 10) =>
     api.get("/posts/feed", { params: { page, limit } }),
 
   // Get single post
   getPost: (postId) => api.get(`/posts/${postId}`),
 
-  // 4.2 Chỉnh sửa bài viết
+  // Update post
   updatePost: (postId, formDataOrContent, media = []) => {
     // If first param is FormData, use it directly
     if (formDataOrContent instanceof FormData) {
@@ -114,17 +132,17 @@ export const postAPI = {
     return api.put(`/posts/${postId}`, formData);
   },
 
-  // 4.3 Xóa bài viết
+  // Delete post
   deletePost: (postId) => api.delete(`/posts/${postId}`),
 
   // Like/Unlike post
   toggleLike: (postId) => api.post(`/posts/${postId}/like`),
 
-  // 4.5 Xem danh sách like
+  // Get post likes
   getPostLikes: (postId, page = 1, limit = 10) =>
     api.get(`/posts/${postId}/likes`, { params: { page, limit } }),
 
-  // 4.6 Xem danh sách bình luận
+  // Get post comments
   getPostComments: (postId, page = 1, limit = 10) =>
     api.get(`/posts/${postId}/comments`, { params: { page, limit } }),
 
@@ -139,25 +157,25 @@ export const postAPI = {
 
 // Comment API endpoints
 export const commentAPI = {
-  // Thêm bình luận
+  // Create comment
   createComment: (postId, content, replyTo = null) =>
     api.post(`/comments/${postId}`, { content, replyTo }),
 
-  // Lấy bình luận của bài viết
+  // Get post comments
   getPostComments: (postId, page = 1, limit = 20) =>
     api.get(`/comments/${postId}`, { params: { page, limit } }),
 
-  // Chỉnh sửa bình luận
+  // Update comment
   updateComment: (commentId, content) =>
     api.put(`/comments/${commentId}`, { content }),
 
-  // Xóa bình luận
+  // Delete comment
   deleteComment: (commentId) => api.delete(`/comments/${commentId}`),
 
-  // Like/Unlike bình luận
+  // Like/Unlike comment
   toggleLike: (commentId) => api.post(`/comments/${commentId}/like`),
 
-  // Lấy reply của bình luận
+  // Get comment replies
   getCommentReplies: (commentId, page = 1, limit = 10) =>
     api.get(`/comments/${commentId}/replies`, { params: { page, limit } }),
 };

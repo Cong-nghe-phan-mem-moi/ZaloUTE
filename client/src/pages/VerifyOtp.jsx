@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+﻿import { useEffect } from 'react'
 import { useAppDispatch, useAppSelector } from '../store/hooks'
 import {
   clearStatus,
@@ -46,22 +46,22 @@ export default function VerifyOtp() {
     const normalizedOtp = otp.trim()
 
     if (!normalizedEmail) {
-      dispatch(setError('Email là bắt buộc'))
+      dispatch(setError('Email is required'))
       return
     }
 
     if (!emailRegex.test(normalizedEmail)) {
-      dispatch(setError('Email không hợp lệ'))
+      dispatch(setError('Invalid email'))
       return
     }
 
     if (!normalizedOtp) {
-      dispatch(setError('OTP là bắt buộc'))
+      dispatch(setError('OTP is required'))
       return
     }
 
     if (!otpRegex.test(normalizedOtp)) {
-      dispatch(setError('OTP phải là 6 chữ số'))
+      dispatch(setError('OTP must be 6 digits'))
       return
     }
 
@@ -77,10 +77,10 @@ export default function VerifyOtp() {
           <div className="space-y-6">
             <div>
               <h1 className="text-2xl font-semibold text-slate-900">
-                Xác thực OTP
+                Verify OTP
               </h1>
               <p className="mt-2 text-sm text-slate-500">
-                Nhập mã OTP được gửi đến email của bạn
+                Enter the OTP sent to your email
               </p>
             </div>
 
@@ -103,13 +103,13 @@ export default function VerifyOtp() {
 
               <div>
                 <label className="text-xs font-medium text-slate-500">
-                  Mã OTP
+                  OTP code
                 </label>
                 <input
                   type="text"
                   value={otp}
                   onChange={onChange('otp')}
-                  placeholder="Nhập 6 chữ số OTP"
+                  placeholder="Enter the 6-digit OTP"
                   className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200"
                   maxLength="6"
                 />
@@ -120,7 +120,7 @@ export default function VerifyOtp() {
                 disabled={loading}
                 className="w-full rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {loading ? 'Đang xác thực...' : 'Xác thực OTP'}
+                {loading ? 'Verifying...' : 'Verify OTP'}
               </button>
 
               <button
@@ -128,7 +128,7 @@ export default function VerifyOtp() {
                 onClick={handleRestart}
                 className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-600 transition hover:border-indigo-300 hover:text-slate-800"
               >
-                Quay lại
+                Back
               </button>
             </form>
           </div>

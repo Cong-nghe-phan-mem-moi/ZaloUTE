@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+﻿import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { fetchUserProfile, updateUserProfile } from "../store/slices/userSlice";
 import { userAPI } from "../services/api";
@@ -27,6 +27,8 @@ const ProfilePage = ({ userId }) => {
   const [rejectRequestLoading, setRejectRequestLoading] = useState(false);
   const [cancelRequestLoading, setCancelRequestLoading] = useState(false);
   const [unfriendLoading, setUnfriendLoading] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [coverUploading, setCoverUploading] = useState(false);
   const [notice, setNotice] = useState("");
 
   const isOwnProfile = !userId;
@@ -46,7 +48,7 @@ const ProfilePage = ({ userId }) => {
     } catch (err) {
       setOtherProfile(null);
       setOtherError(
-        err.response?.data?.message || "Khong the tai trang ca nhan.",
+        err.response?.data?.message || "Unable to load profile.",
       );
     } finally {
       setOtherLoading(false);
@@ -79,6 +81,40 @@ const ProfilePage = ({ userId }) => {
     }
   };
 
+  const handleUploadAvatar = async (file) => {
+    if (!file || avatarUploading) return;
+
+    setAvatarUploading(true);
+    setNotice("");
+
+    try {
+      const response = await userAPI.uploadAvatar(file);
+      await dispatch(fetchUserProfile());
+      setNotice(response.data?.message || "Avatar uploaded successfully.");
+    } catch (err) {
+      setNotice(err.response?.data?.message || "Unable to upload avatar.");
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
+
+  const handleUploadCoverImage = async (file) => {
+    if (!file || coverUploading) return;
+
+    setCoverUploading(true);
+    setNotice("");
+
+    try {
+      const response = await userAPI.uploadCoverImage(file);
+      await dispatch(fetchUserProfile());
+      setNotice(response.data?.message || "Cover image uploaded successfully.");
+    } catch (err) {
+      setNotice(err.response?.data?.message || "Unable to upload cover image.");
+    } finally {
+      setCoverUploading(false);
+    }
+  };
+
   const handleSendFriendRequest = async () => {
     const receiverId = getProfileId(otherProfile);
     if (!receiverId || friendRequestLoading) return;
@@ -92,7 +128,7 @@ const ProfilePage = ({ userId }) => {
       setNotice(response.data?.message || "Friend request sent.");
     } catch (err) {
       setNotice(
-        err.response?.data?.message || "Khong the gui loi moi ket ban.",
+        err.response?.data?.message || "Unable to send friend request.",
       );
     } finally {
       setFriendRequestLoading(false);
@@ -112,7 +148,7 @@ const ProfilePage = ({ userId }) => {
       setNotice(response.data?.message || "Friend request accepted.");
     } catch (err) {
       setNotice(
-        err.response?.data?.message || "Khong the chap nhan loi moi ket ban.",
+        err.response?.data?.message || "Unable to accept friend request.",
       );
     } finally {
       setAcceptRequestLoading(false);
@@ -132,7 +168,7 @@ const ProfilePage = ({ userId }) => {
       setNotice(response.data?.message || "Friend request rejected.");
     } catch (err) {
       setNotice(
-        err.response?.data?.message || "Khong the tu choi loi moi ket ban.",
+        err.response?.data?.message || "Unable to reject friend request.",
       );
     } finally {
       setRejectRequestLoading(false);
@@ -152,7 +188,7 @@ const ProfilePage = ({ userId }) => {
       setNotice(response.data?.message || "Friend request cancelled.");
     } catch (err) {
       setNotice(
-        err.response?.data?.message || "Khong the huy loi moi ket ban.",
+        err.response?.data?.message || "Unable to cancel friend request.",
       );
     } finally {
       setCancelRequestLoading(false);
@@ -171,7 +207,7 @@ const ProfilePage = ({ userId }) => {
       await refreshProfilesAfterAction();
       setNotice(response.data?.message || "Friend removed.");
     } catch (err) {
-      setNotice(err.response?.data?.message || "Khong the huy ket ban.");
+      setNotice(err.response?.data?.message || "Unable to unfriend.");
     } finally {
       setUnfriendLoading(false);
     }
@@ -260,6 +296,7 @@ const ProfilePage = ({ userId }) => {
     ? loading && !profile
     : otherLoading && !otherProfile;
   const pageError = isOwnProfile ? error : otherError;
+  const postAuthorId = getProfileId(currentProfile);
 
   if (pageLoading) {
     return (
@@ -298,6 +335,10 @@ const ProfilePage = ({ userId }) => {
                   profileData={displayProfile}
                   onEdit={() => setIsEditModalOpen(true)}
                   isOwnProfile={isOwnProfile}
+                  onUploadAvatar={handleUploadAvatar}
+                  avatarUploading={avatarUploading}
+                  onUploadCoverImage={handleUploadCoverImage}
+                  coverUploading={coverUploading}
                   onSendFriendRequest={handleSendFriendRequest}
                   sendingFriendRequest={friendRequestLoading}
                   onAcceptFriendRequest={handleAcceptFriendRequest}
@@ -309,12 +350,18 @@ const ProfilePage = ({ userId }) => {
                   onUnfriend={handleUnfriend}
                   unfriending={unfriendLoading}
                 />
-                {isOwnProfile ? <Composer profile={profile} /> : null}
-                {isOwnProfile ? <PostList /> : null}
                 <FriendsGrid
                   friends={friendsData}
                   totalFriends={displayProfile.stats.friends}
                 />
+                {isOwnProfile ? <Composer profile={profile} /> : null}
+                {postAuthorId ? (
+                  <PostList
+                    authorId={postAuthorId}
+                    emptyMessage="No posts yet"
+                    emptyDetail="Posts from this account will appear here."
+                  />
+                ) : null}
               </div>
 
               <div className="space-y-5 lg:col-span-4">

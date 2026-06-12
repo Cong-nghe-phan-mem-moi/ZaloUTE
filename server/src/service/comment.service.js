@@ -1,5 +1,6 @@
 const CommentRepository = require("../repo/comment.repository");
 const Post = require("../models/post.model");
+const NotificationService = require("./notification.service");
 
 class CommentService {
   // Thêm bình luận
@@ -22,9 +23,32 @@ class CommentService {
 
     const comment = await CommentRepository.createComment(commentData);
 
-    // Increment comment count (only for top-level comments)
+    await Post.findByIdAndUpdate(postId, { $inc: { commentCount: 1 } });
+
     if (!replyTo) {
-      await Post.findByIdAndUpdate(postId, { $inc: { commentCount: 1 } });
+      const post = await Post.findById(postId);
+
+      await NotificationService.createNotification({
+        receiver: post?.author,
+        sender: userId,
+        type: "post_comment",
+        content: "commented on your post",
+        preview: content.trim(),
+        relatedId: postId,
+        relatedType: "Post",
+      });
+    } else {
+      const parentComment = await CommentRepository.findCommentById(replyTo);
+
+      await NotificationService.createNotification({
+        receiver: parentComment?.author?._id || parentComment?.author,
+        sender: userId,
+        type: "comment_reply",
+        content: "replied to your comment",
+        preview: content.trim(),
+        relatedId: parentComment?._id || replyTo,
+        relatedType: "Comment",
+      });
     }
 
     return await CommentRepository.findCommentById(comment._id);
@@ -65,14 +89,12 @@ class CommentService {
       throw new Error("Bạn không có quyền xóa bình luận này");
     }
 
-    // Decrement comment count (only for top-level comments)
-    if (!comment.replyTo) {
-      await Post.findByIdAndUpdate(comment.post, {
-        $inc: { commentCount: -1 },
-      });
-    }
+    const result = await CommentRepository.deleteComment(commentId);
+    await Post.findByIdAndUpdate(comment.post, {
+      $inc: { commentCount: -Math.max(1, result.deletedCount || 1) },
+    });
 
-    return await CommentRepository.deleteComment(commentId);
+    return result;
   }
 
   // Like bình luận
@@ -93,6 +115,14 @@ class CommentService {
     } else {
       // Like
       updatedComment = await CommentRepository.addLike(commentId, userId);
+      await NotificationService.createNotification({
+        receiver: comment.author?._id || comment.author,
+        sender: userId,
+        type: "comment_like",
+        content: "liked your comment",
+        relatedId: commentId,
+        relatedType: "Comment",
+      });
     }
 
     return {
@@ -115,9 +145,18 @@ class CommentService {
       limit,
     );
     const total = await CommentRepository.getCommentCountByPost(postId);
+    const commentsWithReplyCount = await Promise.all(
+      comments.map(async (comment) => {
+        const commentObj = comment.toObject();
+        commentObj.replyCount = await CommentRepository.getReplyCountByComment(
+          comment._id,
+        );
+        return commentObj;
+      }),
+    );
 
     return {
-      comments,
+      comments: commentsWithReplyCount,
       pagination: {
         page,
         limit,
@@ -140,9 +179,18 @@ class CommentService {
       limit,
     );
     const total = await CommentRepository.getReplyCountByComment(commentId);
+    const repliesWithReplyCount = await Promise.all(
+      replies.map(async (reply) => {
+        const replyObj = reply.toObject();
+        replyObj.replyCount = await CommentRepository.getReplyCountByComment(
+          reply._id,
+        );
+        return replyObj;
+      }),
+    );
 
     return {
-      replies,
+      replies: repliesWithReplyCount,
       pagination: {
         page,
         limit,

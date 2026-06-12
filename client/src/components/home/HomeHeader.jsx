@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { userAPI } from "../../services/api";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { notificationAPI, userAPI } from "../../services/api";
 import { useAppDispatch } from "../../store/hooks";
 import { clearProfile } from "../../store/slices/userSlice";
 import HomeAvatar from "./HomeAvatar";
@@ -7,6 +7,14 @@ import HomeAvatar from "./HomeAvatar";
 const HomeHeader = ({ profile, activePage = "home" }) => {
   const dispatch = useAppDispatch();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [newNotificationCount, setNewNotificationCount] = useState(0);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [popupNotification, setPopupNotification] = useState(null);
+  const notificationsRef = useRef(null);
+  const notificationsOpenRef = useRef(false);
 
   const handleLogout = async () => {
     if (isLoggingOut) return;
@@ -21,6 +29,177 @@ const HomeHeader = ({ profile, activePage = "home" }) => {
       localStorage.removeItem("token");
       dispatch(clearProfile());
       window.location.assign("/login");
+    }
+  };
+
+  const loadNotifications = useCallback(async () => {
+    setNotificationsLoading(true);
+
+    try {
+      const response = await notificationAPI.getNotifications(1, 10);
+      setNotifications(response.data?.data?.notifications || []);
+      setUnreadCount(response.data?.data?.unreadCount || 0);
+    } catch (error) {
+      console.error("Unable to load notifications:", error);
+      setNotifications([]);
+      setUnreadCount(0);
+    } finally {
+      setNotificationsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      loadNotifications();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [loadNotifications]);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) return undefined;
+
+    const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+    const wsUrl = `${protocol}://${window.location.host}/api/notifications/ws?token=${encodeURIComponent(token)}`;
+    let socket = null;
+    let reconnectTimer = null;
+    let shouldReconnect = true;
+
+    const handleMessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+
+        if (data.type === "notification" && data.notification) {
+          setNotifications((items) => {
+            const exists = items.some(
+              (item) => item._id === data.notification._id,
+            );
+
+            if (exists) return items;
+            return [data.notification, ...items].slice(0, 10);
+          });
+          setUnreadCount(data.unreadCount || 0);
+          if (!notificationsOpenRef.current) {
+            setNewNotificationCount((count) => count + 1);
+          }
+          setPopupNotification(data.notification);
+        }
+
+        if (data.type === "unread_count") {
+          setUnreadCount(data.unreadCount || 0);
+        }
+      } catch (error) {
+        console.error("Invalid notification message:", error);
+      }
+    };
+
+    const connect = () => {
+      socket = new WebSocket(wsUrl);
+      socket.onopen = () => {
+        loadNotifications();
+      };
+      socket.onmessage = handleMessage;
+      socket.onerror = (error) => {
+        console.error("Notification websocket error:", error);
+      };
+      socket.onclose = () => {
+        if (!shouldReconnect) return;
+
+        reconnectTimer = window.setTimeout(connect, 3000);
+      };
+    };
+
+    connect();
+
+    return () => {
+      shouldReconnect = false;
+      if (reconnectTimer) {
+        window.clearTimeout(reconnectTimer);
+      }
+      socket?.close();
+    };
+  }, [loadNotifications]);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      if (document.visibilityState === "visible") {
+        loadNotifications();
+      }
+    }, 15000);
+
+    return () => window.clearInterval(interval);
+  }, [loadNotifications]);
+
+  useEffect(() => {
+    if (!popupNotification) return undefined;
+
+    const timer = window.setTimeout(() => {
+      setPopupNotification(null);
+    }, 6000);
+
+    return () => window.clearTimeout(timer);
+  }, [popupNotification]);
+
+  useEffect(() => {
+    notificationsOpenRef.current = notificationsOpen;
+  }, [notificationsOpen]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        notificationsRef.current &&
+        !notificationsRef.current.contains(event.target)
+      ) {
+        setNotificationsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleToggleNotifications = async () => {
+    const nextOpen = !notificationsOpen;
+    setNotificationsOpen(nextOpen);
+
+    if (nextOpen) {
+      setNewNotificationCount(0);
+      await loadNotifications();
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      await notificationAPI.markAllAsRead();
+      setNotifications((items) =>
+        items.map((item) => ({ ...item, isRead: true })),
+      );
+      setUnreadCount(0);
+      setNewNotificationCount(0);
+    } catch (error) {
+      console.error("Unable to mark notifications as read:", error);
+    }
+  };
+
+  const handleNotificationClick = async (notification, href) => {
+    if (notification.isRead) {
+      window.location.assign(href);
+      return;
+    }
+
+    try {
+      await notificationAPI.markAsRead(notification._id);
+      setNotifications((items) =>
+        items.map((item) =>
+          item._id === notification._id ? { ...item, isRead: true } : item,
+        ),
+      );
+      setUnreadCount((count) => Math.max(0, count - 1));
+    } catch (error) {
+      console.error("Unable to mark notification as read:", error);
+    } finally {
+      window.location.assign(href);
     }
   };
 
@@ -50,7 +229,23 @@ const HomeHeader = ({ profile, activePage = "home" }) => {
 
       <div className="flex items-center gap-3">
         <CircleIcon icon="forum" label="Messages" />
-        <CircleIcon icon="notifications" label="Notifications" />
+        <div className="relative" ref={notificationsRef}>
+          <CircleIcon
+            icon="notifications"
+            label="Notifications"
+            onClick={handleToggleNotifications}
+            badge={newNotificationCount}
+          />
+          {notificationsOpen ? (
+            <NotificationsDropdown
+              notifications={notifications}
+              unreadCount={unreadCount}
+              loading={notificationsLoading}
+              onMarkAllAsRead={handleMarkAllAsRead}
+              onNotificationClick={handleNotificationClick}
+            />
+          ) : null}
+        </div>
         <CircleIcon
           icon="logout"
           label={isLoggingOut ? "Logging out" : "Log out"}
@@ -68,6 +263,12 @@ const HomeHeader = ({ profile, activePage = "home" }) => {
           expand_more
         </span>
       </div>
+      {popupNotification ? (
+        <NotificationPopup
+          notification={popupNotification}
+          onClose={() => setPopupNotification(null)}
+        />
+      ) : null}
     </header>
   );
 };
@@ -108,7 +309,7 @@ const SearchBox = () => {
       } catch (err) {
         if (!isCurrent) return;
         setResults([]);
-        setError(err.response?.data?.message || "Khong the tim kiem nguoi dung.");
+        setError(err.response?.data?.message || "Unable to search users.");
       } finally {
         if (isCurrent) {
           setLoading(false);
@@ -161,7 +362,7 @@ const SearchBox = () => {
           {loading ? (
             <div className="flex items-center gap-3 px-2 py-3 text-[#65676b]">
               <span className="h-5 w-5 animate-spin rounded-full border-2 border-[#1877f2] border-t-transparent" />
-              <span className="text-sm">Dang tim...</span>
+              <span className="text-sm">Searching...</span>
             </div>
           ) : null}
 
@@ -171,7 +372,7 @@ const SearchBox = () => {
 
           {!loading && !error && results.length === 0 ? (
             <p className="px-2 py-3 text-sm text-[#65676b]">
-              Khong tim thay nguoi dung phu hop.
+              No matching users found.
             </p>
           ) : null}
 
@@ -218,17 +419,172 @@ const HeaderTab = ({ icon, active = false, href = "/home" }) => (
   </a>
 );
 
-const CircleIcon = ({ icon, label, onClick, disabled = false }) => (
+const CircleIcon = ({ icon, label, onClick, disabled = false, badge = 0 }) => (
   <button
     type="button"
     onClick={onClick}
     disabled={disabled}
     title={label}
     aria-label={label}
-    className="flex h-9 w-9 items-center justify-center rounded-full bg-[#f1f3f5] text-[#111827] hover:bg-[#e5e7eb] disabled:cursor-not-allowed disabled:opacity-60"
+    className="relative flex h-9 w-9 items-center justify-center rounded-full bg-[#f1f3f5] text-[#111827] hover:bg-[#e5e7eb] disabled:cursor-not-allowed disabled:opacity-60"
   >
     <span className="material-symbols-outlined text-[20px]">{icon}</span>
+    {badge > 0 ? (
+      <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-red-500 px-1 text-center text-[10px] font-bold leading-5 text-white">
+        {badge > 9 ? "9+" : badge}
+      </span>
+    ) : null}
   </button>
 );
 
+const notificationLinks = {
+  friend_request: "/friend-requests",
+  post_like: "/home",
+  post_comment: "/home",
+  comment_reply: "/home",
+  comment_like: "/home",
+};
+
+const popupTitles = {
+  friend_request: "New friend request",
+  post_like: "New like",
+  post_comment: "New comment",
+  comment_reply: "New reply",
+  comment_like: "New comment like",
+};
+
+const NotificationPopup = ({ notification, onClose }) => {
+  const senderName = notification.sender?.fullName || "Someone";
+  const title = popupTitles[notification.type] || "New notification";
+  const href = notificationLinks[notification.type] || "/home";
+
+  return (
+    <div className="fixed right-5 top-24 z-[60] w-[min(360px,calc(100vw-32px))] rounded-lg border border-[#dbe4f0] bg-white p-4 shadow-2xl">
+      <div className="mb-2 flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <HomeAvatar
+            image={notification.sender?.avatar}
+            name={senderName}
+            size="sm"
+          />
+          <div className="min-w-0">
+            <p className="text-sm font-bold text-[#111827]">{title}</p>
+            <p className="truncate text-xs text-[#6b7280]">{senderName}</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-full p-1 text-[#6b7280] hover:bg-[#f2f3f5]"
+          aria-label="Close notification popup"
+        >
+          <span className="material-symbols-outlined text-[18px]">close</span>
+        </button>
+      </div>
+
+      <a href={href} className="block rounded-md hover:bg-[#f8fafc]">
+        <p className="text-sm text-[#111827]">
+          <span className="font-semibold">{senderName}</span>{" "}
+          {notification.content || "sent you a notification"}
+        </p>
+        {notification.preview ? (
+          <p className="mt-2 line-clamp-2 rounded-md bg-[#f2f3f5] px-3 py-2 text-sm text-[#4b5563]">
+            "{notification.preview}"
+          </p>
+        ) : null}
+      </a>
+    </div>
+  );
+};
+
+const NotificationsDropdown = ({
+  notifications,
+  unreadCount,
+  loading,
+  onMarkAllAsRead,
+  onNotificationClick,
+}) => (
+  <div className="absolute right-0 top-12 z-50 w-[min(380px,calc(100vw-24px))] rounded-lg border border-[#dddfe2] bg-white p-3 shadow-2xl">
+    <div className="mb-3 flex items-center justify-between">
+      <h2 className="text-lg font-bold text-[#111827]">Notifications</h2>
+      {unreadCount > 0 ? (
+        <button
+          type="button"
+          onClick={onMarkAllAsRead}
+          className="text-xs font-semibold text-[#1877f2] hover:underline"
+        >
+          Mark all read
+        </button>
+      ) : null}
+    </div>
+
+    {loading ? (
+      <div className="flex items-center gap-3 rounded-md p-3 text-sm text-[#6b7280]">
+        <span className="h-5 w-5 animate-spin rounded-full border-2 border-[#1877f2] border-t-transparent" />
+        Loading notifications...
+      </div>
+    ) : null}
+
+    {!loading && notifications.length === 0 ? (
+      <div className="rounded-md bg-[#f2f3f5] p-4 text-center text-sm font-semibold text-[#6b7280]">
+        No notifications yet.
+      </div>
+    ) : null}
+
+    {!loading && notifications.length > 0 ? (
+      <div className="max-h-[420px] space-y-1 overflow-y-auto">
+        {notifications.map((notification) => (
+          <NotificationItem
+            key={notification._id}
+            notification={notification}
+            onClick={onNotificationClick}
+          />
+        ))}
+      </div>
+    ) : null}
+  </div>
+);
+
+const NotificationItem = ({ notification, onClick }) => {
+  const senderName = notification.sender?.fullName || "Someone";
+  const href = notificationLinks[notification.type] || "/home";
+
+  return (
+    <a
+      href={href}
+      onClick={(event) => {
+        event.preventDefault();
+        onClick?.(notification, href);
+      }}
+      className={`flex gap-3 rounded-md p-2 hover:bg-[#f2f3f5] ${
+        notification.isRead ? "" : "bg-[#eef5ff]"
+      }`}
+    >
+      <HomeAvatar
+        image={notification.sender?.avatar}
+        name={senderName}
+        size="sm"
+      />
+      <div className="min-w-0 flex-1">
+        <p className="text-sm text-[#111827]">
+          <span className="font-bold">{senderName}</span>{" "}
+          {notification.content || "sent you a notification"}
+        </p>
+        {notification.preview ? (
+          <p className="mt-1 line-clamp-2 text-xs text-[#4b5563]">
+            "{notification.preview}"
+          </p>
+        ) : null}
+        <p className="mt-1 text-xs text-[#6b7280]">
+          {new Date(notification.createdAt).toLocaleString()}
+        </p>
+      </div>
+      {!notification.isRead ? (
+        <span className="mt-2 h-2 w-2 rounded-full bg-[#1877f2]" />
+      ) : null}
+    </a>
+  );
+};
+
 export default HomeHeader;
+
