@@ -109,7 +109,12 @@ const CommentSection = ({ postId, onCommentAdded }) => {
         )}
 
         {comments.map((comment) => (
-          <CommentItem key={comment._id} comment={comment} postId={postId} />
+          <CommentItem
+            key={comment._id}
+            comment={comment}
+            postId={postId}
+            onReplyAdded={onCommentAdded}
+          />
         ))}
 
         {/* Load more */}

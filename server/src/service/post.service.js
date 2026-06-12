@@ -3,6 +3,24 @@ const Comment = require('../models/comment.model');
 const NotificationService = require('./notification.service');
 const User = require('../models/user.model');
 
+const buildPostResponse = async (post, userId = null) => {
+  const postObj = post.toObject ? post.toObject() : post;
+
+  if (userId) {
+    postObj.isLiked = (post.likes || []).some(
+      (like) => like._id.toString() === userId,
+    );
+  } else {
+    postObj.isLiked = false;
+  }
+
+  postObj.commentCount = await Comment.countDocuments({ post: postObj._id });
+  return postObj;
+};
+
+const buildPostsResponse = async (posts, userId = null) =>
+  await Promise.all(posts.map((post) => buildPostResponse(post, userId)));
+
 class PostService {
   // 4.1 Tạo bài viết
   static async createPost(userId, content, media = []) {
@@ -118,18 +136,7 @@ class PostService {
     const posts = await PostRepository.getPostsByAuthors(friendIds, skip, limit);
     const total = await PostRepository.getPostsByAuthorsCount(friendIds);
 
-    // Add isLiked flag for current user
-    const postsWithLikeStatus = posts.map((post) => {
-      const postObj = post.toObject();
-      if (userId) {
-        postObj.isLiked = post.likes.some(
-          (like) => like._id.toString() === userId,
-        );
-      } else {
-        postObj.isLiked = false;
-      }
-      return postObj;
-    });
+    const postsWithLikeStatus = await buildPostsResponse(posts, userId);
 
     return {
       posts: postsWithLikeStatus,
@@ -241,14 +248,7 @@ class PostService {
       throw new Error('Bài viết không tồn tại');
     }
 
-    const postObj = post.toObject();
-    if (userId) {
-      postObj.isLiked = post.likes.some((like) => like._id.toString() === userId);
-    } else {
-      postObj.isLiked = false;
-    }
-
-    return postObj;
+    return await buildPostResponse(post, userId);
   }
 
   // Get posts by author
@@ -262,18 +262,7 @@ class PostService {
     const posts = await PostRepository.getPostsByAuthor(authorId, skip, limit);
     const total = await PostRepository.getPostsByAuthorCount(authorId);
 
-    // Add isLiked flag for current user
-    const postsWithLikeStatus = posts.map((post) => {
-      const postObj = post.toObject();
-      if (currentUserId) {
-        postObj.isLiked = post.likes.some(
-          (like) => like._id.toString() === currentUserId,
-        );
-      } else {
-        postObj.isLiked = false;
-      }
-      return postObj;
-    });
+    const postsWithLikeStatus = await buildPostsResponse(posts, currentUserId);
 
     return {
       posts: postsWithLikeStatus,
@@ -309,18 +298,7 @@ class PostService {
 
     const total = await Post.countDocuments({ content: searchRegex });
 
-    // Add isLiked flag for current user
-    const postsWithLikeStatus = posts.map((post) => {
-      const postObj = post.toObject();
-      if (userId) {
-        postObj.isLiked = post.likes.some(
-          (like) => like._id.toString() === userId,
-        );
-      } else {
-        postObj.isLiked = false;
-      }
-      return postObj;
-    });
+    const postsWithLikeStatus = await buildPostsResponse(posts, userId);
 
     return {
       posts: postsWithLikeStatus,

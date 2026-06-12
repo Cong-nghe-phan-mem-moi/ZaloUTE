@@ -23,13 +23,10 @@ class CommentService {
 
     const comment = await CommentRepository.createComment(commentData);
 
-    // Increment comment count (only for top-level comments)
+    await Post.findByIdAndUpdate(postId, { $inc: { commentCount: 1 } });
+
     if (!replyTo) {
-      const post = await Post.findByIdAndUpdate(
-        postId,
-        { $inc: { commentCount: 1 } },
-        { new: true },
-      );
+      const post = await Post.findById(postId);
 
       await NotificationService.createNotification({
         receiver: post?.author,
@@ -92,14 +89,12 @@ class CommentService {
       throw new Error("Bạn không có quyền xóa bình luận này");
     }
 
-    // Decrement comment count (only for top-level comments)
-    if (!comment.replyTo) {
-      await Post.findByIdAndUpdate(comment.post, {
-        $inc: { commentCount: -1 },
-      });
-    }
+    const result = await CommentRepository.deleteComment(commentId);
+    await Post.findByIdAndUpdate(comment.post, {
+      $inc: { commentCount: -Math.max(1, result.deletedCount || 1) },
+    });
 
-    return await CommentRepository.deleteComment(commentId);
+    return result;
   }
 
   // Like bình luận
@@ -150,9 +145,18 @@ class CommentService {
       limit,
     );
     const total = await CommentRepository.getCommentCountByPost(postId);
+    const commentsWithReplyCount = await Promise.all(
+      comments.map(async (comment) => {
+        const commentObj = comment.toObject();
+        commentObj.replyCount = await CommentRepository.getReplyCountByComment(
+          comment._id,
+        );
+        return commentObj;
+      }),
+    );
 
     return {
-      comments,
+      comments: commentsWithReplyCount,
       pagination: {
         page,
         limit,
@@ -175,9 +179,18 @@ class CommentService {
       limit,
     );
     const total = await CommentRepository.getReplyCountByComment(commentId);
+    const repliesWithReplyCount = await Promise.all(
+      replies.map(async (reply) => {
+        const replyObj = reply.toObject();
+        replyObj.replyCount = await CommentRepository.getReplyCountByComment(
+          reply._id,
+        );
+        return replyObj;
+      }),
+    );
 
     return {
-      replies,
+      replies: repliesWithReplyCount,
       pagination: {
         page,
         limit,
