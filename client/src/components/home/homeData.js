@@ -1,8 +1,8 @@
 export const menuItems = [
   { icon: "group", label: "Friends", href: "/friends" },
-  { icon: "groups", label: "Groups", href: "/home" },
-  { icon: "storefront", label: "Marketplace", href: "/home" },
-  { icon: "settings", label: "Watch", href: "/home" },
+  { icon: "groups", label: "Groups", href: "/" },
+  { icon: "storefront", label: "Marketplace", href: "/" },
+  { icon: "settings", label: "Watch", href: "/" },
 ];
 
 export const shortcuts = [

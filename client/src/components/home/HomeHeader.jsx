@@ -14,7 +14,9 @@ const HomeHeader = ({ profile, activePage = "home" }) => {
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [popupNotification, setPopupNotification] = useState(null);
   const notificationsRef = useRef(null);
+  const profileMenuRef = useRef(null);
   const notificationsOpenRef = useRef(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 
   const handleLogout = async () => {
     if (isLoggingOut) return;
@@ -153,6 +155,13 @@ const HomeHeader = ({ profile, activePage = "home" }) => {
       ) {
         setNotificationsOpen(false);
       }
+
+      if (
+        profileMenuRef.current &&
+        !profileMenuRef.current.contains(event.target)
+      ) {
+        setProfileMenuOpen(false);
+      }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
@@ -207,7 +216,7 @@ const HomeHeader = ({ profile, activePage = "home" }) => {
     <header className="flex h-20 items-center justify-between gap-4 bg-white px-6 lg:px-12">
       <div className="flex items-center gap-5">
         <a
-          href="/home"
+          href="/"
           className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1877f2] text-xl font-bold text-white"
           aria-label="ZaloUTE home"
         >
@@ -246,22 +255,35 @@ const HomeHeader = ({ profile, activePage = "home" }) => {
             />
           ) : null}
         </div>
-        <CircleIcon
-          icon="logout"
-          label={isLoggingOut ? "Logging out" : "Log out"}
-          onClick={handleLogout}
-          disabled={isLoggingOut}
-        />
-        <HomeAvatar image={profile?.avatar} name={profile?.fullName} size="sm" />
-        <a
-          href="/user/profile"
-          className="hidden text-sm font-semibold text-[#111827] sm:block"
-        >
-          {profile?.fullName || "Hexa Pentania"}
-        </a>
-        <span className="material-symbols-outlined text-[18px] text-[#111827]">
-          expand_more
-        </span>
+        <div className="relative" ref={profileMenuRef}>
+          <button
+            type="button"
+            onClick={() => setProfileMenuOpen((open) => !open)}
+            className="flex items-center gap-2 rounded-full px-1 py-1 hover:bg-[#f2f3f5]"
+            aria-expanded={profileMenuOpen}
+            aria-label="Open profile menu"
+          >
+            <HomeAvatar
+              image={profile?.avatar}
+              name={profile?.fullName}
+              size="sm"
+            />
+            <span className="hidden max-w-36 truncate text-sm font-semibold text-[#111827] sm:block">
+              {profile?.fullName || "Hexa Pentania"}
+            </span>
+            <span className="material-symbols-outlined text-[18px] text-[#111827]">
+              expand_more
+            </span>
+          </button>
+
+          {profileMenuOpen ? (
+            <ProfileMenu
+              profile={profile}
+              isLoggingOut={isLoggingOut}
+              onLogout={handleLogout}
+            />
+          ) : null}
+        </div>
       </div>
       {popupNotification ? (
         <NotificationPopup
@@ -272,6 +294,37 @@ const HomeHeader = ({ profile, activePage = "home" }) => {
     </header>
   );
 };
+
+const ProfileMenu = ({ profile, isLoggingOut, onLogout }) => (
+  <div className="absolute right-0 top-12 z-50 w-72 rounded-lg border border-[#dddfe2] bg-white p-2 shadow-2xl">
+    <a
+      href="/user/profile"
+      className="flex items-center gap-3 rounded-lg p-3 text-[#111827] hover:bg-[#f2f3f5]"
+    >
+      <HomeAvatar image={profile?.avatar} name={profile?.fullName} size="sm" />
+      <div className="min-w-0">
+        <p className="truncate text-sm font-bold">
+          {profile?.fullName || "Hexa Pentania"}
+        </p>
+        <p className="text-xs text-[#6b7280]">View your profile</p>
+      </div>
+    </a>
+
+    <div className="my-1 h-px bg-[#e5e7eb]" />
+
+    <button
+      type="button"
+      onClick={onLogout}
+      disabled={isLoggingOut}
+      className="flex w-full items-center gap-3 rounded-lg p-3 text-left text-sm font-semibold text-[#111827] hover:bg-[#f2f3f5] disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#f1f3f5]">
+        <span className="material-symbols-outlined text-[20px]">logout</span>
+      </span>
+      {isLoggingOut ? "Logging out..." : "Log out"}
+    </button>
+  </div>
+);
 
 const SearchBox = () => {
   const [keyword, setKeyword] = useState("");
@@ -406,7 +459,7 @@ const SearchResultItem = ({ user }) => (
   </a>
 );
 
-const HeaderTab = ({ icon, active = false, href = "/home" }) => (
+const HeaderTab = ({ icon, active = false, href = "/" }) => (
   <a
     href={href}
     className={`flex h-14 w-20 items-center justify-center border-b-4 ${
@@ -439,10 +492,10 @@ const CircleIcon = ({ icon, label, onClick, disabled = false, badge = 0 }) => (
 
 const notificationLinks = {
   friend_request: "/friend-requests",
-  post_like: "/home",
-  post_comment: "/home",
-  comment_reply: "/home",
-  comment_like: "/home",
+  post_like: "/",
+  post_comment: "/",
+  comment_reply: "/",
+  comment_like: "/",
 };
 
 const popupTitles = {
@@ -456,7 +509,7 @@ const popupTitles = {
 const NotificationPopup = ({ notification, onClose }) => {
   const senderName = notification.sender?.fullName || "Someone";
   const title = popupTitles[notification.type] || "New notification";
-  const href = notificationLinks[notification.type] || "/home";
+  const href = notificationLinks[notification.type] || "/";
 
   return (
     <div className="fixed right-5 top-24 z-[60] w-[min(360px,calc(100vw-32px))] rounded-lg border border-[#dbe4f0] bg-white p-4 shadow-2xl">
@@ -547,7 +600,7 @@ const NotificationsDropdown = ({
 
 const NotificationItem = ({ notification, onClick }) => {
   const senderName = notification.sender?.fullName || "Someone";
-  const href = notificationLinks[notification.type] || "/home";
+  const href = notificationLinks[notification.type] || "/";
 
   return (
     <a

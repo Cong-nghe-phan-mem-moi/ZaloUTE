@@ -11,6 +11,7 @@ import ProfilePage from "./pages/ProfilePage";
 import PostTestPage from "./pages/PostTestPage";
 import FriendRequests from "./pages/FriendRequests";
 import Friends from "./pages/Friends";
+import AdminDashboard from "./pages/AdminDashboard";
 
 function App() {
   const dispatch = useAppDispatch();
@@ -18,25 +19,38 @@ function App() {
     (state) => state.ui?.currentPage || "login",
   );
   const path = window.location.pathname;
+  const token = localStorage.getItem("token");
   const otherProfileId = path.match(/^\/users\/profile\/([^/]+)$/)?.[1] || null;
 
   useEffect(() => {
     const otherProfileMatch = path.match(/^\/users\/profile\/([^/]+)$/);
 
-    if (path === "/" || path === "/login") {
-      dispatch(setCurrentPage("login"));
+    if (path === "/home") {
+      window.history.replaceState(null, "", "/");
+      dispatch(setCurrentPage(token ? "home" : "login"));
+    } else if (path === "/") {
+      dispatch(setCurrentPage(token ? "home" : "login"));
+    } else if (path === "/login") {
+      if (token) {
+        window.history.replaceState(null, "", "/");
+        dispatch(setCurrentPage("home"));
+      } else {
+        dispatch(setCurrentPage("login"));
+      }
     } else if (path === "/register") {
       dispatch(setCurrentPage("register"));
     } else if (path === "/verify-otp") {
       dispatch(setCurrentPage("verify-otp"));
     } else if (path === "/forgot-password") {
       dispatch(setCurrentPage("forgot-password"));
-    } else if (path === "/home") {
-      dispatch(setCurrentPage("home"));
+    } else if (!token) {
+      dispatch(setCurrentPage("login"));
     } else if (path === "/friends") {
       dispatch(setCurrentPage("friends"));
     } else if (path === "/friend-requests") {
       dispatch(setCurrentPage("friend-requests"));
+    } else if (path === "/admin/dashboard" || path === "/admin-dashboard") {
+      dispatch(setCurrentPage("admin-dashboard"));
     } else if (
       path === "/profile" ||
       path === "/user/profile" ||
@@ -46,12 +60,10 @@ function App() {
       dispatch(setCurrentPage("profile"));
     } else if (otherProfileMatch) {
       dispatch(setCurrentPage("other-profile"));
-    } else if (path === "/edit-profile") {
-      dispatch(setCurrentPage("edit-profile"));
     } else if (path === "/post-test") {
       dispatch(setCurrentPage("post-test"));
     }
-  }, [dispatch, path]);
+  }, [dispatch, path, token]);
 
   const renderPage = () => {
     switch (currentPage) {
@@ -67,6 +79,8 @@ function App() {
         return <Friends />;
       case "friend-requests":
         return <FriendRequests />;
+      case "admin-dashboard":
+        return <AdminDashboard />;
       case "profile":
         return <ProfilePage />;
       case "other-profile":

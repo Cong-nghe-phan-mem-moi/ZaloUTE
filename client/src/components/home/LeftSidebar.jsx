@@ -22,7 +22,7 @@ const LeftSidebar = ({ profile }) => (
       ))}
       <a
         className="block px-1 py-3 text-sm font-semibold text-[#0b66c3]"
-        href="/home"
+        href="/"
       >
         See More
       </a>

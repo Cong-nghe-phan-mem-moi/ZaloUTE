@@ -26,9 +26,7 @@ function LoginPage() {
       const { token, redirectUrl } = response.data.data;
 
       localStorage.setItem("token", token);
-      window.location.assign(
-        redirectUrl === "/admin/profile" ? redirectUrl : "/home",
-      );
+      window.location.assign(redirectUrl === "/home" ? "/" : redirectUrl || "/");
     } catch (error) {
       setErrorMessage(getErrorMessage(error));
     } finally {

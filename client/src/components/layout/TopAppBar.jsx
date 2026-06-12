@@ -16,7 +16,7 @@ const TopAppBar = ({ profile }) => {
   const dispatch = useAppDispatch();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const pathname = window.location.pathname;
-  const isHomePage = pathname === "/home";
+  const isHomePage = pathname === "/" || pathname === "/home";
   const isFriendRequestsPage = pathname === "/friend-requests";
 
   const handleLogout = async () => {
@@ -40,7 +40,7 @@ const TopAppBar = ({ profile }) => {
       <div className="h-full px-4 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0 flex-1 md:flex-none">
           <a
-            href="/home"
+            href="/"
             className="w-10 h-10 rounded-full bg-[#1877f2] text-white flex items-center justify-center text-2xl font-bold shrink-0"
             aria-label="ZaloUTE home"
           >
@@ -50,15 +50,15 @@ const TopAppBar = ({ profile }) => {
         </div>
 
         <nav className="hidden md:flex items-center justify-center gap-2 absolute left-1/2 -translate-x-1/2">
-          <NavIcon icon="home" label="Home" href="/home" active={isHomePage} />
+          <NavIcon icon="home" label="Home" href="/" active={isHomePage} />
           <NavIcon
             icon="group"
             label="Friends"
             href="/friend-requests"
             active={isFriendRequestsPage}
           />
-          <NavIcon icon="forum" label="Messages" href="/home" />
-          <NavIcon icon="smart_display" label="Watch" href="/home" />
+          <NavIcon icon="forum" label="Messages" href="/" />
+          <NavIcon icon="smart_display" label="Watch" href="/" />
         </nav>
 
         <div className="flex items-center gap-2 shrink-0">
