@@ -8,6 +8,7 @@ const { authMiddleware, authorize } = require("../middleware/authMiddleware");
 const { validateEditProfile } = require("../middleware/validateRequest");
 const { editProfileLimiter } = require("../middleware/rateLimiter");
 const userRoutes = require("./user.route");
+const upload = require("../middleware/uploadMiddleware");
 
 // Basic health check endpoint
 router.get("/health", (req, res) => {
@@ -41,6 +42,20 @@ router.get(
 // General Profile Routes
 router.get("/profile", authMiddleware, UserController.getMyProfile);
 router.put("/profile", authMiddleware, validateEditProfile, UserController.editProfile);
+router.put(
+  "/profile/avatar",
+  authMiddleware,
+  upload.imageUpload.single("avatar"),
+  UserController.handleMulterError,
+  UserController.uploadAvatar,
+);
+router.put(
+  "/profile/cover-image",
+  authMiddleware,
+  upload.imageUpload.single("coverImage"),
+  UserController.handleMulterError,
+  UserController.uploadCoverImage,
+);
 
 // Comment Routes
 router.use("/comments", commentRoutes);

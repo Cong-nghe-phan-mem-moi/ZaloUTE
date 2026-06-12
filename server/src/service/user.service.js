@@ -16,6 +16,7 @@ const buildProfileResponse = (user) => ({
   email: user.account?.email,
   phone: user.phone,
   avatar: user.avatar,
+  coverImage: user.coverImage,
   bio: user.bio,
   dateOfBirth: user.dateOfBirth,
   gender: user.gender,
@@ -86,6 +87,30 @@ async function editProfile(userId, updateData) {
   return {
     success: true,
     message: "Profile updated successfully",
+    data: buildProfileResponse(updatedUser),
+  };
+}
+
+async function updateProfileImage(userId, field, imageUrl) {
+  if (!["avatar", "coverImage"].includes(field)) {
+    throwError(400, "INVALID_IMAGE_FIELD", "Invalid profile image field");
+  }
+
+  const user = await UserRepository.getUserById(userId);
+  if (!user) throwError(404, "USER_NOT_FOUND", "User not found");
+
+  await UserRepository.updateProfile(userId, { [field]: imageUrl });
+
+  const updatedUser = await UserRepository.getUserById(userId);
+  if (!updatedUser)
+    throwError(500, "UPDATE_FAILED", "Failed to update user profile");
+
+  return {
+    success: true,
+    message:
+      field === "avatar"
+        ? "Avatar uploaded successfully"
+        : "Cover image uploaded successfully",
     data: buildProfileResponse(updatedUser),
   };
 }
@@ -195,6 +220,7 @@ async function logout(userId) {
 module.exports = {
   editProfile,
   getMyProfile,
+  updateProfileImage,
   searchUsers,
   getMyProfileByRole,
   getOtherUserProfile,

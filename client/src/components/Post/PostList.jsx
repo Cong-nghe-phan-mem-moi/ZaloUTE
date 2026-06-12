@@ -20,6 +20,7 @@ const getUserId = (user) => user?.userId || user?._id || user?.id;
 const PostList = ({
   authorId = null,
   allowedAuthorIds = null,
+  refreshKey = 0,
   emptyMessage = "No posts yet",
   emptyDetail = "Add friends to see their posts.",
 }) => {
@@ -51,16 +52,21 @@ const PostList = ({
   }, [allowedAuthorIdSet, posts]);
 
   useEffect(() => {
-    setPage(1);
+    const timer = window.setTimeout(() => {
+      setPage(1);
+    }, 0);
+
     dispatch(resetPosts());
 
     if (authorId) {
       dispatch(getPostsByAuthor({ authorId, page: 1, limit: 10 }));
-      return;
+      return () => window.clearTimeout(timer);
     }
 
     dispatch(getNewsFeed({ page: 1, limit: 10 }));
-  }, [authorId, dispatch]);
+
+    return () => window.clearTimeout(timer);
+  }, [authorId, dispatch, refreshKey]);
 
   useEffect(() => {
     if (page === 1) {
@@ -94,10 +100,11 @@ const PostList = ({
     if (!authorProfileId) return;
 
     const currentUserId = getUserId(currentUser);
-    window.location.href =
+    const profileUrl =
       currentUserId && String(currentUserId) === String(authorProfileId)
         ? "/profile"
         : `/users/profile/${authorProfileId}`;
+    window.location.assign(profileUrl);
   };
 
   const reloadCurrentList = () => {
@@ -120,7 +127,7 @@ const PostList = ({
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-4 pb-8">
+    <div className="max-w-4xl mx-auto space-y-4 pb-8">
       {visiblePosts.length === 0 ? (
         <div className="p-8 text-center text-gray-500 bg-white rounded-lg">
           <p className="text-lg">{emptyMessage}</p>
@@ -205,6 +212,10 @@ const PostList = ({
                         ) : (
                           <video
                             src={item.url}
+                            controls
+                            preload="metadata"
+                            onClick={(event) => event.stopPropagation()}
+                            onMouseDown={(event) => event.stopPropagation()}
                             className="w-full h-48 object-cover"
                             onError={(event) => {
                               event.target.style.display = "none";
@@ -252,7 +263,7 @@ const PostList = ({
                   onClick={() => setSelectedPostId(post._id)}
                   className="flex-1 py-2 rounded-lg hover:bg-gray-100 transition flex items-center justify-center gap-2 font-medium text-gray-600"
                 >
-                  Binh luan
+                  Comment
                 </button>
                 <button className="flex-1 py-2 rounded-lg hover:bg-gray-100 transition flex items-center justify-center gap-2 font-medium text-gray-600">
                   Share

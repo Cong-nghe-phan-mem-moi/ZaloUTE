@@ -12,6 +12,10 @@ const ProfileHeader = ({
   onEdit,
   isOwnProfile = true,
   onSendFriendRequest,
+  onUploadAvatar,
+  avatarUploading = false,
+  onUploadCoverImage,
+  coverUploading = false,
   sendingFriendRequest = false,
   onAcceptFriendRequest,
   acceptingFriendRequest = false,
@@ -35,12 +39,23 @@ const ProfileHeader = ({
 
   return (
     <div className="overflow-hidden rounded bg-white shadow-sm">
-      <CoverImage coverImage={coverImage} isOwnProfile={isOwnProfile} />
+      <CoverImage
+        coverImage={coverImage}
+        isOwnProfile={isOwnProfile}
+        onUploadCoverImage={onUploadCoverImage}
+        coverUploading={coverUploading}
+      />
 
       <div className="px-5 pb-7 sm:px-8">
         <div className="relative -mt-16 mb-6 flex flex-wrap items-end justify-between gap-4">
           <div className="flex flex-wrap items-end gap-5">
-            <ProfileAvatar profileImage={profileImage} isOnline={isOnline} />
+            <ProfileAvatar
+              profileImage={profileImage}
+              isOnline={isOnline}
+              isOwnProfile={isOwnProfile}
+              onUploadAvatar={onUploadAvatar}
+              avatarUploading={avatarUploading}
+            />
             <div className="mb-3 min-w-0">
               <h1 className="truncate text-3xl font-bold text-[#111827]">
                 {name}
@@ -87,47 +102,91 @@ const ProfileHeader = ({
   );
 };
 
-const CoverImage = ({ coverImage, isOwnProfile }) => (
-  <div className="relative h-56 w-full bg-gradient-to-br from-[#dbeafe] via-[#bfdbfe] to-[#93c5fd] sm:h-60">
-    {coverImage && (
-      <img
-        className="h-full w-full object-cover"
-        src={coverImage}
-        alt="Profile cover"
-      />
-    )}
-
-    {isOwnProfile ? (
-      <button className="absolute bottom-4 right-4 flex items-center gap-2 rounded-md bg-white px-4 py-2 text-sm font-semibold text-[#111827] shadow-sm hover:bg-[#f2f3f5]">
-        <span className="material-symbols-outlined text-[18px]">
-          photo_camera
-        </span>
-        <span>Edit cover photo</span>
-      </button>
-    ) : null}
-  </div>
-);
-
-const ProfileAvatar = ({ profileImage, isOnline }) => (
-  <div className="relative group">
-    <div className="h-32 w-32 overflow-hidden rounded-full border-4 border-white bg-[#facc15] text-[#7c2d12] shadow-md transition-transform duration-300 group-hover:scale-[1.02] sm:h-36 sm:w-36">
-      {profileImage ? (
+const CoverImage = ({
+  coverImage,
+  isOwnProfile,
+  onUploadCoverImage,
+  coverUploading,
+}) => {
+  return (
+    <div className="relative h-56 w-full bg-gradient-to-br from-[#dbeafe] via-[#bfdbfe] to-[#93c5fd] sm:h-60">
+      {coverImage && (
         <img
           className="h-full w-full object-cover"
-          src={profileImage}
-          alt="Profile"
+          src={coverImage}
+          alt="Profile cover"
         />
-      ) : (
-        <div className="flex h-full w-full items-center justify-center">
-          <span className="material-symbols-outlined text-4xl">person</span>
-        </div>
       )}
+
+      {isOwnProfile ? (
+        <label className="absolute bottom-4 right-4 z-30 flex cursor-pointer items-center gap-2 overflow-hidden rounded-md bg-white px-4 py-2 text-sm font-semibold text-[#111827] shadow-sm hover:bg-[#f2f3f5] has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-60">
+          <input
+            type="file"
+            accept="image/*"
+            className="absolute inset-0 cursor-pointer opacity-0 disabled:cursor-not-allowed"
+            disabled={coverUploading}
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              event.target.value = "";
+              onUploadCoverImage?.(file);
+            }}
+          />
+          <span className="material-symbols-outlined text-[18px]">
+            {coverUploading ? "sync" : "photo_camera"}
+          </span>
+          <span>{coverUploading ? "Uploading..." : "Edit cover photo"}</span>
+        </label>
+      ) : null}
     </div>
-    {isOnline && (
-      <div className="absolute bottom-3 right-3 h-6 w-6 rounded-full border-4 border-white bg-emerald-500 shadow-sm" />
-    )}
-  </div>
-);
+  );
+};
+
+const ProfileAvatar = ({
+  profileImage,
+  isOnline,
+  isOwnProfile,
+  onUploadAvatar,
+  avatarUploading,
+}) => {
+  return (
+    <div className="relative group">
+      <div className="h-32 w-32 overflow-hidden rounded-full border-4 border-white bg-[#facc15] text-[#7c2d12] shadow-md transition-transform duration-300 group-hover:scale-[1.02] sm:h-36 sm:w-36">
+        {profileImage ? (
+          <img
+            className="h-full w-full object-cover"
+            src={profileImage}
+            alt="Profile"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center">
+            <span className="material-symbols-outlined text-4xl">person</span>
+          </div>
+        )}
+      </div>
+      {isOnline && (
+        <div className="absolute bottom-3 right-3 h-6 w-6 rounded-full border-4 border-white bg-emerald-500 shadow-sm" />
+      )}
+      {isOwnProfile ? (
+        <label className="absolute bottom-2 left-1/2 z-30 flex h-9 w-9 -translate-x-1/2 cursor-pointer items-center justify-center overflow-hidden rounded-full border-2 border-white bg-[#1877f2] text-white shadow-sm transition-colors hover:bg-[#166fe5] has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-60">
+          <input
+            type="file"
+            accept="image/*"
+            className="absolute inset-0 cursor-pointer opacity-0 disabled:cursor-not-allowed"
+            disabled={avatarUploading}
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              event.target.value = "";
+              onUploadAvatar?.(file);
+            }}
+          />
+          <span className="material-symbols-outlined text-[19px]">
+            {avatarUploading ? "sync" : "photo_camera"}
+          </span>
+        </label>
+      ) : null}
+    </div>
+  );
+};
 
 const ActionButtons = ({
   isOwnProfile,

@@ -17,6 +17,36 @@ const initialState = {
   },
 }
 
+const resizeLikes = (likes = [], likeCount = 0) => {
+  if (!Array.isArray(likes)) {
+    return Array.from({ length: likeCount }, (_, index) => ({
+      _id: `like-${index}`,
+    }))
+  }
+
+  if (likes.length > likeCount) {
+    return likes.slice(0, likeCount)
+  }
+
+  if (likes.length < likeCount) {
+    return [
+      ...likes,
+      ...Array.from({ length: likeCount - likes.length }, (_, index) => ({
+        _id: `like-${likes.length + index}`,
+      })),
+    ]
+  }
+
+  return likes
+}
+
+const applyLikeState = (post, likeState) => {
+  if (!post || !likeState) return
+
+  post.isLiked = likeState.isLiked
+  post.likes = resizeLikes(post.likes, likeState.likeCount)
+}
+
 // Create post
 export const createPost = createAsyncThunk(
   'posts/createPost',
@@ -232,6 +262,10 @@ const postSlice = createSlice({
       .addCase(getPost.fulfilled, (state, action) => {
         state.loading = false
         state.currentPost = action.payload
+        const index = state.posts.findIndex((p) => p._id === action.payload._id)
+        if (index !== -1) {
+          state.posts[index] = action.payload
+        }
       })
       .addCase(getPost.rejected, (state, action) => {
         state.loading = false
@@ -283,12 +317,10 @@ const postSlice = createSlice({
         state.loading = false
         const postId = action.payload.postId
         const post = state.posts.find((p) => p._id === postId)
-        if (post) {
-          if (action.payload.isLiked) {
-            post.likes.push(action.payload)
-          } else {
-            post.likes = post.likes.filter((l) => l._id !== action.payload.userId)
-          }
+        applyLikeState(post, action.payload)
+
+        if (state.currentPost?._id === postId) {
+          applyLikeState(state.currentPost, action.payload)
         }
       })
       .addCase(toggleLike.rejected, (state, action) => {

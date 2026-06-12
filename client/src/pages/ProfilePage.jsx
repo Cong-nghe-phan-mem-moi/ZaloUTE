@@ -27,6 +27,8 @@ const ProfilePage = ({ userId }) => {
   const [rejectRequestLoading, setRejectRequestLoading] = useState(false);
   const [cancelRequestLoading, setCancelRequestLoading] = useState(false);
   const [unfriendLoading, setUnfriendLoading] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [coverUploading, setCoverUploading] = useState(false);
   const [notice, setNotice] = useState("");
 
   const isOwnProfile = !userId;
@@ -76,6 +78,40 @@ const ProfilePage = ({ userId }) => {
       setIsEditModalOpen(false);
     } catch (err) {
       console.error("Failed to update profile:", err);
+    }
+  };
+
+  const handleUploadAvatar = async (file) => {
+    if (!file || avatarUploading) return;
+
+    setAvatarUploading(true);
+    setNotice("");
+
+    try {
+      const response = await userAPI.uploadAvatar(file);
+      await dispatch(fetchUserProfile());
+      setNotice(response.data?.message || "Avatar uploaded successfully.");
+    } catch (err) {
+      setNotice(err.response?.data?.message || "Unable to upload avatar.");
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
+
+  const handleUploadCoverImage = async (file) => {
+    if (!file || coverUploading) return;
+
+    setCoverUploading(true);
+    setNotice("");
+
+    try {
+      const response = await userAPI.uploadCoverImage(file);
+      await dispatch(fetchUserProfile());
+      setNotice(response.data?.message || "Cover image uploaded successfully.");
+    } catch (err) {
+      setNotice(err.response?.data?.message || "Unable to upload cover image.");
+    } finally {
+      setCoverUploading(false);
     }
   };
 
@@ -299,6 +335,10 @@ const ProfilePage = ({ userId }) => {
                   profileData={displayProfile}
                   onEdit={() => setIsEditModalOpen(true)}
                   isOwnProfile={isOwnProfile}
+                  onUploadAvatar={handleUploadAvatar}
+                  avatarUploading={avatarUploading}
+                  onUploadCoverImage={handleUploadCoverImage}
+                  coverUploading={coverUploading}
                   onSendFriendRequest={handleSendFriendRequest}
                   sendingFriendRequest={friendRequestLoading}
                   onAcceptFriendRequest={handleAcceptFriendRequest}
@@ -310,6 +350,10 @@ const ProfilePage = ({ userId }) => {
                   onUnfriend={handleUnfriend}
                   unfriending={unfriendLoading}
                 />
+                <FriendsGrid
+                  friends={friendsData}
+                  totalFriends={displayProfile.stats.friends}
+                />
                 {isOwnProfile ? <Composer profile={profile} /> : null}
                 {postAuthorId ? (
                   <PostList
@@ -318,10 +362,6 @@ const ProfilePage = ({ userId }) => {
                     emptyDetail="Posts from this account will appear here."
                   />
                 ) : null}
-                <FriendsGrid
-                  friends={friendsData}
-                  totalFriends={displayProfile.stats.friends}
-                />
               </div>
 
               <div className="space-y-5 lg:col-span-4">

@@ -19,18 +19,20 @@ const storage = multer.diskStorage({
   },
 });
 
-// File filter to accept only images and videos
-const fileFilter = (req, file, cb) => {
-  const allowedMimes = [
-    'image/jpeg',
-    'image/png',
-    'image/gif',
-    'image/webp',
-    'video/mp4',
-    'video/quicktime',
-    'video/x-msvideo',
-  ];
+const imageMimes = [
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+];
 
+const videoMimes = [
+  'video/mp4',
+  'video/quicktime',
+  'video/x-msvideo',
+];
+
+const createFileFilter = (allowedMimes) => (req, file, cb) => {
   if (allowedMimes.includes(file.mimetype)) {
     cb(null, true);
   } else {
@@ -41,10 +43,20 @@ const fileFilter = (req, file, cb) => {
 // Configure multer
 const upload = multer({
   storage,
-  fileFilter,
+  fileFilter: createFileFilter([...imageMimes, ...videoMimes]),
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB max file size
   },
 });
+
+const imageUpload = multer({
+  storage,
+  fileFilter: createFileFilter(imageMimes),
+  limits: {
+    fileSize: 10 * 1024 * 1024,
+  },
+});
+
+upload.imageUpload = imageUpload;
 
 module.exports = upload;

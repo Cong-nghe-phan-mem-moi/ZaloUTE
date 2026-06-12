@@ -45,6 +45,16 @@ api.interceptors.request.use(
 export const userAPI = {
   getProfile: () => api.get("/profile"),
   updateProfile: (data) => api.put("/profile", data),
+  uploadAvatar: (file) => {
+    const formData = new FormData();
+    formData.append("avatar", file);
+    return api.put("/profile/avatar", formData);
+  },
+  uploadCoverImage: (file) => {
+    const formData = new FormData();
+    formData.append("coverImage", file);
+    return api.put("/profile/cover-image", formData);
+  },
   searchUsers: (keyword, page = 1, limit = 8) =>
     api.get("/users/search", {
       params: { keyword, page, limit },

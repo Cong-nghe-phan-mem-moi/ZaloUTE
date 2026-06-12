@@ -91,6 +91,96 @@ async function editProfile(req, res) {
   }
 }
 
+async function uploadAvatar(req, res) {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        code: 'NO_FILE_UPLOADED',
+        message: 'No avatar file uploaded',
+      });
+    }
+
+    const result = await UserService.updateProfileImage(
+      req.user.userId,
+      'avatar',
+      `/uploads/${req.file.filename}`,
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: result.message,
+      data: result.data,
+    });
+  } catch (error) {
+    return handleUploadError(error, res, 'Upload Avatar Error:');
+  }
+}
+
+async function uploadCoverImage(req, res) {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        code: 'NO_FILE_UPLOADED',
+        message: 'No cover image file uploaded',
+      });
+    }
+
+    const result = await UserService.updateProfileImage(
+      req.user.userId,
+      'coverImage',
+      `/uploads/${req.file.filename}`,
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: result.message,
+      data: result.data,
+    });
+  } catch (error) {
+    return handleUploadError(error, res, 'Upload Cover Image Error:');
+  }
+}
+
+function handleUploadError(error, res, logLabel) {
+  console.error(logLabel, error);
+
+  if (error.statusCode === 400 || error.statusCode === 404) {
+    return res.status(error.statusCode).json({
+      success: false,
+      code: error.code,
+      message: error.message,
+    });
+  }
+
+  if (error.kind === 'ObjectId') {
+    return res.status(400).json({
+      success: false,
+      code: 'INVALID_USER_ID',
+      message: 'Invalid user ID format',
+    });
+  }
+
+  return res.status(500).json({
+    success: false,
+    code: 'INTERNAL_SERVER_ERROR',
+    message: 'Internal server error',
+  });
+}
+
+function handleMulterError(err, req, res, next) {
+  if (!err) {
+    return next();
+  }
+
+  return res.status(400).json({
+    success: false,
+    code: 'UPLOAD_ERROR',
+    message: err.message,
+  });
+}
+
 async function getMyProfile(req, res) {
   try {
     const userId = req.user.userId;
@@ -288,6 +378,9 @@ async function logout(req, res) {
 
 module.exports = {
   editProfile,
+  uploadAvatar,
+  uploadCoverImage,
+  handleMulterError,
   getMyProfile,
   getMyProfileIsUser,
   getMyProfileIsAdmin,

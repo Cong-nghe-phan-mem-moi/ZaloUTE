@@ -3,7 +3,6 @@ import HomeAvatar from "../components/home/HomeAvatar";
 import HomeHeader from "../components/home/HomeHeader";
 import LeftSidebar from "../components/home/LeftSidebar";
 import RightSidebar from "../components/home/RightSidebar";
-import { fallbackContacts } from "../components/home/homeData";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { fetchUserProfile } from "../store/slices/userSlice";
 import { userAPI } from "../services/api";
@@ -122,10 +121,11 @@ const FriendRequests = () => {
 
   const contacts = useMemo(() => {
     if (!Array.isArray(profile?.friends) || profile.friends.length === 0) {
-      return fallbackContacts;
+      return [];
     }
 
     return profile.friends.map((friend) => ({
+      id: friend?.userId || friend?._id || friend?.id || friend,
       name: friend?.fullName || friend?.name || "Friend",
       avatar: friend?.avatar || friend?.image || null,
       status: friend?.isOnline ? "Online" : "View profile",
@@ -242,7 +242,14 @@ const FriendRequests = () => {
             ) : null}
           </section>
 
-          <RightSidebar contacts={contacts} profile={profile} />
+          <RightSidebar
+            contacts={contacts}
+            friendRequests={incomingRequests}
+            requestsLoading={loading}
+            requestActionId={actionLoadingId}
+            onAcceptRequest={handleAccept}
+            onRejectRequest={handleReject}
+          />
         </main>
       </div>
     </div>

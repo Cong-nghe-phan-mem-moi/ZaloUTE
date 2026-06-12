@@ -1,28 +1,88 @@
-﻿import { useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Composer from "../components/home/Composer";
 import HomeHeader from "../components/home/HomeHeader";
 import LeftSidebar from "../components/home/LeftSidebar";
 import RightSidebar from "../components/home/RightSidebar";
 import Stories from "../components/home/Stories";
 import { PostList } from "../components/Post";
-import { fallbackContacts } from "../components/home/homeData";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { fetchUserProfile } from "../store/slices/userSlice";
+import { userAPI } from "../services/api";
 
 export default function Home() {
   const dispatch = useAppDispatch();
   const { profile } = useAppSelector((state) => state.user);
+  const [friendRequests, setFriendRequests] = useState([]);
+  const [requestsLoading, setRequestsLoading] = useState(false);
+  const [requestActionId, setRequestActionId] = useState("");
+  const [feedRefreshKey, setFeedRefreshKey] = useState(0);
+
+  const loadFriendRequests = useCallback(async () => {
+    setRequestsLoading(true);
+
+    try {
+      const response = await userAPI.getIncomingFriendRequests();
+      setFriendRequests(response.data?.data || []);
+    } catch (error) {
+      console.error("Unable to load friend requests:", error);
+      setFriendRequests([]);
+    } finally {
+      setRequestsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     dispatch(fetchUserProfile());
-  }, [dispatch]);
+
+    const timer = window.setTimeout(() => {
+      loadFriendRequests();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [dispatch, loadFriendRequests]);
+
+  const refreshSidebarData = async () => {
+    await Promise.all([dispatch(fetchUserProfile()), loadFriendRequests()]);
+  };
+
+  const handleAcceptRequest = async (senderId) => {
+    if (!senderId || requestActionId) return;
+
+    setRequestActionId(senderId);
+
+    try {
+      await userAPI.acceptFriendRequest(senderId);
+      await refreshSidebarData();
+      setFeedRefreshKey((key) => key + 1);
+    } catch (error) {
+      console.error("Unable to accept friend request:", error);
+    } finally {
+      setRequestActionId("");
+    }
+  };
+
+  const handleRejectRequest = async (senderId) => {
+    if (!senderId || requestActionId) return;
+
+    setRequestActionId(senderId);
+
+    try {
+      await userAPI.rejectFriendRequest(senderId);
+      await refreshSidebarData();
+    } catch (error) {
+      console.error("Unable to reject friend request:", error);
+    } finally {
+      setRequestActionId("");
+    }
+  };
 
   const contacts = useMemo(() => {
     if (!Array.isArray(profile?.friends) || profile.friends.length === 0) {
-      return fallbackContacts;
+      return [];
     }
 
     return profile.friends.map((friend) => ({
+      id: friend?.userId || friend?._id || friend?.id || friend,
       name: friend?.fullName || friend?.name || "Friend",
       avatar: friend?.avatar || friend?.image || null,
       status: friend?.isOnline ? "Online" : "View profile",
@@ -53,12 +113,20 @@ export default function Home() {
             <Composer profile={profile} />
             <PostList
               allowedAuthorIds={friendIds}
+              refreshKey={feedRefreshKey}
               emptyMessage="No posts from friends yet"
               emptyDetail="The home feed only shows posts from your friends."
             />
           </section>
 
-          <RightSidebar contacts={contacts} profile={profile} />
+          <RightSidebar
+            contacts={contacts}
+            friendRequests={friendRequests}
+            requestsLoading={requestsLoading}
+            requestActionId={requestActionId}
+            onAcceptRequest={handleAcceptRequest}
+            onRejectRequest={handleRejectRequest}
+          />
         </main>
       </div>
     </div>
