@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+﻿const mongoose = require('mongoose');
 const { removeVietnameseTones } = require("../utils/stringUtil");
 
 const userSchema = new mongoose.Schema({
@@ -15,7 +15,7 @@ const userSchema = new mongoose.Schema({
   },
   phone: {
     type: String,
-    match: [/^\d{10}$/, 'Số điện thoại không hợp lệ']
+    match: [/^\\d{10}$/, 'Invalid phone number']
   },
   avatar: {
     type: String,
@@ -80,3 +80,6 @@ userSchema.pre("findOneAndUpdate", async function () {
 });
 
 module.exports = mongoose.model('User', userSchema);
+
+
+

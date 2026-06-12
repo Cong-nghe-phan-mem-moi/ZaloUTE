@@ -1,12 +1,11 @@
 ﻿import { useState, useRef, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { createPost, clearMessage, clearError } from '../../store/slices/postSlice';
-import Toast from '../common/Toast';
+import { createPost } from '../../store/slices/postSlice';
 
 const CreatePost = ({ onPostCreated }) => {
   const dispatch = useDispatch();
   const currentUser = useSelector((state) => state.user?.profile);
-  const { loading, message, error } = useSelector((state) => state.posts);
+  const { loading, message } = useSelector((state) => state.posts);
 
   const [content, setContent] = useState('');
   const [media, setMedia] = useState([]);
@@ -67,8 +66,8 @@ const CreatePost = ({ onPostCreated }) => {
   };
 
   const handleSubmit = async () => {
-    if (!content.trim()) {
-      alert('Please enter post content.');
+    if (!content.trim() && media.length === 0) {
+      alert('Please enter post content or add media.');
       return;
     }
 
@@ -114,10 +113,6 @@ const CreatePost = ({ onPostCreated }) => {
           readOnly
         />
       </div>
-
-      {/* Messages */}
-      {error && <Toast message={error} type="error" onClose={() => dispatch(clearError())} />}
-      {message && <Toast message={message} type="success" onClose={() => dispatch(clearMessage())} />}
 
       {/* Content Area */}
       <textarea
@@ -196,7 +191,7 @@ const CreatePost = ({ onPostCreated }) => {
 
         <button
           onClick={handleSubmit}
-          disabled={!content.trim() || loading}
+        disabled={(!content.trim() && media.length === 0) || loading}
           className="px-8 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white rounded-lg font-medium transition disabled:cursor-not-allowed"
         >
           {loading ? 'Posting...' : 'Post'}

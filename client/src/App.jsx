@@ -1,6 +1,8 @@
 import { useEffect } from "react";
 import { useAppSelector, useAppDispatch } from "./store/hooks";
 import { setCurrentPage } from "./store/slices/uiSlice";
+import { clearError, clearMessage } from "./store/slices/postSlice";
+import Toast from "./components/common/Toast";
 
 import Register from "./pages/Register";
 import VerifyOtp from "./pages/VerifyOtp";
@@ -94,7 +96,39 @@ function App() {
     }
   };
 
-  return <div className="w-full">{renderPage()}</div>;
+  return (
+    <div className="w-full">
+      {renderPage()}
+      <PostFeedbackToast />
+    </div>
+  );
 }
+
+const PostFeedbackToast = () => {
+  const dispatch = useAppDispatch();
+  const { error, message } = useAppSelector((state) => state.posts);
+
+  if (error) {
+    return (
+      <Toast
+        message={error}
+        type="error"
+        onClose={() => dispatch(clearError())}
+      />
+    );
+  }
+
+  if (message) {
+    return (
+      <Toast
+        message={message}
+        type="success"
+        onClose={() => dispatch(clearMessage())}
+      />
+    );
+  }
+
+  return null;
+};
 
 export default App;

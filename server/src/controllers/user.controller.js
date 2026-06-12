@@ -1,4 +1,4 @@
-const UserService = require('../service/user.service');
+﻿const UserService = require('../service/user.service');
 const FriendRequestService = require('../service/friendRequest.service');
 async function editProfile(req, res) {
   try {
@@ -329,7 +329,7 @@ async function getOtherUserProfile(req, res) {
       return res.status(400).json({
         success: false,
         code: 'INVALID_USER_ID',
-        message: 'Không thể xem profile của chính mình qua endpoint này',
+        message: 'Operation failed',
       });
     }
 
@@ -388,3 +388,6 @@ module.exports = {
   getOtherUserProfile,
   logout
 };
+
+
+

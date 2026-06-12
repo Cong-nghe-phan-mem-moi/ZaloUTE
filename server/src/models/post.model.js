@@ -9,7 +9,7 @@ const postSchema = new mongoose.Schema({
     },
     content: {
         type: String,
-        required: true
+        default: ''
     },
     media: [mediaSchema], // Nhúng sub-document Media vào Post
     likes: [{

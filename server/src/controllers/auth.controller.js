@@ -1,4 +1,4 @@
-const AuthRepository = require("../repo/auth.repository");
+﻿const AuthRepository = require("../repo/auth.repository");
 const OtpRepository = require("../repo/otp.repository");
 const authService = require("../service/auth.service");
 
@@ -61,7 +61,7 @@ const register = async (req, res) => {
     res.status(error.statusCode || 500).json({
       success: false,
       code: error.code || "REGISTER_FAILED",
-      message: error.message || "Lỗi đăng ký. Vui lòng thử lại.",
+      message: error.message || "Operation failed",
     });
   }
 };
@@ -79,7 +79,7 @@ const verifyOTP = async (req, res) => {
     res.status(error.statusCode || 500).json({
       success: false,
       code: error.code || "VERIFY_OTP_FAILED",
-      message: error.message || "Lỗi xác thực OTP. Vui lòng thử lại.",
+      message: error.message || "Operation failed",
     });
   }
 };
@@ -94,7 +94,7 @@ const requestPasswordResetOTP = async (req, res) => {
     res.status(error.statusCode || 500).json({
       success: false,
       code: error.code || "FORGOT_PASSWORD_FAILED",
-      message: error.message || "Không thể gửi OTP. Vui lòng thử lại.",
+      message: error.message || "Operation failed",
     });
   }
 };
@@ -111,7 +111,7 @@ const verifyPasswordResetOTP = async (req, res) => {
     res.status(error.statusCode || 500).json({
       success: false,
       code: error.code || "OTP_VERIFY_FAILED",
-      message: error.message || "Xác thực OTP thất bại.",
+      message: error.message || "Operation failed",
     });
   }
 };
@@ -129,7 +129,7 @@ const resetPassword = async (req, res) => {
     res.status(error.statusCode || 500).json({
       success: false,
       code: error.code || "RESET_PASSWORD_FAILED",
-      message: error.message || "Đặt lại mật khẩu thất bại.",
+      message: error.message || "Operation failed",
     });
   }
 };
@@ -217,3 +217,6 @@ module.exports = {
   getResetOtpDev,
   login,
 };
+
+
+

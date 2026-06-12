@@ -1,8 +1,8 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { getPost, toggleLike } from "../../store/slices/postSlice";
 import { formatDistanceToNow } from "date-fns";
-import { vi } from "date-fns/locale";
+import { enUS } from "date-fns/locale";
 import LoadingSpinner from "../common/LoadingSpinner";
 import ErrorMessage from "../common/ErrorMessage";
 import CommentSection from "./CommentSection";
@@ -10,9 +10,11 @@ import CommentSection from "./CommentSection";
 const PostDetail = ({ postId, isOpen = false, onClose }) => {
   const dispatch = useDispatch();
   const { currentPost, loading, error } = useSelector((state) => state.posts);
+  const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
 
   useEffect(() => {
     if (isOpen && postId) {
+      setSelectedMediaIndex(0);
       dispatch(getPost(postId));
     }
   }, [isOpen, postId, dispatch]);
@@ -86,7 +88,7 @@ const PostDetail = ({ postId, isOpen = false, onClose }) => {
               <p className="text-sm text-gray-500">
                 {formatDistanceToNow(new Date(currentPost.createdAt), {
                   addSuffix: true,
-                  locale: vi,
+                  locale: enUS,
                 })}
               </p>
             </div>
@@ -102,41 +104,17 @@ const PostDetail = ({ postId, isOpen = false, onClose }) => {
         </div>
 
         <div className="p-4">
-          <p className="mb-4 text-base leading-relaxed text-gray-800">
-            {currentPost.content}
-          </p>
-
-          {currentPost.media && currentPost.media.length > 0 ? (
-            <div className="mb-4 grid grid-cols-1 gap-2 md:grid-cols-2">
-              {currentPost.media.map((item, index) => (
-                <div
-                  key={index}
-                  className="overflow-hidden rounded-lg bg-gray-200"
-                >
-                  {item.type === "image" ? (
-                    <img
-                      src={item.url}
-                      alt={`Post media ${index}`}
-                      className="h-auto max-h-[520px] w-full object-contain"
-                      onError={(event) => {
-                        event.target.style.display = "none";
-                      }}
-                    />
-                  ) : (
-                    <video
-                      src={item.url}
-                      controls
-                      preload="metadata"
-                      className="h-auto max-h-[520px] w-full bg-black object-contain"
-                      onError={(event) => {
-                        event.target.style.display = "none";
-                      }}
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
+          {currentPost.content ? (
+            <p className="mb-4 text-base leading-relaxed text-gray-800">
+              {currentPost.content}
+            </p>
           ) : null}
+
+          <PostMediaViewer
+            media={currentPost.media}
+            selectedIndex={selectedMediaIndex}
+            onSelect={setSelectedMediaIndex}
+          />
         </div>
 
         <div className="flex justify-between border-y px-4 py-3 text-sm text-gray-600">
@@ -193,6 +171,110 @@ const PostDetail = ({ postId, isOpen = false, onClose }) => {
       >
         {renderBody()}
       </div>
+    </div>
+  );
+};
+
+const PostMediaViewer = ({ media, selectedIndex, onSelect }) => {
+  if (!Array.isArray(media) || media.length === 0) {
+    return null;
+  }
+
+  const activeIndex = Math.min(selectedIndex, media.length - 1);
+  const activeMedia = media[activeIndex];
+  const hasMultipleMedia = media.length > 1;
+
+  const handlePrevious = () => {
+    onSelect((activeIndex - 1 + media.length) % media.length);
+  };
+
+  const handleNext = () => {
+    onSelect((activeIndex + 1) % media.length);
+  };
+
+  return (
+    <div className="mb-4">
+      <div className="relative overflow-hidden rounded-lg bg-black">
+        {activeMedia.type === "image" ? (
+          <img
+            src={activeMedia.url}
+            alt={`Post media ${activeIndex + 1}`}
+            className="max-h-[70vh] w-full object-contain"
+            onError={(event) => {
+              event.target.style.display = "none";
+            }}
+          />
+        ) : (
+          <video
+            src={activeMedia.url}
+            controls
+            preload="metadata"
+            className="max-h-[70vh] w-full bg-black object-contain"
+            onError={(event) => {
+              event.target.style.display = "none";
+            }}
+          />
+        )}
+
+        {hasMultipleMedia ? (
+          <>
+            <button
+              type="button"
+              onClick={handlePrevious}
+              className="absolute left-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-white hover:bg-black/75"
+              aria-label="Previous media"
+            >
+              <span className="material-symbols-outlined">chevron_left</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleNext}
+              className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-white hover:bg-black/75"
+              aria-label="Next media"
+            >
+              <span className="material-symbols-outlined">chevron_right</span>
+            </button>
+            <div className="absolute bottom-3 right-3 rounded-full bg-black/65 px-3 py-1 text-xs font-semibold text-white">
+              {activeIndex + 1}/{media.length}
+            </div>
+          </>
+        ) : null}
+      </div>
+
+      {hasMultipleMedia ? (
+        <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+          {media.map((item, index) => (
+            <button
+              key={`${item.url || "media"}-${index}`}
+              type="button"
+              onClick={() => onSelect(index)}
+              className={`h-16 w-20 shrink-0 overflow-hidden rounded-md border-2 bg-gray-200 ${
+                index === activeIndex ? "border-blue-500" : "border-transparent"
+              }`}
+              aria-label={`View media ${index + 1}`}
+            >
+              {item.type === "image" ? (
+                <img
+                  src={item.url}
+                  alt={`Post media thumbnail ${index + 1}`}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="relative h-full w-full bg-black">
+                  <video
+                    src={item.url}
+                    preload="metadata"
+                    className="h-full w-full object-cover opacity-80"
+                  />
+                  <span className="material-symbols-outlined absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-white">
+                    play_circle
+                  </span>
+                </div>
+              )}
+            </button>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 };

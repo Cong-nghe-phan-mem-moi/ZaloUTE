@@ -1,8 +1,8 @@
-const PostService = require('../service/post.service');
+﻿const PostService = require('../service/post.service');
 const path = require('path');
 
 class PostController {
-  // 4.1 Tạo bài viết
+  // 4.1 Táº¡o bÃ i viáº¿t
   static async createPost(req, res) {
     try {
       const { content } = req.body;
@@ -32,19 +32,19 @@ class PostController {
 
       return res.status(201).json({
         success: true,
-        message: 'Tạo bài viết thành công',
+        message: 'Operation failed',
         data: post,
       });
     } catch (error) {
       console.error('Error creating post:', error);
       return res.status(400).json({
         success: false,
-        message: error.message || 'Lỗi khi tạo bài viết',
+        message: error.message || 'Operation failed',
       });
     }
   }
 
-  // 4.2 Chỉnh sửa bài viết
+  // 4.2 Chá»‰nh sá»­a bÃ i viáº¿t
   static async updatePost(req, res) {
     try {
       const { postId } = req.params;
@@ -82,20 +82,20 @@ class PostController {
 
       return res.status(200).json({
         success: true,
-        message: 'Chỉnh sửa bài viết thành công',
+        message: 'Operation failed',
         data: post,
       });
     } catch (error) {
       console.error('Error updating post:', error);
 
-      if (error.message.includes('không tồn tại')) {
+      if (error.message.includes('Operation failed')) {
         return res.status(404).json({
           success: false,
           message: error.message,
         });
       }
 
-      if (error.message.includes('không có quyền')) {
+      if (error.message.includes('Operation failed')) {
         return res.status(403).json({
           success: false,
           message: error.message,
@@ -104,12 +104,12 @@ class PostController {
 
       return res.status(400).json({
         success: false,
-        message: error.message || 'Lỗi khi chỉnh sửa bài viết',
+        message: error.message || 'Operation failed',
       });
     }
   }
 
-  // 4.3 Xóa bài viết
+  // 4.3 XÃ³a bÃ i viáº¿t
   static async deletePost(req, res) {
     try {
       const { postId } = req.params;
@@ -119,19 +119,19 @@ class PostController {
 
       return res.status(200).json({
         success: true,
-        message: 'Xóa bài viết thành công',
+        message: 'Operation failed',
       });
     } catch (error) {
       console.error('Error deleting post:', error);
 
-      if (error.message.includes('không tồn tại')) {
+      if (error.message.includes('Operation failed')) {
         return res.status(404).json({
           success: false,
           message: error.message,
         });
       }
 
-      if (error.message.includes('không có quyền')) {
+      if (error.message.includes('Operation failed')) {
         return res.status(403).json({
           success: false,
           message: error.message,
@@ -140,7 +140,7 @@ class PostController {
 
       return res.status(400).json({
         success: false,
-        message: error.message || 'Lỗi khi xóa bài viết',
+        message: error.message || 'Operation failed',
       });
     }
   }
@@ -159,14 +159,14 @@ class PostController {
 
       return res.status(200).json({
         success: true,
-        message: 'Lấy news feed thành công',
+        message: 'Operation failed',
         data: result,
       });
     } catch (error) {
       console.error('Error fetching news feed:', error);
       return res.status(500).json({
         success: false,
-        message: 'Lỗi khi lấy news feed',
+        message: 'Operation failed',
         error: error.message,
       });
     }
@@ -182,13 +182,13 @@ class PostController {
 
       return res.status(200).json({
         success: true,
-        message: result.isLiked ? 'Thích bài viết' : 'Bỏ thích bài viết',
+        message: result.isLiked ? 'Liked' : 'Unliked',
         data: result,
       });
     } catch (error) {
       console.error('Error toggling like:', error);
 
-      if (error.message.includes('không tồn tại')) {
+      if (error.message.includes('Operation failed')) {
         return res.status(404).json({
           success: false,
           message: error.message,
@@ -197,12 +197,12 @@ class PostController {
 
       return res.status(400).json({
         success: false,
-        message: error.message || 'Lỗi khi thích bài viết',
+        message: error.message || 'Operation failed',
       });
     }
   }
 
-  // 4.5 Xem danh sách like
+  // 4.5 Xem danh sÃ¡ch like
   static async getPostLikes(req, res) {
     try {
       const { postId } = req.params;
@@ -216,13 +216,13 @@ class PostController {
 
       return res.status(200).json({
         success: true,
-        message: 'Lấy danh sách thích thành công',
+        message: 'Operation failed',
         data: result,
       });
     } catch (error) {
       console.error('Error fetching likes:', error);
 
-      if (error.message.includes('không tồn tại')) {
+      if (error.message.includes('Operation failed')) {
         return res.status(404).json({
           success: false,
           message: error.message,
@@ -231,12 +231,12 @@ class PostController {
 
       return res.status(400).json({
         success: false,
-        message: error.message || 'Lỗi khi lấy danh sách thích',
+        message: error.message || 'Operation failed',
       });
     }
   }
 
-  // 4.6 Xem danh sách bình luận
+  // 4.6 Xem danh sÃ¡ch bÃ¬nh luáº­n
   static async getPostComments(req, res) {
     try {
       const { postId } = req.params;
@@ -250,13 +250,13 @@ class PostController {
 
       return res.status(200).json({
         success: true,
-        message: 'Lấy danh sách bình luận thành công',
+        message: 'Operation failed',
         data: result,
       });
     } catch (error) {
       console.error('Error fetching comments:', error);
 
-      if (error.message.includes('không tồn tại')) {
+      if (error.message.includes('Operation failed')) {
         return res.status(404).json({
           success: false,
           message: error.message,
@@ -265,7 +265,7 @@ class PostController {
 
       return res.status(400).json({
         success: false,
-        message: error.message || 'Lỗi khi lấy danh sách bình luận',
+        message: error.message || 'Operation failed',
       });
     }
   }
@@ -280,13 +280,13 @@ class PostController {
 
       return res.status(200).json({
         success: true,
-        message: 'Lấy bài viết thành công',
+        message: 'Operation failed',
         data: post,
       });
     } catch (error) {
       console.error('Error fetching post:', error);
 
-      if (error.message.includes('không tồn tại')) {
+      if (error.message.includes('Operation failed')) {
         return res.status(404).json({
           success: false,
           message: error.message,
@@ -295,7 +295,7 @@ class PostController {
 
       return res.status(400).json({
         success: false,
-        message: error.message || 'Lỗi khi lấy bài viết',
+        message: error.message || 'Operation failed',
       });
     }
   }
@@ -316,14 +316,14 @@ class PostController {
 
       return res.status(200).json({
         success: true,
-        message: 'Lấy bài viết của tác giả thành công',
+        message: 'Operation failed',
         data: result,
       });
     } catch (error) {
       console.error('Error fetching author posts:', error);
       return res.status(400).json({
         success: false,
-        message: error.message || 'Lỗi khi lấy bài viết của tác giả',
+        message: error.message || 'Operation failed',
       });
     }
   }
@@ -343,17 +343,20 @@ class PostController {
 
       return res.status(200).json({
         success: true,
-        message: 'Tìm kiếm bài viết thành công',
+        message: 'Operation failed',
         data: result,
       });
     } catch (error) {
       console.error('Error searching posts:', error);
       return res.status(400).json({
         success: false,
-        message: error.message || 'Lỗi khi tìm kiếm bài viết',
+        message: error.message || 'Operation failed',
       });
     }
   }
 }
 
 module.exports = PostController;
+
+
+

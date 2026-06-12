@@ -4,6 +4,56 @@ import { useAppDispatch } from "../../store/hooks";
 import { clearProfile } from "../../store/slices/userSlice";
 import HomeAvatar from "./HomeAvatar";
 
+const getNotificationWsUrl = (token) => {
+  const encodedToken = encodeURIComponent(token);
+  const isSecure = window.location.protocol === "https:";
+
+  if (import.meta.env.DEV) {
+    const apiOrigin =
+      import.meta.env.VITE_API_ORIGIN ||
+      `${window.location.protocol}//${window.location.hostname}:5000`;
+    const wsOrigin = apiOrigin.replace(/^http/, isSecure ? "wss" : "ws");
+
+    return `${wsOrigin}/api/notifications/ws?token=${encodedToken}`;
+  }
+
+  const protocol = isSecure ? "wss" : "ws";
+  return `${protocol}://${window.location.host}/api/notifications/ws?token=${encodedToken}`;
+};
+
+const LAST_SEEN_NOTIFICATION_KEY = "lastSeenNotificationAt";
+
+const getLastSeenNotificationAt = () => {
+  const value = localStorage.getItem(LAST_SEEN_NOTIFICATION_KEY);
+  const timestamp = value ? Number(value) : 0;
+
+  return Number.isFinite(timestamp) ? timestamp : 0;
+};
+
+const getNotificationTime = (notification) =>
+  new Date(notification?.createdAt || 0).getTime();
+
+const getNewNotificationCount = (notifications) => {
+  const lastSeenAt = getLastSeenNotificationAt();
+
+  return notifications.filter(
+    (notification) => getNotificationTime(notification) > lastSeenAt,
+  ).length;
+};
+
+const rememberNotificationsSeen = (notifications) => {
+  const latestTimestamp = notifications.reduce(
+    (latest, notification) =>
+      Math.max(latest, getNotificationTime(notification)),
+    Date.now(),
+  );
+
+  localStorage.setItem(
+    LAST_SEEN_NOTIFICATION_KEY,
+    String(latestTimestamp || Date.now()),
+  );
+};
+
 const HomeHeader = ({ profile, activePage = "home" }) => {
   const dispatch = useAppDispatch();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -39,12 +89,17 @@ const HomeHeader = ({ profile, activePage = "home" }) => {
 
     try {
       const response = await notificationAPI.getNotifications(1, 10);
-      setNotifications(response.data?.data?.notifications || []);
+      const nextNotifications = response.data?.data?.notifications || [];
+      setNotifications(nextNotifications);
+      setNewNotificationCount(getNewNotificationCount(nextNotifications));
       setUnreadCount(response.data?.data?.unreadCount || 0);
+      return nextNotifications;
     } catch (error) {
       console.error("Unable to load notifications:", error);
       setNotifications([]);
+      setNewNotificationCount(0);
       setUnreadCount(0);
+      return [];
     } finally {
       setNotificationsLoading(false);
     }
@@ -62,11 +117,11 @@ const HomeHeader = ({ profile, activePage = "home" }) => {
     const token = localStorage.getItem("token");
     if (!token) return undefined;
 
-    const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-    const wsUrl = `${protocol}://${window.location.host}/api/notifications/ws?token=${encodeURIComponent(token)}`;
+    const wsUrl = getNotificationWsUrl(token);
     let socket = null;
     let reconnectTimer = null;
     let shouldReconnect = true;
+    let hasConnected = false;
 
     const handleMessage = (event) => {
       try {
@@ -79,12 +134,16 @@ const HomeHeader = ({ profile, activePage = "home" }) => {
             );
 
             if (exists) return items;
-            return [data.notification, ...items].slice(0, 10);
+            const nextItems = [data.notification, ...items].slice(0, 10);
+            if (notificationsOpenRef.current) {
+              rememberNotificationsSeen(nextItems);
+              setNewNotificationCount(0);
+            } else {
+              setNewNotificationCount(getNewNotificationCount(nextItems));
+            }
+            return nextItems;
           });
           setUnreadCount(data.unreadCount || 0);
-          if (!notificationsOpenRef.current) {
-            setNewNotificationCount((count) => count + 1);
-          }
           setPopupNotification(data.notification);
         }
 
@@ -99,20 +158,38 @@ const HomeHeader = ({ profile, activePage = "home" }) => {
     const connect = () => {
       socket = new WebSocket(wsUrl);
       socket.onopen = () => {
+        hasConnected = true;
         loadNotifications();
       };
       socket.onmessage = handleMessage;
       socket.onerror = (error) => {
-        console.error("Notification websocket error:", error);
+        if (hasConnected) {
+          console.error("Notification websocket error:", error);
+        }
       };
-      socket.onclose = () => {
+      socket.onclose = (event) => {
+        if (event.code === 1008 || !hasConnected) {
+          shouldReconnect = false;
+          return;
+        }
+
         if (!shouldReconnect) return;
 
         reconnectTimer = window.setTimeout(connect, 3000);
       };
     };
 
-    connect();
+    notificationAPI
+      .getNotifications(1, 1)
+      .then(() => {
+        if (shouldReconnect) {
+          connect();
+        }
+      })
+      .catch((error) => {
+        shouldReconnect = false;
+        console.error("Unable to start notification websocket:", error);
+      });
 
     return () => {
       shouldReconnect = false;
@@ -173,8 +250,9 @@ const HomeHeader = ({ profile, activePage = "home" }) => {
     setNotificationsOpen(nextOpen);
 
     if (nextOpen) {
+      const nextNotifications = await loadNotifications();
+      rememberNotificationsSeen(nextNotifications);
       setNewNotificationCount(0);
-      await loadNotifications();
     }
   };
 
@@ -185,7 +263,6 @@ const HomeHeader = ({ profile, activePage = "home" }) => {
         items.map((item) => ({ ...item, isRead: true })),
       );
       setUnreadCount(0);
-      setNewNotificationCount(0);
     } catch (error) {
       console.error("Unable to mark notifications as read:", error);
     }
@@ -492,14 +569,29 @@ const CircleIcon = ({ icon, label, onClick, disabled = false, badge = 0 }) => (
 
 const notificationLinks = {
   friend_request: "/friend-requests",
+  friend_accept: "/friends",
   post_like: "/",
   post_comment: "/",
   comment_reply: "/",
   comment_like: "/",
 };
 
+const isFriendAcceptNotification = (notification) =>
+  notification.type === "friend_accept" ||
+  notification.content === "accepted your friend request";
+
+const getNotificationHref = (notification) => {
+  if (isFriendAcceptNotification(notification)) {
+    const userId = notification.sender?._id || notification.relatedId;
+    return userId ? `/users/profile/${userId}` : "/friends";
+  }
+
+  return notificationLinks[notification.type] || "/";
+};
+
 const popupTitles = {
   friend_request: "New friend request",
+  friend_accept: "Friend request accepted",
   post_like: "New like",
   post_comment: "New comment",
   comment_reply: "New reply",
@@ -508,8 +600,10 @@ const popupTitles = {
 
 const NotificationPopup = ({ notification, onClose }) => {
   const senderName = notification.sender?.fullName || "Someone";
-  const title = popupTitles[notification.type] || "New notification";
-  const href = notificationLinks[notification.type] || "/";
+  const title = isFriendAcceptNotification(notification)
+    ? "Friend request accepted"
+    : popupTitles[notification.type] || "New notification";
+  const href = getNotificationHref(notification);
 
   return (
     <div className="fixed right-5 top-24 z-[60] w-[min(360px,calc(100vw-32px))] rounded-lg border border-[#dbe4f0] bg-white p-4 shadow-2xl">
@@ -600,7 +694,7 @@ const NotificationsDropdown = ({
 
 const NotificationItem = ({ notification, onClick }) => {
   const senderName = notification.sender?.fullName || "Someone";
-  const href = notificationLinks[notification.type] || "/";
+  const href = getNotificationHref(notification);
 
   return (
     <a

@@ -58,5 +58,45 @@ const imageUpload = multer({
 });
 
 upload.imageUpload = imageUpload;
+upload.postMedia = [
+  upload.fields([
+    { name: 'media', maxCount: 10 },
+    { name: 'files', maxCount: 10 },
+    { name: 'images', maxCount: 10 },
+    { name: 'image', maxCount: 10 },
+    { name: 'videos', maxCount: 10 },
+    { name: 'video', maxCount: 10 },
+  ]),
+  (req, res, next) => {
+    if (req.files && !Array.isArray(req.files)) {
+      req.files = Object.values(req.files).flat();
+    }
+
+    next();
+  },
+];
+upload.handleUploadError = (err, req, res, next) => {
+  if (!err) {
+    return next();
+  }
+
+  if (err instanceof multer.MulterError) {
+    const fieldMessage =
+      err.code === 'LIMIT_UNEXPECTED_FILE' && err.field
+        ? `Unexpected upload field "${err.field}". Use "media" for post files.`
+        : err.message;
+
+    return res.status(400).json({
+      success: false,
+      message: fieldMessage,
+      field: err.field,
+    });
+  }
+
+  return res.status(400).json({
+    success: false,
+    message: err.message || 'File upload failed',
+  });
+};
 
 module.exports = upload;

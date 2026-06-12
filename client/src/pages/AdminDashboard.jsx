@@ -5,8 +5,8 @@ import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { fetchUserProfile } from "../store/slices/userSlice";
 
 const tabs = [
-  { id: "users", label: "Người dùng", icon: "group" },
-  { id: "posts", label: "Bài viết", icon: "article" },
+  { id: "users", label: "Users", icon: "group" },
+  { id: "posts", label: "Posts", icon: "article" },
   { id: "stickers", label: "Sticker", icon: "mood" },
 ];
 
@@ -92,7 +92,7 @@ export default function AdminDashboard() {
 
       setPagination(response?.data?.data?.pagination || defaultPagination);
     } catch (err) {
-      setError(err.response?.data?.message || "Không tải được dữ liệu admin.");
+      setError(err.response?.data?.message || "Unable to load admin data.");
     } finally {
       setLoading(false);
     }
@@ -117,7 +117,7 @@ export default function AdminDashboard() {
   }, [loadActiveData]);
 
   const tableTitle = useMemo(() => {
-    return tabs.find((tab) => tab.id === activeTab)?.label || "Quản lý";
+    return tabs.find((tab) => tab.id === activeTab)?.label || "Management";
   }, [activeTab]);
 
   const showMessage = (text) => {
@@ -147,17 +147,17 @@ export default function AdminDashboard() {
       setUsers((items) =>
         items.map((user) => (user._id === userId ? updatedUser : user)),
       );
-      showMessage("Đã cập nhật trạng thái người dùng.");
+      showMessage("User status updated.");
       loadStats();
     } catch (err) {
-      setError(err.response?.data?.message || "Không cập nhật được user.");
+      setError(err.response?.data?.message || "Unable to update user.");
     } finally {
       setActionId("");
     }
   };
 
   const handleDeleteUser = async (userId) => {
-    const confirmed = window.confirm("Xoá người dùng này và toàn bộ bài viết của họ?");
+    const confirmed = window.confirm("Delete this user and all of their posts?");
     if (!confirmed) return;
 
     setActionId(userId);
@@ -166,17 +166,17 @@ export default function AdminDashboard() {
     try {
       await adminAPI.deleteUser(userId);
       setUsers((items) => items.filter((user) => user._id !== userId));
-      showMessage("Đã xoá người dùng.");
+      showMessage("User deleted.");
       loadStats();
     } catch (err) {
-      setError(err.response?.data?.message || "Không xoá được user.");
+      setError(err.response?.data?.message || "Unable to delete user.");
     } finally {
       setActionId("");
     }
   };
 
   const handleDeletePost = async (postId) => {
-    const confirmed = window.confirm("Xoá bài viết này?");
+    const confirmed = window.confirm("Delete this post?");
     if (!confirmed) return;
 
     setActionId(postId);
@@ -185,10 +185,10 @@ export default function AdminDashboard() {
     try {
       await adminAPI.deletePost(postId);
       setPosts((items) => items.filter((post) => post._id !== postId));
-      showMessage("Đã xoá bài viết.");
+      showMessage("Post deleted.");
       loadStats();
     } catch (err) {
-      setError(err.response?.data?.message || "Không xoá được bài viết.");
+      setError(err.response?.data?.message || "Unable to delete post.");
     } finally {
       setActionId("");
     }
@@ -202,17 +202,17 @@ export default function AdminDashboard() {
     try {
       if (editingStickerId) {
         await adminAPI.updateSticker(editingStickerId, stickerForm);
-        showMessage("Đã cập nhật sticker.");
+        showMessage("Sticker updated.");
       } else {
         await adminAPI.createSticker(stickerForm);
-        showMessage("Đã thêm sticker.");
+        showMessage("Sticker added.");
       }
 
       setStickerForm(emptyStickerForm);
       setEditingStickerId("");
       await Promise.all([loadActiveData(), loadStats()]);
     } catch (err) {
-      setError(err.response?.data?.message || "Không lưu được sticker.");
+      setError(err.response?.data?.message || "Unable to save sticker.");
     } finally {
       setActionId("");
     }
@@ -228,7 +228,7 @@ export default function AdminDashboard() {
   };
 
   const handleDeleteSticker = async (stickerId) => {
-    const confirmed = window.confirm("Xoá sticker này?");
+    const confirmed = window.confirm("Delete this sticker?");
     if (!confirmed) return;
 
     setActionId(stickerId);
@@ -237,10 +237,10 @@ export default function AdminDashboard() {
     try {
       await adminAPI.deleteSticker(stickerId);
       setStickers((items) => items.filter((sticker) => sticker._id !== stickerId));
-      showMessage("Đã xoá sticker.");
+      showMessage("Sticker deleted.");
       loadStats();
     } catch (err) {
-      setError(err.response?.data?.message || "Không xoá được sticker.");
+      setError(err.response?.data?.message || "Unable to delete sticker.");
     } finally {
       setActionId("");
     }
@@ -256,9 +256,9 @@ export default function AdminDashboard() {
             <p className="text-sm font-semibold uppercase tracking-wide text-[#1877f2]">
               Admin dashboard
             </p>
-            <h1 className="text-3xl font-bold">Quản trị hệ thống</h1>
+            <h1 className="text-3xl font-bold">System Administration</h1>
             <p className="mt-1 text-sm text-[#65676b]">
-              Quản lý người dùng, bài viết và kho sticker của ZaloUTE.
+              Manage ZaloUTE users, posts, and stickers.
             </p>
           </div>
 
@@ -269,23 +269,23 @@ export default function AdminDashboard() {
             <input
               value={keyword}
               onChange={(event) => setKeyword(event.target.value)}
-              placeholder={`Tìm trong ${tableTitle.toLowerCase()}...`}
+              placeholder={`Search ${tableTitle.toLowerCase()}...`}
               className="min-w-0 flex-1 rounded-md border border-[#e5e7eb] px-3 py-2 text-sm outline-none focus:border-[#1877f2]"
             />
             <button
               type="submit"
               className="rounded-md bg-[#1877f2] px-4 py-2 text-sm font-semibold text-white hover:bg-[#166fe5]"
             >
-              Tìm
+              Search
             </button>
           </form>
         </div>
 
         <section className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard label="Người dùng" value={stats.users} icon="group" />
-          <StatCard label="Bài viết" value={stats.posts} icon="article" />
+          <StatCard label="Users" value={stats.users} icon="group" />
+          <StatCard label="Posts" value={stats.posts} icon="article" />
           <StatCard label="Sticker" value={stats.stickers} icon="mood" />
-          <StatCard label="Tài khoản bị cấm" value={stats.bannedUsers} icon="block" />
+          <StatCard label="Banned accounts" value={stats.bannedUsers} icon="block" />
         </section>
 
         <section className="rounded-lg bg-white shadow-sm">
@@ -315,7 +315,7 @@ export default function AdminDashboard() {
             </div>
 
             <div className="text-sm text-[#65676b]">
-              Tổng: <span className="font-semibold">{pagination.total}</span>
+              Total: <span className="font-semibold">{pagination.total}</span>
             </div>
           </div>
 
@@ -403,7 +403,7 @@ const StatCard = ({ label, value, icon }) => (
 
 const UsersTable = ({ users, loading, actionId, onStatusChange, onDelete }) => (
   <table className="min-w-full text-left text-sm">
-    <TableHead columns={["Tên", "Email", "Vai trò", "Trạng thái", "Ngày tạo", ""]} />
+    <TableHead columns={["Name", "Email", "Role", "Status", "Created", ""]} />
     <tbody>
       {loading ? <LoadingRow colSpan={6} /> : null}
       {!loading && users.length === 0 ? <EmptyRow colSpan={6} /> : null}
@@ -432,7 +432,7 @@ const UsersTable = ({ users, loading, actionId, onStatusChange, onDelete }) => (
               <td className="px-4 py-3 text-right">
                 <DangerButton
                   disabled={actionId === user._id}
-                  label="Xoá"
+                  label="Delete"
                   onClick={() => onDelete(user._id)}
                 />
               </td>
@@ -445,7 +445,7 @@ const UsersTable = ({ users, loading, actionId, onStatusChange, onDelete }) => (
 
 const PostsTable = ({ posts, loading, actionId, onDelete }) => (
   <table className="min-w-full text-left text-sm">
-    <TableHead columns={["Tác giả", "Nội dung", "Tương tác", "Ngày tạo", ""]} />
+    <TableHead columns={["Author", "Content", "Engagement", "Created", ""]} />
     <tbody>
       {loading ? <LoadingRow colSpan={5} /> : null}
       {!loading && posts.length === 0 ? <EmptyRow colSpan={5} /> : null}
@@ -465,7 +465,7 @@ const PostsTable = ({ posts, loading, actionId, onDelete }) => (
               <td className="px-4 py-3 text-right">
                 <DangerButton
                   disabled={actionId === post._id}
-                  label="Xoá"
+                  label="Delete"
                   onClick={() => onDelete(post._id)}
                 />
               </td>
@@ -478,7 +478,7 @@ const PostsTable = ({ posts, loading, actionId, onDelete }) => (
 
 const StickersTable = ({ stickers, loading, actionId, onEdit, onDelete }) => (
   <table className="min-w-full text-left text-sm">
-    <TableHead columns={["Ảnh", "Tên", "Danh mục", "Ngày tạo", ""]} />
+    <TableHead columns={["Image", "Name", "Category", "Created", ""]} />
     <tbody>
       {loading ? <LoadingRow colSpan={5} /> : null}
       {!loading && stickers.length === 0 ? <EmptyRow colSpan={5} /> : null}
@@ -501,11 +501,11 @@ const StickersTable = ({ stickers, loading, actionId, onEdit, onDelete }) => (
                   onClick={() => onEdit(sticker)}
                   className="mr-2 rounded-md bg-[#e7f3ff] px-3 py-1.5 text-sm font-semibold text-[#1877f2] hover:bg-[#dbeafe]"
                 >
-                  Sửa
+                  Edit
                 </button>
                 <DangerButton
                   disabled={actionId === sticker._id}
-                  label="Xoá"
+                  label="Delete"
                   onClick={() => onDelete(sticker._id)}
                 />
               </td>
@@ -524,14 +524,14 @@ const StickerForm = ({ form, editing, saving, onChange, onSubmit, onCancel }) =>
     <input
       value={form.name}
       onChange={(event) => onChange({ ...form, name: event.target.value })}
-      placeholder="Tên sticker"
+      placeholder="Sticker name"
       className="rounded-md border border-[#d1d5db] px-3 py-2 text-sm outline-none focus:border-[#1877f2]"
       required
     />
     <input
       value={form.category}
       onChange={(event) => onChange({ ...form, category: event.target.value })}
-      placeholder="Danh mục"
+      placeholder="Category"
       className="rounded-md border border-[#d1d5db] px-3 py-2 text-sm outline-none focus:border-[#1877f2]"
     />
     <input
@@ -547,7 +547,7 @@ const StickerForm = ({ form, editing, saving, onChange, onSubmit, onCancel }) =>
         disabled={saving}
         className="rounded-md bg-[#1877f2] px-4 py-2 text-sm font-semibold text-white hover:bg-[#166fe5] disabled:opacity-60"
       >
-        {editing ? "Lưu" : "Thêm"}
+        {editing ? "Save" : "Add"}
       </button>
       {editing ? (
         <button
@@ -555,7 +555,7 @@ const StickerForm = ({ form, editing, saving, onChange, onSubmit, onCancel }) =>
           onClick={onCancel}
           className="rounded-md bg-[#e5e7eb] px-4 py-2 text-sm font-semibold text-[#374151] hover:bg-[#d1d5db]"
         >
-          Huỷ
+          Cancel
         </button>
       ) : null}
     </div>
@@ -574,7 +574,7 @@ const Pagination = ({ pagination, loading, onChangePage }) => (
         onClick={() => onChangePage((pagination.page || 1) - 1)}
         className="rounded-md border border-[#d1d5db] px-3 py-2 font-semibold disabled:opacity-50"
       >
-        Trước
+        Previous
       </button>
       <button
         type="button"
@@ -603,7 +603,7 @@ const TableHead = ({ columns }) => (
 const LoadingRow = ({ colSpan }) => (
   <tr>
     <td colSpan={colSpan} className="px-4 py-8 text-center text-[#65676b]">
-      Đang tải dữ liệu...
+      Loading data...
     </td>
   </tr>
 );
@@ -611,7 +611,7 @@ const LoadingRow = ({ colSpan }) => (
 const EmptyRow = ({ colSpan }) => (
   <tr>
     <td colSpan={colSpan} className="px-4 py-8 text-center text-[#65676b]">
-      Không có dữ liệu.
+      No data.
     </td>
   </tr>
 );

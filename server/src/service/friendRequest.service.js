@@ -1,4 +1,4 @@
-const FriendRequestRepo = require("../repo/friendRequest.repository");
+﻿const FriendRequestRepo = require("../repo/friendRequest.repository");
 const UserRepository = require("../repo/user.repository");
 const NotificationService = require("./notification.service");
 
@@ -56,23 +56,23 @@ async function sendFriendRequest(senderId, receiverId) {
     throw {
       statusCode: 400,
       code: "RECEIVER_ID_REQUIRED",
-      message: "Thiếu người nhận lời mời kết bạn",
+      message: "Friend request receiver is required",
     };
   }
 
   if (senderId === receiverId) {
     throw {
       statusCode: 400,
-      message: "Không thể tự gửi lời mời cho chính mình",
+      message: "You cannot send a friend request to yourself",
     };
   }
 
   const receiverExists = await UserRepository.getUserById(receiverId);
   if (!receiverExists) {
-    throw { statusCode: 404, message: "Không tìm thấy người dùng này" };
+    throw { statusCode: 404, message: "User not found" };
   } else {
     if (hasFriend(receiverExists, senderId)) {
-      throw { statusCode: 400, message: "Hai người đã là bạn bè" };
+      throw { statusCode: 400, message: "You are already friends" };
     }
   }
 
@@ -85,7 +85,7 @@ async function sendFriendRequest(senderId, receiverId) {
     throw {
       statusCode: 400,
       code: "ALREADY_FRIENDS",
-      message: "Hai người đã là bạn bè",
+      message: "You are already friends",
     };
   }
 
@@ -94,7 +94,7 @@ async function sendFriendRequest(senderId, receiverId) {
     receiverId,
   );
   if (existingReq) {
-    throw { statusCode: 400, message: "Lời mời kết bạn đang chờ xử lý" };
+    throw { statusCode: 400, message: "Friend request is already pending" };
   }
 
   const newRequest = await FriendRequestRepo.createRequest(
@@ -113,7 +113,7 @@ async function sendFriendRequest(senderId, receiverId) {
 
   return {
     success: true,
-    message: "Gửi lời mời kết bạn thành công",
+    message: "Friend request sent successfully",
     data: newRequest,
   };
 }
@@ -123,7 +123,7 @@ async function acceptFriendRequest(senderId, receiverId) {
     throw {
       statusCode: 400,
       code: "SENDER_ID_REQUIRED",
-      message: "Thiếu người gửi lời mời kết bạn",
+      message: "Friend request sender is required",
     };
   }
 
@@ -131,7 +131,7 @@ async function acceptFriendRequest(senderId, receiverId) {
     throw {
       statusCode: 400,
       code: "INVALID_ACTION",
-      message: "Không thể tự chấp nhận lời mời của chính mình",
+      message: "You cannot accept your own friend request",
     };
   }
 
@@ -140,14 +140,14 @@ async function acceptFriendRequest(senderId, receiverId) {
     throw {
       statusCode: 404,
       code: "SENDER_NOT_FOUND",
-      message: "Không tìm thấy người gửi lời mời kết bạn",
+      message: "Friend request sender not found",
     };
   } else {
     if (hasFriend(senderExists, receiverId)) {
       throw {
         statusCode: 400,
         code: "ALREADY_FRIENDS",
-        message: "Hai người đã là bạn bè",
+        message: "You are already friends",
       };
     }
   }
@@ -160,7 +160,7 @@ async function acceptFriendRequest(senderId, receiverId) {
     throw {
       statusCode: 404,
       code: "REQUEST_NOT_FOUND",
-      message: "Không tìm thấy lời mời kết bạn đang chờ xử lý giữa hai người",
+      message: "No pending friend request found",
     };
   }
 
@@ -168,19 +168,48 @@ async function acceptFriendRequest(senderId, receiverId) {
     throw {
       statusCode: 403,
       code: "FORBIDDEN",
-      message: "Bạn không có quyền chấp nhận lời mời kết bạn này",
+      message: "You are not allowed to accept this friend request",
     };
   }
 
+  const requesterId = request.sender.toString();
+  const accepterId = request.receiver.toString();
+
+  console.log("Accepting friend request:", {
+    requestId: request._id.toString(),
+    requesterId,
+    accepterId,
+    currentUserId: receiverId?.toString?.() || receiverId,
+  });
+
   await Promise.all([
     FriendRequestRepo.updateRequestStatus(request._id, "accepted"),
-    UserRepository.addFriend(senderId, receiverId),
-    UserRepository.addFriend(receiverId, senderId),
+    UserRepository.addFriend(requesterId, accepterId),
+    UserRepository.addFriend(accepterId, requesterId),
   ]);
+
+  const notification = await NotificationService.createNotification({
+    receiver: requesterId,
+    sender: accepterId,
+    type: "friend_request",
+    content: "accepted your friend request",
+    relatedId: accepterId,
+    relatedType: "User",
+  });
+
+  if (!notification) {
+    throw {
+      statusCode: 500,
+      code: "FRIEND_ACCEPT_NOTIFICATION_FAILED",
+      message: "Unable to create friend accept notification",
+    };
+  }
+
+  console.log("Friend accept notification created:", notification?._id);
 
   return {
     success: true,
-    message: "Chấp nhận lời mời kết bạn thành công",
+    message: "Friend request accepted successfully",
   };
 }
 
@@ -189,7 +218,7 @@ async function rejectFriendRequest(senderId, receiverId) {
     throw {
       statusCode: 400,
       code: "SENDER_ID_REQUIRED",
-      message: "Thiếu người gửi lời mời kết bạn",
+      message: "Friend request sender is required",
     };
   }
 
@@ -197,7 +226,7 @@ async function rejectFriendRequest(senderId, receiverId) {
     throw {
       statusCode: 400,
       code: "INVALID_ACTION",
-      message: "Không thể tự từ chối lời mời của chính mình",
+      message: "You cannot reject your own friend request",
     };
   }
 
@@ -210,7 +239,7 @@ async function rejectFriendRequest(senderId, receiverId) {
     throw {
       statusCode: 404,
       code: "REQUEST_NOT_FOUND",
-      message: "Không tìm thấy lời mời kết bạn đang chờ xử lý giữa hai người",
+      message: "No pending friend request found",
     };
   }
 
@@ -218,7 +247,7 @@ async function rejectFriendRequest(senderId, receiverId) {
     throw {
       statusCode: 403,
       code: "FORBIDDEN",
-      message: "Bạn không có quyền từ chối lời mời kết bạn này",
+      message: "You are not allowed to reject this friend request",
     };
   }
 
@@ -226,7 +255,7 @@ async function rejectFriendRequest(senderId, receiverId) {
 
   return {
     success: true,
-    message: "Từ chối lời mời kết bạn thành công",
+    message: "Friend request rejected successfully",
   };
 }
 
@@ -235,7 +264,7 @@ async function cancelFriendRequest(senderId, receiverId) {
     throw {
       statusCode: 400,
       code: "RECEIVER_ID_REQUIRED",
-      message: "Thiếu người nhận lời mời kết bạn",
+      message: "Friend request receiver is required",
     };
   }
 
@@ -243,7 +272,7 @@ async function cancelFriendRequest(senderId, receiverId) {
     throw {
       statusCode: 400,
       code: "INVALID_ACTION",
-      message: "Không thể hủy lời mời của chính mình",
+      message: "You cannot cancel your own friend request",
     };
   }
 
@@ -256,7 +285,7 @@ async function cancelFriendRequest(senderId, receiverId) {
     throw {
       statusCode: 404,
       code: "REQUEST_NOT_FOUND",
-      message: "Không tìm thấy lời mời kết bạn đang chờ xử lý giữa hai người",
+      message: "No pending friend request found",
     };
   }
 
@@ -264,7 +293,7 @@ async function cancelFriendRequest(senderId, receiverId) {
     throw {
       statusCode: 403,
       code: "FORBIDDEN",
-      message: "Bạn không có quyền hủy lời mời kết bạn này",
+      message: "You are not allowed to cancel this friend request",
     };
   }
 
@@ -272,7 +301,7 @@ async function cancelFriendRequest(senderId, receiverId) {
 
   return {
     success: true,
-    message: "Hủy lời mời kết bạn thành công",
+    message: "Friend request cancelled successfully",
   };
 }
 
@@ -281,7 +310,7 @@ async function unfriend(userId, friendId) {
     throw {
       statusCode: 400,
       code: "FRIEND_ID_REQUIRED",
-      message: "Thiếu người dùng cần hủy kết bạn",
+      message: "User to unfriend is required",
     };
   }
 
@@ -289,7 +318,7 @@ async function unfriend(userId, friendId) {
     throw {
       statusCode: 400,
       code: "INVALID_ACTION",
-      message: "Không thể hủy kết bạn với chính mình",
+      message: "You cannot unfriend yourself",
     };
   }
 
@@ -300,7 +329,7 @@ async function unfriend(userId, friendId) {
     throw {
       statusCode: 404,
       code: "USER_NOT_FOUND",
-      message: "Không tìm thấy người dùng",
+      message: "User not found",
     };
   }
 
@@ -308,7 +337,7 @@ async function unfriend(userId, friendId) {
     throw {
       statusCode: 400,
       code: "NOT_FRIENDS",
-      message: "Hai người chưa phải là bạn bè",
+      message: "These users are not friends",
     };
   }
 
@@ -320,7 +349,7 @@ async function unfriend(userId, friendId) {
 
   return {
     success: true,
-    message: "Hủy kết bạn thành công",
+    message: "Unfriended successfully",
   };
 }
 
@@ -371,3 +400,6 @@ module.exports = {
   acceptFriendRequest,
   getFriendRelation,
 };
+
+
+

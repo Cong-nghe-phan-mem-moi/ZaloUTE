@@ -15,6 +15,26 @@ import { PostList } from "../components/Post";
 const getProfileId = (profile) =>
   profile?.userId || profile?._id || profile?.id;
 
+const getActionMessage = (response, fallback) => {
+  const message = response?.data?.message;
+
+  if (!message || message === "Operation failed") {
+    return fallback;
+  }
+
+  return message;
+};
+
+const getActionErrorMessage = (error, fallback) => {
+  const message = error?.response?.data?.message;
+
+  if (!message || message === "Operation failed") {
+    return fallback;
+  }
+
+  return message;
+};
+
 const ProfilePage = ({ userId }) => {
   const dispatch = useAppDispatch();
   const { profile, loading, error } = useAppSelector((state) => state.user);
@@ -90,9 +110,9 @@ const ProfilePage = ({ userId }) => {
     try {
       const response = await userAPI.uploadAvatar(file);
       await dispatch(fetchUserProfile());
-      setNotice(response.data?.message || "Avatar uploaded successfully.");
+      setNotice(getActionMessage(response, "Avatar uploaded successfully."));
     } catch (err) {
-      setNotice(err.response?.data?.message || "Unable to upload avatar.");
+      setNotice(getActionErrorMessage(err, "Unable to upload avatar."));
     } finally {
       setAvatarUploading(false);
     }
@@ -107,9 +127,9 @@ const ProfilePage = ({ userId }) => {
     try {
       const response = await userAPI.uploadCoverImage(file);
       await dispatch(fetchUserProfile());
-      setNotice(response.data?.message || "Cover image uploaded successfully.");
+      setNotice(getActionMessage(response, "Cover image uploaded successfully."));
     } catch (err) {
-      setNotice(err.response?.data?.message || "Unable to upload cover image.");
+      setNotice(getActionErrorMessage(err, "Unable to upload cover image."));
     } finally {
       setCoverUploading(false);
     }
@@ -125,11 +145,9 @@ const ProfilePage = ({ userId }) => {
     try {
       const response = await userAPI.sendFriendRequest(receiverId);
       await refreshProfilesAfterAction();
-      setNotice(response.data?.message || "Friend request sent.");
+      setNotice(getActionMessage(response, "Friend request sent."));
     } catch (err) {
-      setNotice(
-        err.response?.data?.message || "Unable to send friend request.",
-      );
+      setNotice(getActionErrorMessage(err, "Unable to send friend request."));
     } finally {
       setFriendRequestLoading(false);
     }
@@ -145,11 +163,9 @@ const ProfilePage = ({ userId }) => {
     try {
       const response = await userAPI.acceptFriendRequest(senderId);
       await refreshProfilesAfterAction();
-      setNotice(response.data?.message || "Friend request accepted.");
+      setNotice(getActionMessage(response, "Friend request accepted."));
     } catch (err) {
-      setNotice(
-        err.response?.data?.message || "Unable to accept friend request.",
-      );
+      setNotice(getActionErrorMessage(err, "Unable to accept friend request."));
     } finally {
       setAcceptRequestLoading(false);
     }
@@ -165,11 +181,9 @@ const ProfilePage = ({ userId }) => {
     try {
       const response = await userAPI.rejectFriendRequest(senderId);
       await refreshProfilesAfterAction();
-      setNotice(response.data?.message || "Friend request rejected.");
+      setNotice(getActionMessage(response, "Friend request rejected."));
     } catch (err) {
-      setNotice(
-        err.response?.data?.message || "Unable to reject friend request.",
-      );
+      setNotice(getActionErrorMessage(err, "Unable to reject friend request."));
     } finally {
       setRejectRequestLoading(false);
     }
@@ -185,11 +199,9 @@ const ProfilePage = ({ userId }) => {
     try {
       const response = await userAPI.cancelFriendRequest(receiverId);
       await refreshProfilesAfterAction();
-      setNotice(response.data?.message || "Friend request cancelled.");
+      setNotice(getActionMessage(response, "Friend request cancelled."));
     } catch (err) {
-      setNotice(
-        err.response?.data?.message || "Unable to cancel friend request.",
-      );
+      setNotice(getActionErrorMessage(err, "Unable to cancel friend request."));
     } finally {
       setCancelRequestLoading(false);
     }
@@ -205,9 +217,9 @@ const ProfilePage = ({ userId }) => {
     try {
       const response = await userAPI.unfriend(friendId);
       await refreshProfilesAfterAction();
-      setNotice(response.data?.message || "Friend removed.");
+      setNotice(getActionMessage(response, "Friend removed."));
     } catch (err) {
-      setNotice(err.response?.data?.message || "Unable to unfriend.");
+      setNotice(getActionErrorMessage(err, "Unable to unfriend."));
     } finally {
       setUnfriendLoading(false);
     }
@@ -326,8 +338,6 @@ const ProfilePage = ({ userId }) => {
                 }
               />
             ) : null}
-
-            {notice ? <StatusCard icon="info" message={notice} /> : null}
 
             <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
               <div className="space-y-5 lg:col-span-8">
