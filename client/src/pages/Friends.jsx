@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from "react";
+import { Link } from "react-router-dom";
 import HomeAvatar from "../components/home/HomeAvatar";
 import HomeHeader from "../components/home/HomeHeader";
 import LeftSidebar from "../components/home/LeftSidebar";
@@ -67,12 +68,12 @@ const Friends = () => {
                     {friends.length} friends total
                   </p>
                 </div>
-                <a
-                  href="/friend-requests"
+                <Link
+                  to="/friend-requests"
                   className="rounded-md bg-[#1877f2] px-5 py-2 text-sm font-semibold text-white shadow-md hover:bg-[#166fe5]"
                 >
                   Friend requests
-                </a>
+                </Link>
               </div>
             </section>
 
@@ -124,8 +125,8 @@ const Friends = () => {
 };
 
 const FriendCard = ({ friend }) => (
-  <a
-    href={`/users/profile/${friend.id}`}
+  <Link
+    to={`/users/profile/${friend.id}`}
     className="flex items-center gap-4 rounded-md bg-white p-4 shadow-sm ring-1 ring-[#eef0f2] transition hover:-translate-y-0.5 hover:shadow-md"
   >
     <HomeAvatar image={friend.avatar} name={friend.name} />
@@ -143,7 +144,7 @@ const FriendCard = ({ friend }) => (
     <span className="material-symbols-outlined text-[20px] text-[#6b7280]">
       chevron_right
     </span>
-  </a>
+  </Link>
 );
 
 const StatusCard = ({ icon, message, detail, tone = "neutral", loading }) => (
