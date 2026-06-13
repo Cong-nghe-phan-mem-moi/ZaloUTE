@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { authAPI } from "../services/api";
 
 const getErrorMessage = (error) =>
@@ -7,6 +8,7 @@ const getErrorMessage = (error) =>
   "Unable to log in. Please try again.";
 
 function LoginPage() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -26,7 +28,9 @@ function LoginPage() {
       const { token, redirectUrl } = response.data.data;
 
       localStorage.setItem("token", token);
-      window.location.assign(redirectUrl === "/home" ? "/" : redirectUrl || "/");
+      navigate(redirectUrl === "/home" ? "/" : redirectUrl || "/", {
+        replace: true,
+      });
     } catch (error) {
       setErrorMessage(getErrorMessage(error));
     } finally {
@@ -99,9 +103,9 @@ function LoginPage() {
               />
               Remember me
             </label>
-            <a className="font-semibold text-[#2538ff]" href="/forgot-password">
+            <Link className="font-semibold text-[#2538ff]" to="/forgot-password">
               Forgot password?
-            </a>
+            </Link>
           </div>
 
           {errorMessage ? (
@@ -131,9 +135,9 @@ function LoginPage() {
 
         <p className="mt-5 text-center text-xs text-slate-500">
           Don't have an account?{" "}
-          <a className="font-semibold text-[#2538ff]" href="/register">
+          <Link className="font-semibold text-[#2538ff]" to="/register">
             Register
-          </a>
+          </Link>
         </p>
       </form>
     </AuthShell>

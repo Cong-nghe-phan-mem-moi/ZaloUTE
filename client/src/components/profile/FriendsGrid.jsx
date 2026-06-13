@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import FriendCard from '../common/FriendCard';
 
 const FriendsGrid = ({ friends, totalFriends }) => {
@@ -10,12 +11,12 @@ const FriendsGrid = ({ friends, totalFriends }) => {
             {totalFriends} friends total
           </p>
         </div>
-        <a
-          href="/friends"
+        <Link
+          to="/friends"
           className="text-xs font-semibold text-[#1877f2] hover:underline"
         >
           See all friends
-        </a>
+        </Link>
       </div>
       
       {friends.length > 0 ? (

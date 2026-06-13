@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import {
   clearStatus,
@@ -165,9 +166,9 @@ function Register() {
 
         <p className="mt-5 text-center text-xs text-slate-500">
           Already have an account?{" "}
-          <a className="font-semibold text-[#2538ff]" href="/login">
+          <Link className="font-semibold text-[#2538ff]" to="/login">
             Sign In
-          </a>
+          </Link>
         </p>
       </div>
     </AuthShell>
@@ -262,13 +263,13 @@ const RegisterForm = ({
       />
       <span>
         I agree to the{" "}
-        <a className="font-semibold text-[#2538ff]" href="/register">
+        <Link className="font-semibold text-[#2538ff]" to="/register">
           Terms of Service
-        </a>{" "}
+        </Link>{" "}
         and{" "}
-        <a className="font-semibold text-[#2538ff]" href="/register">
+        <Link className="font-semibold text-[#2538ff]" to="/register">
           Privacy Policy
-        </a>
+        </Link>
         .
       </span>
     </label>
@@ -332,12 +333,12 @@ const SuccessPanel = ({ message, onRestart }) => (
     <p className="mt-2 text-sm text-slate-500">
       {message || "Your account has been created successfully."}
     </p>
-    <a
-      href="/login"
+    <Link
+      to="/login"
       className="mt-6 flex h-11 w-full items-center justify-center rounded-lg bg-[#3329ff] text-sm font-semibold text-white shadow-lg shadow-indigo-200 transition hover:bg-[#241ce5]"
     >
       Go to Login
-    </a>
+    </Link>
     <button
       type="button"
       onClick={onRestart}
