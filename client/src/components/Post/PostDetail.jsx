@@ -6,15 +6,18 @@ import { enUS } from "date-fns/locale";
 import LoadingSpinner from "../common/LoadingSpinner";
 import ErrorMessage from "../common/ErrorMessage";
 import CommentSection from "./CommentSection";
+import SharePostModal from "./SharePostModal";
+import SharedPostPreview from "./SharedPostPreview";
+import PostEngagement from "./PostEngagement";
 
 const PostDetail = ({ postId, isOpen = false, onClose }) => {
   const dispatch = useDispatch();
   const { currentPost, loading, error } = useSelector((state) => state.posts);
   const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
+  const [isShareOpen, setIsShareOpen] = useState(false);
 
   useEffect(() => {
     if (isOpen && postId) {
-      setSelectedMediaIndex(0);
       dispatch(getPost(postId));
     }
   }, [isOpen, postId, dispatch]);
@@ -39,9 +42,9 @@ const PostDetail = ({ postId, isOpen = false, onClose }) => {
     };
   }, [isOpen, onClose]);
 
-  const handleToggleLike = () => {
+  const handleReaction = (reactionType = "like") => {
     if (currentPost) {
-      dispatch(toggleLike(currentPost._id));
+      dispatch(toggleLike({ postId: currentPost._id, reactionType }));
     }
   };
 
@@ -115,44 +118,27 @@ const PostDetail = ({ postId, isOpen = false, onClose }) => {
             selectedIndex={selectedMediaIndex}
             onSelect={setSelectedMediaIndex}
           />
+          <SharedPostPreview post={currentPost.sharedFrom} />
         </div>
 
-        <div className="flex justify-between border-y px-4 py-3 text-sm text-gray-600">
-          <div>{currentPost.likes?.length || 0} likes</div>
-          <div>{currentPost.commentCount || 0} comments</div>
-        </div>
-
-        <div className="flex gap-2 border-b p-3 text-gray-600">
-          <button
-            type="button"
-            onClick={handleToggleLike}
-            className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2 transition ${
-              currentPost.isLiked
-                ? "bg-blue-100 font-semibold text-blue-600"
-                : "hover:bg-gray-100"
-            }`}
-          >
-            {currentPost.isLiked ? "Unlike" : "Like"}
-          </button>
-          <button
-            type="button"
-            className="flex flex-1 items-center justify-center gap-2 rounded-lg py-2 transition hover:bg-gray-100"
-          >
-            Comment
-          </button>
-          <button
-            type="button"
-            className="flex flex-1 items-center justify-center gap-2 rounded-lg py-2 transition hover:bg-gray-100"
-          >
-            Share
-          </button>
-        </div>
+        <PostEngagement
+          post={currentPost}
+          onReact={handleReaction}
+          onComment={() => {}}
+          onShare={() => setIsShareOpen(true)}
+        />
 
         <CommentSection
           postId={postId}
           onCommentAdded={() => {
             dispatch(getPost(postId));
           }}
+        />
+
+        <SharePostModal
+          post={currentPost}
+          isOpen={isShareOpen}
+          onClose={() => setIsShareOpen(false)}
         />
       </>
     );

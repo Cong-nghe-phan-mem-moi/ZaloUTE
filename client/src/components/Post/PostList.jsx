@@ -12,6 +12,9 @@ import { enUS } from "date-fns/locale";
 import LoadingSpinner from "../common/LoadingSpinner";
 import PostDetail from "./PostDetail";
 import EditPost from "./EditPost";
+import SharePostModal from "./SharePostModal";
+import SharedPostPreview from "./SharedPostPreview";
+import PostEngagement from "./PostEngagement";
 
 const getUserId = (user) => user?.userId || user?._id || user?.id;
 
@@ -117,6 +120,7 @@ const PostList = ({
   const currentUser = useSelector((state) => state.user?.profile);
   const [selectedPostId, setSelectedPostId] = useState(null);
   const [editingPostId, setEditingPostId] = useState(null);
+  const [sharingPostId, setSharingPostId] = useState(null);
   const [page, setPage] = useState(1);
 
   const allowedAuthorIdSet = useMemo(() => {
@@ -167,8 +171,8 @@ const PostList = ({
     dispatch(getNewsFeed({ page, limit: 10 }));
   }, [authorId, page, dispatch]);
 
-  const handleToggleLike = (postId) => {
-    dispatch(toggleLike(postId));
+  const handleReaction = (postId, reactionType = "like") => {
+    dispatch(toggleLike({ postId, reactionType }));
   };
 
   const handleDeletePost = (postId) => {
@@ -274,44 +278,18 @@ const PostList = ({
                 ) : null}
 
                 <PostMediaPreview media={post.media} />
+                <SharedPostPreview
+                  post={post.sharedFrom}
+                  onOpen={setSelectedPostId}
+                />
               </div>
 
-              <div className="px-4 py-2 border-t border-b border-gray-100 text-sm text-gray-600 flex justify-between">
-                <button
-                  onClick={() => setSelectedPostId(post._id)}
-                  className="hover:text-blue-500 transition"
-                >
-                  {post.likes?.length || 0} likes
-                </button>
-                <button
-                  onClick={() => setSelectedPostId(post._id)}
-                  className="hover:text-blue-500 transition"
-                >
-                  {post.commentCount || 0} comments
-                </button>
-              </div>
-
-              <div className="p-2 flex gap-1 text-gray-600">
-                <button
-                  onClick={() => handleToggleLike(post._id)}
-                  className={`flex-1 py-2 rounded-lg transition flex items-center justify-center gap-2 font-medium ${
-                    post.isLiked
-                      ? "bg-blue-100 text-blue-600"
-                      : "hover:bg-gray-100 text-gray-600"
-                  }`}
-                >
-                  {post.isLiked ? "Unlike" : "Like"}
-                </button>
-                <button
-                  onClick={() => setSelectedPostId(post._id)}
-                  className="flex-1 py-2 rounded-lg hover:bg-gray-100 transition flex items-center justify-center gap-2 font-medium text-gray-600"
-                >
-                  Comment
-                </button>
-                <button className="flex-1 py-2 rounded-lg hover:bg-gray-100 transition flex items-center justify-center gap-2 font-medium text-gray-600">
-                  Share
-                </button>
-              </div>
+              <PostEngagement
+                post={post}
+                onReact={(reactionType) => handleReaction(post._id, reactionType)}
+                onComment={() => setSelectedPostId(post._id)}
+                onShare={() => setSharingPostId(post._id)}
+              />
             </div>
           ))}
 
@@ -343,6 +321,12 @@ const PostList = ({
         postId={selectedPostId}
         isOpen={!!selectedPostId}
         onClose={() => setSelectedPostId(null)}
+      />
+
+      <SharePostModal
+        post={posts.find((post) => post._id === sharingPostId)}
+        isOpen={!!sharingPostId}
+        onClose={() => setSharingPostId(null)}
       />
     </div>
   );
