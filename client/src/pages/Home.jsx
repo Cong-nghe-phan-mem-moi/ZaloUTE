@@ -16,6 +16,15 @@ export default function Home() {
   const [requestsLoading, setRequestsLoading] = useState(false);
   const [requestActionId, setRequestActionId] = useState("");
   const [feedRefreshKey, setFeedRefreshKey] = useState(0);
+  const postTarget = useMemo(() => {
+    const params = new URLSearchParams(window.location.search);
+
+    return {
+      postId: params.get("postId"),
+      commentId: params.get("commentId"),
+      parentCommentId: params.get("parentCommentId"),
+    };
+  }, []);
 
   const loadFriendRequests = useCallback(async () => {
     setRequestsLoading(true);
@@ -114,6 +123,9 @@ export default function Home() {
             <PostList
               allowedAuthorIds={friendIds}
               refreshKey={feedRefreshKey}
+              initialSelectedPostId={postTarget.postId}
+              focusedCommentId={postTarget.commentId}
+              focusedParentCommentId={postTarget.parentCommentId}
               emptyMessage="No posts from friends yet"
               emptyDetail="The home feed only shows posts from your friends."
             />

@@ -18,6 +18,7 @@ const notificationSchema = new mongoose.Schema({
             'friend_accept',
             'post_like',
             'post_comment',
+            'post_share',
             'comment_reply',
             'comment_like',
             'new_message',
@@ -42,6 +43,10 @@ const notificationSchema = new mongoose.Schema({
         type: String,
         enum: ['Post', 'Comment', 'FriendRequest', 'User', null],
         default: null
+    },
+    data: {
+        type: mongoose.Schema.Types.Mixed,
+        default: {}
     },
     isRead: {
         type: Boolean,

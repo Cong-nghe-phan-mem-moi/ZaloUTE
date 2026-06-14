@@ -11,7 +11,12 @@ import LoadingSpinner from "../common/LoadingSpinner";
 import ErrorMessage from "../common/ErrorMessage";
 import Toast from "../common/Toast";
 
-const CommentSection = ({ postId, onCommentAdded }) => {
+const CommentSection = ({
+  postId,
+  focusedCommentId = null,
+  focusedParentCommentId = null,
+  onCommentAdded,
+}) => {
   const dispatch = useDispatch();
   const currentUser = useSelector((state) => state.user?.profile);
   const { comments, loading, error, message, pagination } = useSelector(
@@ -113,6 +118,8 @@ const CommentSection = ({ postId, onCommentAdded }) => {
             key={comment._id}
             comment={comment}
             postId={postId}
+            focusedCommentId={focusedCommentId}
+            focusedParentCommentId={focusedParentCommentId}
             onReplyAdded={onCommentAdded}
           />
         ))}

@@ -10,7 +10,13 @@ import SharePostModal from "./SharePostModal";
 import SharedPostPreview from "./SharedPostPreview";
 import PostEngagement from "./PostEngagement";
 
-const PostDetail = ({ postId, isOpen = false, onClose }) => {
+const PostDetail = ({
+  postId,
+  isOpen = false,
+  focusedCommentId = null,
+  focusedParentCommentId = null,
+  onClose,
+}) => {
   const dispatch = useDispatch();
   const { currentPost, loading, error } = useSelector((state) => state.posts);
   const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
@@ -130,6 +136,8 @@ const PostDetail = ({ postId, isOpen = false, onClose }) => {
 
         <CommentSection
           postId={postId}
+          focusedCommentId={focusedCommentId}
+          focusedParentCommentId={focusedParentCommentId}
           onCommentAdded={() => {
             dispatch(getPost(postId));
           }}

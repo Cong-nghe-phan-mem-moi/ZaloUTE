@@ -572,6 +572,7 @@ const notificationLinks = {
   friend_accept: "/friends",
   post_like: "/",
   post_comment: "/",
+  post_share: "/",
   comment_reply: "/",
   comment_like: "/",
 };
@@ -581,9 +582,39 @@ const isFriendAcceptNotification = (notification) =>
   notification.content === "accepted your friend request";
 
 const getNotificationHref = (notification) => {
+  const data = notification.data || {};
+
+  if (notification.type === "friend_request") {
+    const userId = data.profileId || notification.sender?._id;
+    return userId ? `/users/profile/${userId}` : "/friend-requests";
+  }
+
   if (isFriendAcceptNotification(notification)) {
-    const userId = notification.sender?._id || notification.relatedId;
+    const userId = data.profileId || notification.sender?._id || notification.relatedId;
     return userId ? `/users/profile/${userId}` : "/friends";
+  }
+
+  if (["post_like", "post_share"].includes(notification.type)) {
+    const postId = data.postId || data.sharedPostId || notification.relatedId;
+    return postId ? `/?postId=${encodeURIComponent(postId)}` : "/";
+  }
+
+  if (["post_comment", "comment_reply", "comment_like"].includes(notification.type)) {
+    const postId =
+      data.postId ||
+      (notification.relatedType === "Post" ? notification.relatedId : null);
+    const commentId =
+      data.commentId ||
+      (notification.relatedType === "Comment" ? notification.relatedId : null);
+    const parentCommentId = data.parentCommentId;
+
+    if (!postId) return "/";
+
+    const params = new URLSearchParams({ postId: String(postId) });
+    if (commentId) params.set("commentId", String(commentId));
+    if (parentCommentId) params.set("parentCommentId", String(parentCommentId));
+
+    return `/?${params.toString()}`;
   }
 
   return notificationLinks[notification.type] || "/";
@@ -594,6 +625,7 @@ const popupTitles = {
   friend_accept: "Friend request accepted",
   post_like: "New like",
   post_comment: "New comment",
+  post_share: "New share",
   comment_reply: "New reply",
   comment_like: "New comment like",
 };

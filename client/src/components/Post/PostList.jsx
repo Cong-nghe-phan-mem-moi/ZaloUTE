@@ -110,6 +110,9 @@ const PostList = ({
   authorId = null,
   allowedAuthorIds = null,
   refreshKey = 0,
+  initialSelectedPostId = null,
+  focusedCommentId = null,
+  focusedParentCommentId = null,
   emptyMessage = "No posts yet",
   emptyDetail = "Add friends to see their posts.",
 }) => {
@@ -118,7 +121,7 @@ const PostList = ({
     (state) => state.posts,
   );
   const currentUser = useSelector((state) => state.user?.profile);
-  const [selectedPostId, setSelectedPostId] = useState(null);
+  const [selectedPostId, setSelectedPostId] = useState(initialSelectedPostId);
   const [editingPostId, setEditingPostId] = useState(null);
   const [sharingPostId, setSharingPostId] = useState(null);
   const [page, setPage] = useState(1);
@@ -320,6 +323,8 @@ const PostList = ({
       <PostDetail
         postId={selectedPostId}
         isOpen={!!selectedPostId}
+        focusedCommentId={focusedCommentId}
+        focusedParentCommentId={focusedParentCommentId}
         onClose={() => setSelectedPostId(null)}
       />
 

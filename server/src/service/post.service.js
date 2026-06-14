@@ -157,6 +157,20 @@ class PostService {
     await PostRepository.incrementShareCount(postId);
     const populatedSharedPost = await PostRepository.findPostById(sharedPost._id);
 
+    await NotificationService.createNotification({
+      receiver: originalPost.author?._id || originalPost.author,
+      sender: userId,
+      type: 'post_share',
+      content: 'shared your post',
+      preview: trimmedCaption || originalPost.content,
+      relatedId: sharedPost._id,
+      relatedType: 'Post',
+      data: {
+        postId: sharedPost._id,
+        originalPostId: postId,
+      },
+    });
+
     return {
       target: 'timeline',
       postId,
@@ -302,6 +316,9 @@ class PostService {
           content: 'reacted to your post',
           relatedId: postId,
           relatedType: 'Post',
+          data: {
+            postId,
+          },
         });
       }
     }
