@@ -23,37 +23,82 @@ const getMediaGridClass = (count) => {
     return "grid-cols-2";
   }
 
-  return "grid-cols-2";
+  if (count === 3) {
+    return "grid-cols-2";
+  }
+
+  return "grid-cols-6";
 };
 
 const getMediaTileClass = (count, index) => {
   if (count === 1) {
-    return "max-h-[620px]";
+    return "max-h-[520px]";
   }
 
   if (count === 3 && index === 0) {
-    return "col-span-2 h-80";
+    return "col-span-2 aspect-[2/1]";
   }
 
-  return "h-56";
+  if (count >= 4 && index < 2) {
+    return "col-span-3 aspect-square";
+  }
+
+  if (count >= 4) {
+    return "col-span-2 aspect-square";
+  }
+
+  return "aspect-square";
 };
 
 const PostMediaPreview = ({ media }) => {
+  const [singleImageOrientation, setSingleImageOrientation] = useState(null);
+
   if (!Array.isArray(media) || media.length === 0) {
     return null;
   }
 
-  const visibleMedia = media.slice(0, 4);
+  const visibleMedia = media.slice(0, 5);
   const remainingCount = media.length - visibleMedia.length;
-  const isSingleImage = media.length === 1 && media[0]?.type === "image";
+  const isSingleMedia = media.length === 1;
+  const isSingleImage = isSingleMedia && media[0]?.type === "image";
+  const isSingleVideo = isSingleMedia && media[0]?.type !== "image";
 
   if (isSingleImage) {
+    const imageClass =
+      singleImageOrientation === "wide"
+        ? "w-full max-h-[620px] object-contain"
+        : "max-h-[680px] max-w-full object-contain";
+
     return (
-      <div className="mb-3 overflow-hidden rounded-lg bg-gray-100">
+      <div className="mb-3 flex w-full items-center justify-center overflow-hidden rounded-lg bg-[#f0f2f5]">
         <img
           src={media[0].url}
           alt="Post media"
-          className="max-h-[620px] w-full object-cover"
+          className={imageClass}
+          onLoad={(event) => {
+            const { naturalWidth, naturalHeight } = event.currentTarget;
+            setSingleImageOrientation(
+              naturalWidth >= naturalHeight ? "wide" : "tall",
+            );
+          }}
+          onError={(event) => {
+            event.target.style.display = "none";
+          }}
+        />
+      </div>
+    );
+  }
+
+  if (isSingleVideo) {
+    return (
+      <div className="mb-3 flex w-full items-center justify-center overflow-hidden rounded-lg bg-black">
+        <video
+          src={media[0].url}
+          controls
+          preload="metadata"
+          className="max-h-[620px] w-full object-contain"
+          onClick={(event) => event.stopPropagation()}
+          onMouseDown={(event) => event.stopPropagation()}
           onError={(event) => {
             event.target.style.display = "none";
           }}
@@ -67,7 +112,7 @@ const PostMediaPreview = ({ media }) => {
       {visibleMedia.map((item, index) => (
         <div
           key={`${item.url || "media"}-${index}`}
-          className={`relative overflow-hidden rounded-lg bg-gray-200 ${getMediaTileClass(
+          className={`relative overflow-hidden bg-white ${getMediaTileClass(
             media.length,
             index,
           )}`}
@@ -212,7 +257,7 @@ const PostList = ({
   if (loading && visiblePosts.length === 0) return <LoadingSpinner />;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-4 pb-8">
+    <div className="w-full space-y-4 pb-8">
       {visiblePosts.length === 0 ? (
         <div className="p-8 text-center text-gray-500 bg-white rounded-lg">
           <p className="text-lg">{emptyMessage}</p>

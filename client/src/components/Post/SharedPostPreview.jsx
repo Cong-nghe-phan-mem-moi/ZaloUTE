@@ -37,7 +37,7 @@ const SharedPostPreview = ({ post, onOpen }) => {
             <img
               src={firstMedia.url}
               alt="Shared post media"
-              className="max-h-64 w-full object-cover"
+              className="max-h-64 w-full object-contain"
             />
           ) : (
             <div className="flex h-32 items-center justify-center bg-black text-white">

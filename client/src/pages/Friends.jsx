@@ -48,11 +48,11 @@ const Friends = () => {
   }, [profile]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0f49b5] via-[#1e63d6] to-[#3b82f6] px-4 py-6 text-[#111827]">
-      <div className="mx-auto max-w-[1320px] overflow-hidden rounded-[28px] bg-white shadow-2xl">
+    <div className="min-h-screen bg-[#f2f3f5] text-[#111827]">
+      <div className="min-h-screen w-full bg-white">
         <HomeHeader profile={profile} activePage="friends" />
 
-        <main className="grid min-h-[760px] grid-cols-1 bg-[#f2f3f5] lg:grid-cols-[250px_minmax(0,1fr)_300px]">
+        <main className="grid min-h-[calc(100vh-80px)] grid-cols-1 bg-[#f2f3f5] lg:grid-cols-[280px_minmax(0,1fr)_320px]">
           <LeftSidebar profile={profile} />
 
           <section className="space-y-5 px-5 py-5">
