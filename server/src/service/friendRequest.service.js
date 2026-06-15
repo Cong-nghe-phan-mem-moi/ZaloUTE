@@ -109,6 +109,10 @@ async function sendFriendRequest(senderId, receiverId) {
     content: "sent you a friend request",
     relatedId: newRequest._id,
     relatedType: "FriendRequest",
+    data: {
+      profileId: senderId,
+      friendRequestId: newRequest._id,
+    },
   });
 
   return {
@@ -191,10 +195,13 @@ async function acceptFriendRequest(senderId, receiverId) {
   const notification = await NotificationService.createNotification({
     receiver: requesterId,
     sender: accepterId,
-    type: "friend_request",
+    type: "friend_accept",
     content: "accepted your friend request",
     relatedId: accepterId,
     relatedType: "User",
+    data: {
+      profileId: accepterId,
+    },
   });
 
   if (!notification) {

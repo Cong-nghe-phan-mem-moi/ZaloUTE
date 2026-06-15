@@ -14,7 +14,7 @@ const messageSchema = new mongoose.Schema({
     },
     messageType: {
         type: String,
-        enum: ['text', 'image', 'sticker', 'system', 'video'],
+        enum: ['text', 'image', 'sticker', 'system', 'video', 'post_share'],
         default: 'text'
     },
     content: {
@@ -32,6 +32,11 @@ const messageSchema = new mongoose.Schema({
     replyTo: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Message',
+        default: null
+    },
+    sharedPost: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Post',
         default: null
     },
     reactions: [{

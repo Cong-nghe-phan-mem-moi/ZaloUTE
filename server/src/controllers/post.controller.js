@@ -44,6 +44,35 @@ class PostController {
     }
   }
 
+  static async sharePost(req, res) {
+    try {
+      const { postId } = req.params;
+      const { caption = '', target = 'timeline', conversationId = null } = req.body;
+      const userId = req.user.userId;
+
+      const result = await PostService.sharePost(
+        postId,
+        userId,
+        caption,
+        target,
+        conversationId,
+      );
+
+      return res.status(201).json({
+        success: true,
+        message: target === 'message' ? 'Post shared to message' : 'Post shared',
+        data: result,
+      });
+    } catch (error) {
+      console.error('Error sharing post:', error);
+
+      return res.status(400).json({
+        success: false,
+        message: error.message || 'Operation failed',
+      });
+    }
+  }
+
   // 4.2 Chá»‰nh sá»­a bÃ i viáº¿t
   static async updatePost(req, res) {
     try {
@@ -176,13 +205,14 @@ class PostController {
   static async toggleLike(req, res) {
     try {
       const { postId } = req.params;
+      const { reactionType = 'like' } = req.body;
       const userId = req.user.userId;
 
-      const result = await PostService.toggleLike(postId, userId);
+      const result = await PostService.toggleLike(postId, userId, reactionType);
 
       return res.status(200).json({
         success: true,
-        message: result.isLiked ? 'Liked' : 'Unliked',
+        message: result.isLiked ? 'Reacted' : 'Reaction removed',
         data: result,
       });
     } catch (error) {

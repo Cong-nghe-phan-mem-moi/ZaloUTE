@@ -2,18 +2,63 @@
 const Comment = require('../models/comment.model');
 const NotificationService = require('./notification.service');
 const User = require('../models/user.model');
+const Conversation = require('../models/conversation.model');
+const Message = require('../models/message.model');
+
+const REACTION_TYPES = ['like', 'love', 'haha', 'wow', 'sad', 'angry'];
+
+const getReactionUserId = (reaction) => String(reaction.user?._id || reaction.user);
+
+const buildReactionState = (postObj, userId = null) => {
+  const reactionSummary = REACTION_TYPES.reduce((summary, type) => {
+    summary[type] = 0;
+    return summary;
+  }, {});
+  const reactedUserIds = new Set();
+  let currentUserReaction = null;
+
+  (postObj.reactions || []).forEach((reaction) => {
+    const reactionType = REACTION_TYPES.includes(reaction.type) ? reaction.type : 'like';
+    const reactionUserId = getReactionUserId(reaction);
+
+    reactedUserIds.add(reactionUserId);
+    reactionSummary[reactionType] += 1;
+
+    if (userId && reactionUserId === String(userId)) {
+      currentUserReaction = reactionType;
+    }
+  });
+
+  (postObj.likes || []).forEach((like) => {
+    const likeUserId = String(like._id || like);
+    if (reactedUserIds.has(likeUserId)) {
+      return;
+    }
+
+    reactedUserIds.add(likeUserId);
+    reactionSummary.like += 1;
+
+    if (userId && likeUserId === String(userId) && !currentUserReaction) {
+      currentUserReaction = 'like';
+    }
+  });
+
+  return {
+    reactionSummary,
+    reactionCount: reactedUserIds.size,
+    currentUserReaction,
+    isLiked: Boolean(currentUserReaction),
+  };
+};
 
 const buildPostResponse = async (post, userId = null) => {
   const postObj = post.toObject ? post.toObject() : post;
+  const reactionState = buildReactionState(postObj, userId);
 
-  if (userId) {
-    postObj.isLiked = (post.likes || []).some(
-      (like) => like._id.toString() === userId,
-    );
-  } else {
-    postObj.isLiked = false;
-  }
-
+  postObj.reactionSummary = reactionState.reactionSummary;
+  postObj.reactionCount = reactionState.reactionCount;
+  postObj.currentUserReaction = reactionState.currentUserReaction;
+  postObj.isLiked = reactionState.isLiked;
   postObj.commentCount = await Comment.countDocuments({ post: postObj._id });
   return postObj;
 };
@@ -39,11 +84,99 @@ class PostService {
       content: trimmedContent,
       media: media || [],
       likes: [],
+      reactions: [],
       commentCount: 0,
     };
 
     const post = await PostRepository.createPost(postData);
     return await PostRepository.findPostById(post._id);
+  }
+
+  static async sharePost(postId, userId, caption = '', target = 'timeline', conversationId = null) {
+    const originalPost = await PostRepository.findPostById(postId);
+    if (!originalPost) {
+      throw new Error('Operation failed');
+    }
+
+    const trimmedCaption = caption?.trim() || '';
+    if (trimmedCaption.length > 1000) {
+      throw new Error('Caption must be at most 1000 characters');
+    }
+
+    if (!['timeline', 'message'].includes(target)) {
+      throw new Error('Invalid share target');
+    }
+
+    if (target === 'message') {
+      if (!conversationId) {
+        throw new Error('Conversation is required');
+      }
+
+      const conversation = await Conversation.findOne({
+        _id: conversationId,
+        participants: userId,
+      });
+
+      if (!conversation) {
+        throw new Error('Conversation not found');
+      }
+
+      const message = await Message.create({
+        conversationId,
+        senderId: userId,
+        messageType: 'post_share',
+        content: trimmedCaption || 'Shared a post',
+        sharedPost: postId,
+        readBy: [userId],
+      });
+
+      conversation.lastMessage = message._id;
+      await conversation.save();
+      await PostRepository.incrementShareCount(postId);
+
+      return {
+        target: 'message',
+        postId,
+        shareCount: (originalPost.shareCount || 0) + 1,
+        message,
+      };
+    }
+
+    const sharedPost = await PostRepository.createPost({
+      author: userId,
+      content: trimmedCaption,
+      media: [],
+      likes: [],
+      reactions: [],
+      commentCount: 0,
+      shareCount: 0,
+      sharedFrom: postId,
+      shareCaption: trimmedCaption,
+    });
+
+    await PostRepository.incrementShareCount(postId);
+    const populatedSharedPost = await PostRepository.findPostById(sharedPost._id);
+
+    await NotificationService.createNotification({
+      receiver: originalPost.author?._id || originalPost.author,
+      sender: userId,
+      type: 'post_share',
+      content: 'shared your post',
+      preview: trimmedCaption || originalPost.content,
+      relatedId: sharedPost._id,
+      relatedType: 'Post',
+      data: {
+        postId: sharedPost._id,
+        originalPostId: postId,
+      },
+    });
+
+    return {
+      target: 'timeline',
+      postId,
+      shareCount: (originalPost.shareCount || 0) + 1,
+      sharedPost: await buildPostResponse(populatedSharedPost, userId),
+    };
   }
 
   // 4.2 Chá»‰nh sá»­a bÃ i viáº¿t
@@ -156,35 +289,49 @@ class PostService {
   }
 
   // Like/Unlike post
-  static async toggleLike(postId, userId) {
+  static async toggleLike(postId, userId, reactionType = 'like') {
     const post = await PostRepository.findPostById(postId);
     if (!post) {
       throw new Error('Operation failed');
     }
 
-    const likeIndex = post.likes.findIndex((like) => like._id.toString() === userId);
+    if (!REACTION_TYPES.includes(reactionType)) {
+      throw new Error('Invalid reaction type');
+    }
+
+    const reactionState = buildReactionState(post, userId);
+    const shouldRemoveReaction = reactionState.currentUserReaction === reactionType;
 
     let updatedPost;
-    if (likeIndex > -1) {
-      // Unlike
+    if (shouldRemoveReaction) {
       updatedPost = await PostRepository.removeLike(postId, userId);
     } else {
-      // Like
-      updatedPost = await PostRepository.addLike(postId, userId);
-      await NotificationService.createNotification({
-        receiver: post.author?._id || post.author,
-        sender: userId,
-        type: 'post_like',
-        content: 'liked your post',
-        relatedId: postId,
-        relatedType: 'Post',
-      });
+      updatedPost = await PostRepository.setReaction(postId, userId, reactionType);
+
+      if (!reactionState.currentUserReaction) {
+        await NotificationService.createNotification({
+          receiver: post.author?._id || post.author,
+          sender: userId,
+          type: 'post_like',
+          content: 'reacted to your post',
+          relatedId: postId,
+          relatedType: 'Post',
+          data: {
+            postId,
+          },
+        });
+      }
     }
+
+    const updatedReactionState = buildReactionState(updatedPost, userId);
 
     return {
       postId,
-      isLiked: likeIndex === -1,
-      likeCount: updatedPost.likes.length,
+      isLiked: updatedReactionState.isLiked,
+      likeCount: updatedReactionState.reactionCount,
+      reactionCount: updatedReactionState.reactionCount,
+      reactionSummary: updatedReactionState.reactionSummary,
+      currentUserReaction: updatedReactionState.currentUserReaction,
     };
   }
 
@@ -298,6 +445,15 @@ class PostService {
     const posts = await Post.find({ content: searchRegex })
       .populate('author', 'fullName avatar email')
       .populate('likes', 'fullName avatar email')
+      .populate('reactions.user', 'fullName avatar email')
+      .populate({
+        path: 'sharedFrom',
+        populate: [
+          { path: 'author', select: '_id fullName avatar email' },
+          { path: 'likes', select: 'fullName avatar email' },
+          { path: 'reactions.user', select: 'fullName avatar email' },
+        ],
+      })
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);

@@ -34,8 +34,12 @@ class CommentService {
         type: "post_comment",
         content: "commented on your post",
         preview: content.trim(),
-        relatedId: postId,
-        relatedType: "Post",
+        relatedId: comment._id,
+        relatedType: "Comment",
+        data: {
+          postId,
+          commentId: comment._id,
+        },
       });
     } else {
       const parentComment = await CommentRepository.findCommentById(replyTo);
@@ -46,8 +50,13 @@ class CommentService {
         type: "comment_reply",
         content: "replied to your comment",
         preview: content.trim(),
-        relatedId: parentComment?._id || replyTo,
+        relatedId: comment._id,
         relatedType: "Comment",
+        data: {
+          postId,
+          commentId: comment._id,
+          parentCommentId: parentComment?._id || replyTo,
+        },
       });
     }
 
@@ -122,6 +131,11 @@ class CommentService {
         content: "liked your comment",
         relatedId: commentId,
         relatedType: "Comment",
+        data: {
+          postId: comment.post,
+          commentId,
+          parentCommentId: comment.replyTo || null,
+        },
       });
     }
 

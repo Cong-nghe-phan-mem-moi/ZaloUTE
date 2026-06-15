@@ -312,8 +312,8 @@ const ProfilePage = ({ userId }) => {
 
   if (pageLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#0f49b5] via-[#1e63d6] to-[#3b82f6] px-4 py-6 text-[#111827]">
-        <div className="mx-auto flex min-h-[760px] max-w-[1320px] items-center justify-center overflow-hidden rounded-[28px] bg-[#f2f3f5] shadow-2xl">
+      <div className="min-h-screen bg-[#f2f3f5] text-[#111827]">
+        <div className="flex min-h-screen w-full items-center justify-center bg-[#f2f3f5]">
           <div className="h-12 w-12 animate-spin rounded-full border-2 border-[#1877f2] border-t-transparent" />
         </div>
       </div>
@@ -321,12 +321,12 @@ const ProfilePage = ({ userId }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0f49b5] via-[#1e63d6] to-[#3b82f6] px-4 py-6 text-[#111827]">
-      <div className="mx-auto max-w-[1320px] overflow-hidden rounded-[28px] bg-white shadow-2xl">
+    <div className="min-h-screen bg-[#f2f3f5] text-[#111827]">
+      <div className="min-h-screen w-full bg-white">
         <HomeHeader profile={profile} />
 
-        <main className="min-h-[760px] bg-[#f2f3f5] px-5 py-5">
-          <div className="mx-auto max-w-6xl space-y-5">
+        <main className="min-h-[calc(100vh-80px)] bg-[#f2f3f5] px-5 py-5">
+          <div className="w-full space-y-5">
             {pageError ? (
               <StatusCard
                 icon="error"
@@ -337,6 +337,10 @@ const ProfilePage = ({ userId }) => {
                     : pageError.message || "Error occurred"
                 }
               />
+            ) : null}
+
+            {notice ? (
+              <StatusCard icon="info" message={notice} />
             ) : null}
 
             <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">

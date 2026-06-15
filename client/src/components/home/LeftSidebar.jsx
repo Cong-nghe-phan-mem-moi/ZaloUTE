@@ -1,7 +1,7 @@
-import HomeAvatar from "./HomeAvatar";
+import { Link } from "react-router-dom";
 import { menuItems, shortcuts } from "./homeData";
 
-const LeftSidebar = ({ profile }) => (
+const LeftSidebar = () => (
   <aside className="hidden bg-white px-8 py-5 lg:block">
     <button className="mb-7 h-11 w-full rounded-md bg-[#1877f2] text-sm font-semibold text-white shadow-md hover:bg-[#166fe5]">
       Create New Post
@@ -9,23 +9,23 @@ const LeftSidebar = ({ profile }) => (
 
     <nav className="space-y-1">
       {menuItems.map((item) => (
-        <a
+        <Link
           key={item.label}
-          href={item.href}
+          to={item.href}
           className="flex items-center gap-4 rounded-lg px-1 py-3 text-sm font-semibold hover:bg-[#f2f3f5]"
         >
           <span className="material-symbols-outlined text-[22px] text-[#0b66c3]">
             {item.icon}
           </span>
           {item.label}
-        </a>
+        </Link>
       ))}
-      <a
+      <Link
         className="block px-1 py-3 text-sm font-semibold text-[#0b66c3]"
-        href="/"
+        to="/"
       >
         See More
-      </a>
+      </Link>
     </nav>
 
     <div className="my-5 h-px bg-[#e5e7eb]" />

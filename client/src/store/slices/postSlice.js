@@ -45,6 +45,15 @@ const applyLikeState = (post, likeState) => {
 
   post.isLiked = likeState.isLiked
   post.likes = resizeLikes(post.likes, likeState.likeCount)
+  post.reactionCount = likeState.reactionCount ?? likeState.likeCount
+  post.reactionSummary = likeState.reactionSummary
+  post.currentUserReaction = likeState.currentUserReaction
+}
+
+const applyShareState = (post, shareState) => {
+  if (!post || !shareState) return
+
+  post.shareCount = shareState.shareCount
 }
 
 // Create post
@@ -132,13 +141,31 @@ export const deletePost = createAsyncThunk(
 // Like/Unlike post
 export const toggleLike = createAsyncThunk(
   'posts/toggleLike',
-  async (postId, { rejectWithValue }) => {
+  async ({ postId, reactionType = 'like' }, { rejectWithValue }) => {
     try {
-      const response = await postAPI.toggleLike(postId)
+      const response = await postAPI.toggleLike(postId, reactionType)
       return response.data.data
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || 'Unable to like post',
+      )
+    }
+  },
+)
+
+export const sharePost = createAsyncThunk(
+  'posts/sharePost',
+  async ({ postId, caption = '', target = 'timeline', conversationId = null }, { rejectWithValue }) => {
+    try {
+      const response = await postAPI.sharePost(postId, {
+        caption,
+        target,
+        conversationId,
+      })
+      return response.data.data
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Unable to share post',
       )
     }
   },
@@ -324,6 +351,36 @@ const postSlice = createSlice({
         }
       })
       .addCase(toggleLike.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload
+      })
+
+      // Share Post
+      .addCase(sharePost.pending, (state) => {
+        state.loading = true
+        state.error = null
+        state.message = null
+      })
+      .addCase(sharePost.fulfilled, (state, action) => {
+        state.loading = false
+        const postId = action.payload.postId
+        const post = state.posts.find((p) => p._id === postId)
+        applyShareState(post, action.payload)
+
+        if (state.currentPost?._id === postId) {
+          applyShareState(state.currentPost, action.payload)
+        }
+
+        if (action.payload.target === 'timeline' && action.payload.sharedPost) {
+          state.posts.unshift(action.payload.sharedPost)
+        }
+
+        state.message =
+          action.payload.target === 'message'
+            ? 'Post shared to message'
+            : 'Post shared successfully'
+      })
+      .addCase(sharePost.rejected, (state, action) => {
         state.loading = false
         state.error = action.payload
       })
