@@ -21,6 +21,7 @@ const notificationSchema = new mongoose.Schema({
             'post_share',
             'comment_reply',
             'comment_like',
+            'story_reaction',
             'new_message',
             'group_invite',
             'mention',
@@ -41,7 +42,7 @@ const notificationSchema = new mongoose.Schema({
     },
     relatedType: {
         type: String,
-        enum: ['Post', 'Comment', 'FriendRequest', 'User', null],
+        enum: ['Post', 'Comment', 'FriendRequest', 'User', 'Story', null],
         default: null
     },
     data: {

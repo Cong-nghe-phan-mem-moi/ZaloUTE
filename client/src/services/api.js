@@ -83,6 +83,27 @@ export const notificationAPI = {
   markAllAsRead: () => api.put("/notifications/read-all"),
 };
 
+export const storyAPI = {
+  getStories: () => api.get("/stories"),
+  createStory: ({ text = "", background = "#1877f2", media = null }) => {
+    const formData = new FormData();
+    formData.append("text", text);
+    formData.append("background", background);
+
+    if (media) {
+      formData.append("media", media);
+    }
+
+    return api.post("/stories", formData);
+  },
+  getStory: (storyId) => api.get(`/stories/${storyId}`),
+  markViewed: (storyId) => api.post(`/stories/${storyId}/view`),
+  react: (storyId, reactionType = "like") =>
+    api.post(`/stories/${storyId}/react`, { reactionType }),
+  reply: (storyId, content) => api.post(`/stories/${storyId}/reply`, { content }),
+  getViewers: (storyId) => api.get(`/stories/${storyId}/viewers`),
+};
+
 export const adminAPI = {
   getStats: () => api.get("/admin/stats"),
   getUsers: (params = {}) => api.get("/admin/users", { params }),

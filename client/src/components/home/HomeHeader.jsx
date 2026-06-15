@@ -577,6 +577,7 @@ const notificationLinks = {
   post_share: "/",
   comment_reply: "/",
   comment_like: "/",
+  story_reaction: "/",
 };
 
 const isFriendAcceptNotification = (notification) =>
@@ -619,6 +620,11 @@ const getNotificationHref = (notification) => {
     return `/?${params.toString()}`;
   }
 
+  if (notification.type === "story_reaction") {
+    const storyId = data.storyId || notification.relatedId;
+    return storyId ? `/?storyId=${encodeURIComponent(storyId)}` : "/";
+  }
+
   return notificationLinks[notification.type] || "/";
 };
 
@@ -630,6 +636,7 @@ const popupTitles = {
   post_share: "New share",
   comment_reply: "New reply",
   comment_like: "New comment like",
+  story_reaction: "New story reaction",
 };
 
 const NotificationPopup = ({ notification, onClose }) => {
