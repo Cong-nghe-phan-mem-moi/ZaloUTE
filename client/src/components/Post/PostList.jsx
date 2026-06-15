@@ -221,6 +221,19 @@ const PostList = ({
     dispatch(getNewsFeed({ page, limit: 10 }));
   }, [authorId, page, dispatch]);
 
+  useEffect(() => {
+    if (!initialSelectedPostId) {
+      return undefined;
+    }
+
+    const timer = window.setTimeout(() => {
+      setSelectedPostId(initialSelectedPostId);
+      window.history.replaceState(null, "", window.location.pathname);
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [initialSelectedPostId, focusedCommentId, focusedParentCommentId]);
+
   const handleReaction = (postId, reactionType = "like") => {
     dispatch(toggleLike({ postId, reactionType }));
   };

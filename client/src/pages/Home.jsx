@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import Composer from "../components/home/Composer";
 import HomeHeader from "../components/home/HomeHeader";
 import LeftSidebar from "../components/home/LeftSidebar";
@@ -11,20 +12,21 @@ import { userAPI } from "../services/api";
 
 export default function Home() {
   const dispatch = useAppDispatch();
+  const location = useLocation();
   const { profile } = useAppSelector((state) => state.user);
   const [friendRequests, setFriendRequests] = useState([]);
   const [requestsLoading, setRequestsLoading] = useState(false);
   const [requestActionId, setRequestActionId] = useState("");
   const [feedRefreshKey, setFeedRefreshKey] = useState(0);
   const postTarget = useMemo(() => {
-    const params = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(location.search);
 
     return {
       postId: params.get("postId"),
       commentId: params.get("commentId"),
       parentCommentId: params.get("parentCommentId"),
     };
-  }, []);
+  }, [location.search]);
 
   const loadFriendRequests = useCallback(async () => {
     setRequestsLoading(true);
