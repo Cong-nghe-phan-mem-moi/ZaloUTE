@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { Navigate, Route, Routes, useLocation, useParams } from "react-router-dom";
 import { useAppSelector, useAppDispatch } from "./store/hooks";
 import { setCurrentPage } from "./store/slices/uiSlice";
 import { clearError, clearMessage } from "./store/slices/postSlice";
@@ -17,28 +18,15 @@ import AdminDashboard from "./pages/AdminDashboard";
 
 function App() {
   const dispatch = useAppDispatch();
-  const currentPage = useAppSelector(
-    (state) => state.ui?.currentPage || "login",
-  );
-  const path = window.location.pathname;
+  const location = useLocation();
+  const path = location.pathname;
   const token = localStorage.getItem("token");
-  const otherProfileId = path.match(/^\/users\/profile\/([^/]+)$/)?.[1] || null;
 
   useEffect(() => {
-    const otherProfileMatch = path.match(/^\/users\/profile\/([^/]+)$/);
-
-    if (path === "/home") {
-      window.history.replaceState(null, "", "/");
-      dispatch(setCurrentPage(token ? "home" : "login"));
-    } else if (path === "/") {
+    if (path === "/" || path === "/home") {
       dispatch(setCurrentPage(token ? "home" : "login"));
     } else if (path === "/login") {
-      if (token) {
-        window.history.replaceState(null, "", "/");
-        dispatch(setCurrentPage("home"));
-      } else {
-        dispatch(setCurrentPage("login"));
-      }
+      dispatch(setCurrentPage(token ? "home" : "login"));
     } else if (path === "/register") {
       dispatch(setCurrentPage("register"));
     } else if (path === "/verify-otp") {
@@ -60,49 +48,51 @@ function App() {
       path === "/edit-profile"
     ) {
       dispatch(setCurrentPage("profile"));
-    } else if (otherProfileMatch) {
+    } else if (path.startsWith("/users/profile/")) {
       dispatch(setCurrentPage("other-profile"));
     } else if (path === "/post-test") {
       dispatch(setCurrentPage("post-test"));
     }
   }, [dispatch, path, token]);
 
-  const renderPage = () => {
-    switch (currentPage) {
-      case "login":
-        return <LoginPage />;
-      case "verify-otp":
-        return <VerifyOtp />;
-      case "forgot-password":
-        return <ForgotPassword />;
-      case "home":
-        return <Home />;
-      case "friends":
-        return <Friends />;
-      case "friend-requests":
-        return <FriendRequests />;
-      case "admin-dashboard":
-        return <AdminDashboard />;
-      case "profile":
-        return <ProfilePage />;
-      case "other-profile":
-        return <ProfilePage userId={otherProfileId} />;
-      case "post-test":
-        return <PostTestPage />;
-      case "register":
-        return <Register />;
-      default:
-        return <LoginPage />;
-    }
-  };
-
   return (
     <div className="w-full">
-      {renderPage()}
+      <Routes>
+        <Route path="/login" element={token ? <Navigate to="/" replace /> : <LoginPage />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/verify-otp" element={<VerifyOtp />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/" element={<ProtectedPage token={token}><Home /></ProtectedPage>} />
+        <Route path="/home" element={<Navigate to="/" replace />} />
+        <Route path="/friends" element={<ProtectedPage token={token}><Friends /></ProtectedPage>} />
+        <Route path="/friend-requests" element={<ProtectedPage token={token}><FriendRequests /></ProtectedPage>} />
+        <Route path="/admin/dashboard" element={<ProtectedPage token={token}><AdminDashboard /></ProtectedPage>} />
+        <Route path="/admin-dashboard" element={<Navigate to="/admin/dashboard" replace />} />
+        <Route path="/profile" element={<ProtectedPage token={token}><ProfilePage /></ProtectedPage>} />
+        <Route path="/user/profile" element={<ProtectedPage token={token}><ProfilePage /></ProtectedPage>} />
+        <Route path="/admin/profile" element={<ProtectedPage token={token}><ProfilePage /></ProtectedPage>} />
+        <Route path="/edit-profile" element={<ProtectedPage token={token}><ProfilePage /></ProtectedPage>} />
+        <Route path="/users/profile/:userId" element={<ProtectedPage token={token}><OtherProfilePage /></ProtectedPage>} />
+        <Route path="/post-test" element={<PostTestPage />} />
+        <Route path="*" element={<Navigate to={token ? "/" : "/login"} replace />} />
+      </Routes>
       <PostFeedbackToast />
     </div>
   );
 }
+
+const ProtectedPage = ({ token, children }) => {
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return children;
+};
+
+const OtherProfilePage = () => {
+  const { userId } = useParams();
+  return <ProfilePage userId={userId} />;
+};
 
 const PostFeedbackToast = () => {
   const dispatch = useAppDispatch();

@@ -1,5 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import {
   getNewsFeed,
   getPostsByAuthor,
@@ -162,6 +163,7 @@ const PostList = ({
   emptyDetail = "Add friends to see their posts.",
 }) => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { posts, loading, pagination } = useSelector(
     (state) => state.posts,
   );
@@ -242,7 +244,7 @@ const PostList = ({
       currentUserId && String(currentUserId) === String(authorProfileId)
         ? "/profile"
         : `/users/profile/${authorProfileId}`;
-    window.location.assign(profileUrl);
+    navigate(profileUrl);
   };
 
   const reloadCurrentList = () => {
