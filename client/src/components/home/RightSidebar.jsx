@@ -8,6 +8,7 @@ const RightSidebar = ({
   requestActionId = "",
   onAcceptRequest,
   onRejectRequest,
+  onContactClick,
 }) => (
   <aside className="hidden bg-white px-6 py-6 lg:block">
     <PanelTitle title="News Update" action="See All" />
@@ -61,7 +62,7 @@ const RightSidebar = ({
       ) : (
         <div className="space-y-4">
           {contacts.map((contact) => (
-            <Contact key={contact.id || contact.name} contact={contact} />
+            <Contact key={contact.id || contact.name} contact={contact} onClick={onContactClick} />
           ))}
         </div>
       )}
@@ -129,25 +130,35 @@ const FriendRequestCard = ({
   );
 };
 
-const Contact = ({ contact }) => (
-  <a
-    href={contact.id ? `/users/profile/${contact.id}` : "/friends"}
-    className="flex items-center gap-3 rounded-md hover:bg-[#f2f3f5]"
-  >
-    <HomeAvatar image={contact.avatar} name={contact.name} />
-    <div>
-      <p className="text-sm font-bold">{contact.name}</p>
-      <p className="flex items-center gap-2 text-xs text-[#6b7280]">
-        <span
-          className={`h-2 w-2 rounded-full ${
-            contact.online ? "bg-emerald-500" : "bg-[#9ca3af]"
-          }`}
-        />
-        {contact.status}
-      </p>
-    </div>
-  </a>
-);
+const Contact = ({ contact, onClick }) => {
+  const handleClick = (e) => {
+    if (onClick) {
+      e.preventDefault();
+      onClick(contact);
+    }
+  };
+
+  return (
+    <a
+      href={contact.id ? `/users/profile/${contact.id}` : "/friends"}
+      onClick={handleClick}
+      className="flex items-center gap-3 rounded-md hover:bg-[#f2f3f5] w-full text-left"
+    >
+      <HomeAvatar image={contact.avatar} name={contact.name} />
+      <div>
+        <p className="text-sm font-bold">{contact.name}</p>
+        <p className="flex items-center gap-2 text-xs text-[#6b7280]">
+          <span
+            className={`h-2 w-2 rounded-full ${
+              contact.online ? "bg-emerald-500" : "bg-[#9ca3af]"
+            }`}
+          />
+          {contact.status}
+        </p>
+      </div>
+    </a>
+  );
+};
 
 const EmptyState = ({ icon, text, loading = false }) => (
   <div className="rounded bg-[#f2f3f5] p-4 text-center text-xs font-semibold text-[#6b7280]">

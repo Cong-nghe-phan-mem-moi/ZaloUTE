@@ -314,7 +314,11 @@ const HomeHeader = ({ profile, activePage = "home" }) => {
       </nav>
 
       <div className="flex items-center gap-3">
-        <CircleIcon icon="forum" label="Messages" />
+        <CircleIcon
+          icon="forum"
+          label="Messages"
+          onClick={() => window.location.assign("/messages")}
+        />
         <div className="relative" ref={notificationsRef}>
           <CircleIcon
             icon="notifications"

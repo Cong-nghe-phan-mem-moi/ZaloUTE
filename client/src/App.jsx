@@ -14,6 +14,7 @@ import PostTestPage from "./pages/PostTestPage";
 import FriendRequests from "./pages/FriendRequests";
 import Friends from "./pages/Friends";
 import AdminDashboard from "./pages/AdminDashboard";
+import ChatPage from "./pages/ChatPage";
 
 function App() {
   const dispatch = useAppDispatch();
@@ -51,6 +52,8 @@ function App() {
       dispatch(setCurrentPage("friends"));
     } else if (path === "/friend-requests") {
       dispatch(setCurrentPage("friend-requests"));
+    } else if (path === "/messages") {
+      dispatch(setCurrentPage("messages"));
     } else if (path === "/admin/dashboard" || path === "/admin-dashboard") {
       dispatch(setCurrentPage("admin-dashboard"));
     } else if (
@@ -81,6 +84,8 @@ function App() {
         return <Friends />;
       case "friend-requests":
         return <FriendRequests />;
+      case "messages":
+        return <ChatPage />;
       case "admin-dashboard":
         return <AdminDashboard />;
       case "profile":
