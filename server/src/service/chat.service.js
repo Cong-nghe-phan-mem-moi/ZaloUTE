@@ -14,6 +14,8 @@ const throwError = (statusCode, code, message) => {
   throw error;
 };
 
+const onlineTracker = require("../utils/onlineTracker");
+
 // Gửi payload dạng JSON tới người dùng cụ thể
 const sendToUser = (userId, payload) => {
   const userClients = clients.get(userId.toString());
@@ -33,11 +35,17 @@ const sendToUser = (userId, payload) => {
   }
 };
 
+// Register chat sendToUser helper with onlineTracker
+onlineTracker.setChatSendHelper(sendToUser);
+
 const addClient = (userId, socket) => {
   const key = userId.toString();
   const userClients = clients.get(key) || new Set();
   userClients.add(socket);
   clients.set(key, userClients);
+
+  // Notify online tracker that a connection has been established
+  onlineTracker.handleConnectionChange(userId, true, "chat");
 
   socket.on("close", () => {
     const currentClients = clients.get(key);
@@ -46,6 +54,8 @@ const addClient = (userId, socket) => {
     if (currentClients.size === 0) {
       clients.delete(key);
     }
+    // Notify online tracker that a connection has been closed
+    onlineTracker.handleConnectionChange(userId, false, "chat");
   });
 };
 

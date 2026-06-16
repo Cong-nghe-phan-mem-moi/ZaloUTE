@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
-import { format } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
+import { enUS } from "date-fns/locale";
 import HomeHeader from "../components/home/HomeHeader";
 import LeftSidebar from "../components/home/LeftSidebar";
 import RightSidebar from "../components/home/RightSidebar";
 import HomeAvatar from "../components/home/HomeAvatar";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
-import { fetchUserProfile } from "../store/slices/userSlice";
+import { fetchUserProfile, updateFriendStatus } from "../store/slices/userSlice";
 import {
   fetchConversations,
   selectConversationAndFetchMessages,
@@ -25,6 +26,7 @@ import {
   blockConversation,
   unblockConversation,
   deleteConversation,
+  updateParticipantStatus,
 } from "../store/slices/chatSlice";
 
 const getChatWsUrl = (token) => {
@@ -42,6 +44,16 @@ const getChatWsUrl = (token) => {
 
   const protocol = isSecure ? "wss" : "ws";
   return `${protocol}://${window.location.host}/api/chats/ws?token=${encodedToken}`;
+};
+
+const formatLastActive = (lastActive) => {
+  if (!lastActive) return "Offline";
+  try {
+    const timeDistance = formatDistanceToNow(new Date(lastActive), { addSuffix: true, locale: enUS });
+    return `Active ${timeDistance}`;
+  } catch {
+    return "Offline";
+  }
 };
 
 const ChatPage = () => {
@@ -308,6 +320,10 @@ const ChatPage = () => {
             dispatch(updateMessage(payload.data));
           } else if (type === "conversation_update") {
             dispatch(updateConversationListItem(payload.data));
+          } else if (type === "user_status_change") {
+            const { userId, isOnline, lastActive } = payload.data;
+            dispatch(updateParticipantStatus({ userId, isOnline, lastActive }));
+            dispatch(updateFriendStatus({ userId, isOnline, lastActive }));
           } else if (type === "conversation_remove") {
             dispatch(removeConversationFromList(payload.conversationId));
           } else if (type === "typing") {
@@ -1003,7 +1019,9 @@ const ChatPage = () => {
                             Active now
                           </>
                         ) : (
-                          <span className="text-gray-400">Offline</span>
+                          <span className="text-gray-400">
+                            {formatLastActive(getChatPartner(activeConversation).lastActive)}
+                          </span>
                         )}
                       </p>
                     </div>

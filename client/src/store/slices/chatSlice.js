@@ -275,6 +275,34 @@ const chatSlice = createSlice({
     clearError: (state) => {
       state.error = null;
     },
+    updateParticipantStatus: (state, action) => {
+      const { userId, isOnline, lastActive } = action.payload;
+      if (!userId) return;
+
+      // Update in conversations list
+      state.conversations.forEach((conv) => {
+        if (conv.participants) {
+          conv.participants.forEach((p) => {
+            const pId = p._id || p.id;
+            if (pId && pId.toString() === userId.toString()) {
+              p.isOnline = isOnline;
+              p.lastActive = lastActive;
+            }
+          });
+        }
+      });
+
+      // Update in activeConversation
+      if (state.activeConversation && state.activeConversation.participants) {
+        state.activeConversation.participants.forEach((p) => {
+          const pId = p._id || p.id;
+          if (pId && pId.toString() === userId.toString()) {
+            p.isOnline = isOnline;
+            p.lastActive = lastActive;
+          }
+        });
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -378,6 +406,7 @@ export const {
   clearError,
   removeConversationFromList,
   updateMessage,
+  updateParticipantStatus,
 } = chatSlice.actions;
 
 export default chatSlice.reducer;

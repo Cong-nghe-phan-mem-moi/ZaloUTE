@@ -64,6 +64,19 @@ const userSlice = createSlice({
       state.loading = false
       state.error = null
     },
+    updateFriendStatus: (state, action) => {
+      const { userId, isOnline, lastActive } = action.payload;
+      if (!userId) return;
+      if (state.profile && state.profile.friends) {
+        state.profile.friends.forEach((friend) => {
+          const friendId = friend.id || friend._id;
+          if (friendId && friendId.toString() === userId.toString()) {
+            friend.isOnline = isOnline;
+            friend.lastActive = lastActive;
+          }
+        });
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -94,5 +107,5 @@ const userSlice = createSlice({
   },
 })
 
-export const { clearError, clearProfile } = userSlice.actions
+export const { clearError, clearProfile, updateFriendStatus } = userSlice.actions
 export default userSlice.reducer
