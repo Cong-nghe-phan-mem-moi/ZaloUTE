@@ -23,7 +23,15 @@ const conversationSchema = new mongoose.Schema({
     lastMessage: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Message'
-    }
+    },
+    mutedUntil: [{
+        user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        until: { type: Date }
+    }],
+    blockedBy: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }]
 }, { timestamps: true });
 
 module.exports = mongoose.model('Conversation', conversationSchema);

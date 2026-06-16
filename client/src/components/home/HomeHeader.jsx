@@ -581,6 +581,8 @@ const notificationLinks = {
   post_share: "/",
   comment_reply: "/",
   comment_like: "/",
+  mention: "/messages",
+  new_message: "/messages",
 };
 
 const isFriendAcceptNotification = (notification) =>
@@ -589,6 +591,16 @@ const isFriendAcceptNotification = (notification) =>
 
 const getNotificationHref = (notification) => {
   const data = notification.data || {};
+
+  if (notification.type === "mention") {
+    const conversationId = data.conversationId || notification.relatedId;
+    return conversationId ? `/messages?conversationId=${conversationId}` : "/messages";
+  }
+
+  if (notification.type === "new_message") {
+    const conversationId = data.conversationId || notification.relatedId;
+    return conversationId ? `/messages?conversationId=${conversationId}` : "/messages";
+  }
 
   if (notification.type === "friend_request") {
     const userId = data.profileId || notification.sender?._id;
@@ -634,6 +646,8 @@ const popupTitles = {
   post_share: "New share",
   comment_reply: "New reply",
   comment_like: "New comment like",
+  mention: "Nhắc đến",
+  new_message: "Tin nhắn mới",
 };
 
 const NotificationPopup = ({ notification, onClose }) => {

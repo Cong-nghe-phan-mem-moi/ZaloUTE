@@ -99,6 +99,16 @@ export const chatAPI = {
     api.post(`/chats/groups/${conversationId}/leave`),
   addGroupMembers: (conversationId, participantIds) =>
     api.post(`/chats/groups/${conversationId}/add-members`, { participantIds }),
+  muteConversation: (conversationId, duration) =>
+    api.post(`/chats/conversations/${conversationId}/mute`, { duration }),
+  unmuteConversation: (conversationId) =>
+    api.post(`/chats/conversations/${conversationId}/unmute`),
+  blockConversation: (conversationId) =>
+    api.post(`/chats/conversations/${conversationId}/block`),
+  unblockConversation: (conversationId) =>
+    api.post(`/chats/conversations/${conversationId}/unblock`),
+  deleteConversation: (conversationId) =>
+    api.delete(`/chats/conversations/${conversationId}`),
 };
 
 export const adminAPI = {
