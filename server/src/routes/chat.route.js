@@ -27,4 +27,15 @@ router.post("/groups/:conversationId/leave", chatController.leaveGroup);
 // Thêm thành viên vào nhóm chat
 router.post("/groups/:conversationId/add-members", chatController.addMembers);
 
+// Tắt/bật thông báo hội thoại
+router.post("/conversations/:conversationId/mute", chatController.muteConversation);
+router.post("/conversations/:conversationId/unmute", chatController.unmuteConversation);
+
+// Chặn/bỏ chặn người dùng trong hội thoại
+router.post("/conversations/:conversationId/block", chatController.blockConversation);
+router.post("/conversations/:conversationId/unblock", chatController.unblockConversation);
+
+// Xóa cuộc hội thoại
+router.delete("/conversations/:conversationId", chatController.deleteConversation);
+
 module.exports = router;

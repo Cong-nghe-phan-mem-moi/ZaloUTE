@@ -63,6 +63,7 @@ async function saveMessage(messageData) {
   const savedMessage = await message.save();
   return await Message.findById(savedMessage._id)
     .populate("senderId", "fullName avatar")
+    .populate("mentions", "fullName avatar")
     .populate({
       path: "replyTo",
       populate: {
@@ -82,6 +83,7 @@ async function saveMessage(messageData) {
 async function getMessagesByConversationId(conversationId, skip = 0, limit = 50) {
   return await Message.find({ conversationId })
     .populate("senderId", "fullName avatar")
+    .populate("mentions", "fullName avatar")
     .populate({
       path: "replyTo",
       populate: {

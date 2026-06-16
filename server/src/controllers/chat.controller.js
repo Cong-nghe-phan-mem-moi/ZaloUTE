@@ -142,6 +142,87 @@ async function addMembers(req, res) {
   }
 }
 
+async function muteConversation(req, res) {
+  try {
+    const userId = req.user.userId;
+    const { conversationId } = req.params;
+    const { duration } = req.body;
+    const result = await ChatService.muteConversation(userId, conversationId, duration);
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error("Mute Conversation Error:", error);
+    return res.status(error.statusCode || 500).json({
+      success: false,
+      code: error.code || "INTERNAL_SERVER_ERROR",
+      message: error.message || "Internal server error",
+    });
+  }
+}
+
+async function unmuteConversation(req, res) {
+  try {
+    const userId = req.user.userId;
+    const { conversationId } = req.params;
+    const result = await ChatService.unmuteConversation(userId, conversationId);
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error("Unmute Conversation Error:", error);
+    return res.status(error.statusCode || 500).json({
+      success: false,
+      code: error.code || "INTERNAL_SERVER_ERROR",
+      message: error.message || "Internal server error",
+    });
+  }
+}
+
+async function blockConversation(req, res) {
+  try {
+    const userId = req.user.userId;
+    const { conversationId } = req.params;
+    const result = await ChatService.blockConversation(userId, conversationId);
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error("Block Conversation Error:", error);
+    return res.status(error.statusCode || 500).json({
+      success: false,
+      code: error.code || "INTERNAL_SERVER_ERROR",
+      message: error.message || "Internal server error",
+    });
+  }
+}
+
+async function unblockConversation(req, res) {
+  try {
+    const userId = req.user.userId;
+    const { conversationId } = req.params;
+    const result = await ChatService.unblockConversation(userId, conversationId);
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error("Unblock Conversation Error:", error);
+    return res.status(error.statusCode || 500).json({
+      success: false,
+      code: error.code || "INTERNAL_SERVER_ERROR",
+      message: error.message || "Internal server error",
+    });
+  }
+}
+
+async function deleteConversation(req, res) {
+  try {
+    const userId = req.user.userId;
+    const { conversationId } = req.params;
+    const result = await ChatService.deleteConversation(userId, conversationId);
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error("Delete Conversation Error:", error);
+    return res.status(error.statusCode || 500).json({
+      success: false,
+      code: error.code || "INTERNAL_SERVER_ERROR",
+      message: error.message || "Internal server error",
+    });
+  }
+}
+
 module.exports = {
   getConversations,
   getOrCreateConversation,
@@ -150,4 +231,9 @@ module.exports = {
   removeMember,
   leaveGroup,
   addMembers,
+  muteConversation,
+  unmuteConversation,
+  blockConversation,
+  unblockConversation,
+  deleteConversation,
 };

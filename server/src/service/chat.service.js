@@ -1,6 +1,7 @@
 const chatRepository = require("../repo/chat.repository");
 const UserRepository = require("../repo/user.repository");
 const Message = require("../models/message.model");
+const Conversation = require("../models/conversation.model");
 const jwt = require("jsonwebtoken");
 const { WebSocketServer, WebSocket } = require("ws");
 
@@ -389,6 +390,116 @@ class ChatService {
     };
   }
 
+  static async muteConversation(userId, conversationId, duration) {
+    const conversation = await Conversation.findById(conversationId);
+    if (!conversation) {
+      throwError(404, "CONVERSATION_NOT_FOUND", "Không tìm thấy cuộc trò chuyện");
+    }
+
+    let untilDate = new Date();
+    if (duration === 1) {
+      untilDate = new Date(Date.now() + 60 * 60 * 1000);
+    } else if (duration === 4) {
+      untilDate = new Date(Date.now() + 4 * 60 * 60 * 1000);
+    } else if (duration === 8) {
+      untilDate.setHours(8, 0, 0, 0);
+      if (new Date().getHours() >= 8) {
+        untilDate.setDate(untilDate.getDate() + 1);
+      }
+    } else if (duration === -1) {
+      untilDate = new Date("9999-12-31T23:59:59Z");
+    } else {
+      throwError(400, "INVALID_DURATION", "Thời gian tắt thông báo không hợp lệ");
+    }
+
+    const index = conversation.mutedUntil.findIndex(
+      (m) => m.user.toString() === userId.toString()
+    );
+    if (index !== -1) {
+      conversation.mutedUntil[index].until = untilDate;
+    } else {
+      conversation.mutedUntil.push({ user: userId, until: untilDate });
+    }
+
+    await conversation.save();
+
+    const populated = await chatRepository.getConversationById(conversationId);
+    return { success: true, data: populated };
+  }
+
+  static async unmuteConversation(userId, conversationId) {
+    const conversation = await Conversation.findById(conversationId);
+    if (!conversation) {
+      throwError(404, "CONVERSATION_NOT_FOUND", "Không tìm thấy cuộc trò chuyện");
+    }
+
+    conversation.mutedUntil = conversation.mutedUntil.filter(
+      (m) => m.user.toString() !== userId.toString()
+    );
+
+    await conversation.save();
+
+    const populated = await chatRepository.getConversationById(conversationId);
+    return { success: true, data: populated };
+  }
+
+  static async blockConversation(userId, conversationId) {
+    const conversation = await Conversation.findById(conversationId);
+    if (!conversation) {
+      throwError(404, "CONVERSATION_NOT_FOUND", "Không tìm thấy cuộc trò chuyện");
+    }
+
+    if (!conversation.blockedBy.includes(userId)) {
+      conversation.blockedBy.push(userId);
+      await conversation.save();
+    }
+
+    const populated = await chatRepository.getConversationById(conversationId);
+    return { success: true, data: populated };
+  }
+
+  static async unblockConversation(userId, conversationId) {
+    const conversation = await Conversation.findById(conversationId);
+    if (!conversation) {
+      throwError(404, "CONVERSATION_NOT_FOUND", "Không tìm thấy cuộc trò chuyện");
+    }
+
+    conversation.blockedBy = conversation.blockedBy.filter(
+      (id) => id.toString() !== userId.toString()
+    );
+    await conversation.save();
+
+    const populated = await chatRepository.getConversationById(conversationId);
+    return { success: true, data: populated };
+  }
+
+  static async deleteConversation(userId, conversationId) {
+    const conversation = await Conversation.findById(conversationId);
+    if (!conversation) {
+      throwError(404, "CONVERSATION_NOT_FOUND", "Không tìm thấy cuộc trò chuyện");
+    }
+
+    conversation.participants = conversation.participants.filter(
+      (id) => id.toString() !== userId.toString()
+    );
+
+    conversation.mutedUntil = conversation.mutedUntil.filter(
+      (m) => m.user.toString() !== userId.toString()
+    );
+    conversation.blockedBy = conversation.blockedBy.filter(
+      (id) => id.toString() !== userId.toString()
+    );
+
+    if (conversation.participants.length === 0) {
+      await Conversation.findByIdAndDelete(conversationId);
+      await Message.deleteMany({ conversationId });
+    } else {
+      await conversation.save();
+    }
+
+    return { success: true, conversationId };
+  }
+
   static attachWebSocketServer(server) {
     const wss = new WebSocketServer({ noServer: true });
     
@@ -448,8 +559,40 @@ class ChatService {
             if (!isParticipant) return;
 
             if (type === "send_message") {
-              const { content, messageType, replyTo } = payload;
+              const { content, messageType, replyTo, mentions } = payload;
               if (!content || String(content).trim() === "") return;
+
+              // Check blocking
+              if (conversation.blockedBy && conversation.blockedBy.length > 0) {
+                const isBlockedByOther = conversation.blockedBy.some(
+                  (id) => id.toString() !== ws.userId.toString()
+                );
+                const hasBlockedOther = conversation.blockedBy.some(
+                  (id) => id.toString() === ws.userId.toString()
+                );
+
+                let errMsg = "Cuộc hội thoại đã bị chặn";
+                if (isBlockedByOther) {
+                  errMsg = "Bạn đã bị chặn bởi người dùng này";
+                } else if (hasBlockedOther) {
+                  errMsg = "Bạn đã chặn người dùng này. Vui lòng bỏ chặn để tiếp tục nhắn tin.";
+                }
+
+                ws.send(JSON.stringify({
+                  type: "error",
+                  conversationId,
+                  message: errMsg
+                }));
+                return;
+              }
+
+              let finalMentions = mentions || [];
+              if (content.includes("@All") && conversation.isGroup) {
+                const allParticipantIds = conversation.participants
+                  .map((p) => (p._id || p).toString())
+                  .filter((id) => id !== ws.userId.toString());
+                finalMentions = Array.from(new Set([...finalMentions, ...allParticipantIds]));
+              }
 
               // 1. Lưu tin nhắn vào CSDL
               const savedMessage = await chatRepository.saveMessage({
@@ -459,7 +602,70 @@ class ChatService {
                 messageType: messageType || "text",
                 readBy: [ws.userId],
                 replyTo: replyTo || null,
+                mentions: finalMentions,
               });
+
+              // Send mention notifications (exempt from mute filter)
+              if (finalMentions.length > 0) {
+                const NotificationService = require("./notification.service");
+                finalMentions.forEach(async (receiverId) => {
+                  if (receiverId.toString() === ws.userId.toString()) return;
+                  try {
+                    await NotificationService.createNotification({
+                      receiver: receiverId,
+                      sender: ws.userId,
+                      type: "mention",
+                      content: `${savedMessage.senderId.fullName} đã nhắc đến bạn trong nhóm ${conversation.name || "hội thoại"}`,
+                      preview: content.trim(),
+                      relatedId: conversationId,
+                      relatedType: null,
+                      data: {
+                        conversationId,
+                        messageId: savedMessage._id,
+                      },
+                    });
+                  } catch (err) {
+                    console.error("Error creating mention notification:", err);
+                  }
+                });
+              }
+
+              // Send new_message notification for direct chats (subject to mute filter)
+              if (!conversation.isGroup) {
+                const partner = conversation.participants.find(
+                  (p) => p._id.toString() !== ws.userId.toString()
+                );
+                if (partner) {
+                  const isMuted = conversation.mutedUntil?.some((m) => {
+                    return (
+                      m.user.toString() === partner._id.toString() &&
+                      m.until &&
+                      new Date(m.until) > new Date()
+                    );
+                  });
+
+                  if (!isMuted) {
+                    const NotificationService = require("./notification.service");
+                    try {
+                      await NotificationService.createNotification({
+                        receiver: partner._id,
+                        sender: ws.userId,
+                        type: "new_message",
+                        content: `${savedMessage.senderId.fullName} đã gửi cho bạn một tin nhắn`,
+                        preview: content.trim(),
+                        relatedId: conversationId,
+                        relatedType: null,
+                        data: {
+                          conversationId,
+                          messageId: savedMessage._id,
+                        },
+                      });
+                    } catch (err) {
+                      console.error("Error creating new_message notification:", err);
+                    }
+                  }
+                }
+            }
 
               // 2. Cập nhật tin nhắn cuối trong cuộc hội thoại
               await chatRepository.updateConversationLastMessage(conversationId, savedMessage._id);
