@@ -10,7 +10,7 @@ const RightSidebar = ({
   onRejectRequest,
   onContactClick,
 }) => (
-  <aside className="hidden bg-white px-6 py-6 lg:block">
+  <aside className="hidden bg-white px-6 py-6 lg:block h-full overflow-y-auto min-h-0">
     <PanelTitle title="News Update" action="See All" />
     <div className="space-y-4">
       {newsItems.map((item) => (

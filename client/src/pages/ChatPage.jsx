@@ -355,9 +355,9 @@ const ChatPage = () => {
       <div className="mx-auto max-w-[1320px] overflow-hidden rounded-[28px] bg-white shadow-2xl">
         <HomeHeader profile={profile} activePage="messages" />
 
-        <main className="grid min-h-[760px] max-h-[760px] grid-cols-1 bg-[#f2f3f5] lg:grid-cols-[300px_minmax(0,1fr)_300px]">
+        <main className="grid h-[760px] grid-cols-1 bg-[#f2f3f5] lg:grid-cols-[300px_minmax(0,1fr)_300px] overflow-hidden">
           {/* Thanh menu bên trái */}
-          <aside className="border-r border-gray-200 bg-white flex flex-col">
+          <aside className="border-r border-gray-200 bg-white flex flex-col h-full min-h-0">
             <div className="p-4 border-b border-gray-100">
               <div className="flex justify-between items-center mb-3">
                 <h2 className="text-xl font-bold">Chats</h2>
@@ -484,7 +484,7 @@ const ChatPage = () => {
           </aside>
 
           {/* Vùng trò chuyện chính */}
-          <section className="flex flex-col bg-[#f0f2f5] h-full overflow-hidden">
+          <section className="flex flex-col bg-[#f0f2f5] h-full overflow-hidden min-h-0">
             {activeConversation ? (
               <>
                 {/* Header trò chuyện */}
@@ -724,7 +724,7 @@ const GroupSidebar = ({ conversation, profile, onLeaveGroup, onRemoveMember, onA
     : conversation?.admin?.toString() === currentUserId?.toString();
 
   return (
-    <aside className="hidden bg-white border-l border-gray-200 px-6 py-6 lg:flex flex-col h-full overflow-y-auto">
+    <aside className="hidden bg-white border-l border-gray-200 px-6 py-6 lg:flex flex-col h-full overflow-y-auto min-h-0">
       <div className="flex flex-col items-center border-b border-gray-100 pb-6 mb-6">
         <HomeAvatar image={conversation.avatar} name={conversation.name} size="lg" />
         <h3 className="text-lg font-bold text-gray-900 mt-3 text-center">{conversation.name}</h3>

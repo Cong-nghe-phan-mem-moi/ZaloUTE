@@ -503,6 +503,18 @@ class ChatService {
               // Cập nhật CSDL đánh dấu đã đọc
               await chatRepository.markMessagesAsRead(conversationId, ws.userId);
               
+              // Lấy thông tin hội thoại mới nhất sau khi đã đánh dấu đọc để gửi về cho chính mình để xóa chấm xanh thông báo
+              const updatedConversation = await chatRepository.getConversationsByUserId(ws.userId);
+              const conversationForThisId = updatedConversation.find(
+                (c) => c._id.toString() === conversationId.toString()
+              );
+              if (conversationForThisId) {
+                sendToUser(ws.userId, {
+                  type: "conversation_update",
+                  data: conversationForThisId,
+                });
+              }
+
               // Gửi trạng thái đã đọc tới các thành viên khác
               conversation.participants.forEach((participant) => {
                 const participantIdStr = participant._id.toString();
