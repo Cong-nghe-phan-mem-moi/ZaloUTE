@@ -64,8 +64,90 @@ async function getMessages(req, res) {
   }
 }
 
+async function createGroup(req, res) {
+  try {
+    const userId = req.user.userId;
+    const { name, participantIds } = req.body;
+
+    const result = await ChatService.createGroup(userId, name, participantIds);
+    return res.status(201).json(result);
+  } catch (error) {
+    console.error("Create Group Error:", error);
+    return res.status(error.statusCode || 500).json({
+      success: false,
+      code: error.code || "INTERNAL_SERVER_ERROR",
+      message: error.message || "Internal server error",
+    });
+  }
+}
+
+async function removeMember(req, res) {
+  try {
+    const userId = req.user.userId;
+    const { conversationId } = req.params;
+    const { memberId } = req.body;
+
+    if (!memberId) {
+      return res.status(400).json({
+        success: false,
+        code: "MISSING_MEMBER_ID",
+        message: "memberId is required",
+      });
+    }
+
+    const result = await ChatService.removeGroupMember(userId, conversationId, memberId);
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error("Remove Member Error:", error);
+    return res.status(error.statusCode || 500).json({
+      success: false,
+      code: error.code || "INTERNAL_SERVER_ERROR",
+      message: error.message || "Internal server error",
+    });
+  }
+}
+
+async function leaveGroup(req, res) {
+  try {
+    const userId = req.user.userId;
+    const { conversationId } = req.params;
+
+    const result = await ChatService.leaveGroup(userId, conversationId);
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error("Leave Group Error:", error);
+    return res.status(error.statusCode || 500).json({
+      success: false,
+      code: error.code || "INTERNAL_SERVER_ERROR",
+      message: error.message || "Internal server error",
+    });
+  }
+}
+
+async function addMembers(req, res) {
+  try {
+    const userId = req.user.userId;
+    const { conversationId } = req.params;
+    const { participantIds } = req.body;
+
+    const result = await ChatService.addGroupMembers(userId, conversationId, participantIds);
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error("Add Members Error:", error);
+    return res.status(error.statusCode || 500).json({
+      success: false,
+      code: error.code || "INTERNAL_SERVER_ERROR",
+      message: error.message || "Internal server error",
+    });
+  }
+}
+
 module.exports = {
   getConversations,
   getOrCreateConversation,
   getMessages,
+  createGroup,
+  removeMember,
+  leaveGroup,
+  addMembers,
 };

@@ -119,6 +119,54 @@ async function markMessagesAsRead(conversationId, userId) {
   );
 }
 
+/**
+ * Loại bỏ một thành viên khỏi cuộc hội thoại nhóm
+ * @param {string} conversationId 
+ * @param {string} userId 
+ * @returns {Promise<Object|null>}
+ */
+async function removeParticipant(conversationId, userId) {
+  return await Conversation.findByIdAndUpdate(
+    conversationId,
+    { $pull: { participants: userId } },
+    { new: true }
+  )
+    .populate("participants", "fullName avatar isOnline lastActive")
+    .populate("admin", "fullName avatar");
+}
+
+/**
+ * Cập nhật trưởng nhóm mới
+ * @param {string} conversationId 
+ * @param {string} adminId 
+ * @returns {Promise<Object|null>}
+ */
+async function updateConversationAdmin(conversationId, adminId) {
+  return await Conversation.findByIdAndUpdate(
+    conversationId,
+    { admin: adminId },
+    { new: true }
+  )
+    .populate("participants", "fullName avatar isOnline lastActive")
+    .populate("admin", "fullName avatar");
+}
+
+/**
+ * Thêm các thành viên vào cuộc hội thoại nhóm
+ * @param {string} conversationId 
+ * @param {Array<string>} userIds 
+ * @returns {Promise<Object|null>}
+ */
+async function addParticipants(conversationId, userIds) {
+  return await Conversation.findByIdAndUpdate(
+    conversationId,
+    { $addToSet: { participants: { $each: userIds } } },
+    { new: true }
+  )
+    .populate("participants", "fullName avatar isOnline lastActive")
+    .populate("admin", "fullName avatar");
+}
+
 module.exports = {
   getConversationsByUserId,
   findDirectConversation,
@@ -128,4 +176,7 @@ module.exports = {
   getMessagesByConversationId,
   updateConversationLastMessage,
   markMessagesAsRead,
+  removeParticipant,
+  updateConversationAdmin,
+  addParticipants,
 };

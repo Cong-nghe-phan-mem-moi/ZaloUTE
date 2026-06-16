@@ -67,6 +67,66 @@ export const getOrCreateConversationAndSelect = createAsyncThunk(
   }
 );
 
+export const createGroup = createAsyncThunk(
+  "chat/createGroup",
+  async ({ name, participantIds }, { dispatch, rejectWithValue }) => {
+    try {
+      const response = await chatAPI.createGroup(name, participantIds);
+      const conversation = response.data.data;
+      dispatch(selectConversationAndFetchMessages(conversation));
+      dispatch(fetchConversations());
+      return conversation;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to create group"
+      );
+    }
+  }
+);
+
+export const removeGroupMember = createAsyncThunk(
+  "chat/removeGroupMember",
+  async ({ conversationId, memberId }, { rejectWithValue }) => {
+    try {
+      const response = await chatAPI.removeGroupMember(conversationId, memberId);
+      return response.data.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to remove member"
+      );
+    }
+  }
+);
+
+export const addGroupMembers = createAsyncThunk(
+  "chat/addGroupMembers",
+  async ({ conversationId, participantIds }, { rejectWithValue }) => {
+    try {
+      const response = await chatAPI.addGroupMembers(conversationId, participantIds);
+      return response.data.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to add group members"
+      );
+    }
+  }
+);
+
+export const leaveGroup = createAsyncThunk(
+  "chat/leaveGroup",
+  async (conversationId, { dispatch, rejectWithValue }) => {
+    try {
+      await chatAPI.leaveGroup(conversationId);
+      dispatch(removeConversationFromList(conversationId));
+      return conversationId;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to leave group"
+      );
+    }
+  }
+);
+
 const chatSlice = createSlice({
   name: "chat",
   initialState,
@@ -78,6 +138,16 @@ const chatSlice = createSlice({
     clearActiveConversation: (state) => {
       state.activeConversation = null;
       state.messages = [];
+    },
+    removeConversationFromList: (state, action) => {
+      const conversationId = action.payload;
+      state.conversations = state.conversations.filter(
+        (c) => c._id !== conversationId
+      );
+      if (state.activeConversation?._id === conversationId) {
+        state.activeConversation = null;
+        state.messages = [];
+      }
     },
     addReceivedMessage: (state, action) => {
       const message = action.payload;
@@ -103,6 +173,13 @@ const chatSlice = createSlice({
         };
       } else {
         state.conversations.push(updatedConv);
+      }
+      
+      if (state.activeConversation && state.activeConversation._id === updatedConv._id) {
+        state.activeConversation = {
+          ...state.activeConversation,
+          ...updatedConv,
+        };
       }
       
       // Sắp xếp lại danh sách hội thoại theo updatedAt giảm dần
@@ -149,6 +226,26 @@ const chatSlice = createSlice({
       .addCase(fetchMessages.rejected, (state, action) => {
         state.loadingMessages = false;
         state.error = action.payload;
+      })
+      
+      // Remove Group Member
+      .addCase(removeGroupMember.fulfilled, (state, action) => {
+        const updatedConv = action.payload;
+        state.activeConversation = updatedConv;
+        const index = state.conversations.findIndex((c) => c._id === updatedConv._id);
+        if (index !== -1) {
+          state.conversations[index] = updatedConv;
+        }
+      })
+      
+      // Add Group Members
+      .addCase(addGroupMembers.fulfilled, (state, action) => {
+        const updatedConv = action.payload;
+        state.activeConversation = updatedConv;
+        const index = state.conversations.findIndex((c) => c._id === updatedConv._id);
+        if (index !== -1) {
+          state.conversations[index] = updatedConv;
+        }
       });
   },
 });
@@ -160,6 +257,7 @@ export const {
   updateConversationListItem,
   setTypingStatus,
   clearError,
+  removeConversationFromList,
 } = chatSlice.actions;
 
 export default chatSlice.reducer;

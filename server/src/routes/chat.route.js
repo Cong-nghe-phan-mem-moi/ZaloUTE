@@ -15,4 +15,16 @@ router.post("/conversations", chatController.getOrCreateConversation);
 // Lấy tin nhắn trong hội thoại
 router.get("/conversations/:conversationId/messages", chatController.getMessages);
 
+// Tạo nhóm chat mới
+router.post("/groups", chatController.createGroup);
+
+// Xóa thành viên khỏi nhóm chat
+router.post("/groups/:conversationId/remove-member", chatController.removeMember);
+
+// Thành viên tự rời khỏi nhóm
+router.post("/groups/:conversationId/leave", chatController.leaveGroup);
+
+// Thêm thành viên vào nhóm chat
+router.post("/groups/:conversationId/add-members", chatController.addMembers);
+
 module.exports = router;

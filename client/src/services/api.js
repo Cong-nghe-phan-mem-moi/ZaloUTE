@@ -91,6 +91,14 @@ export const chatAPI = {
     api.get(`/chats/conversations/${conversationId}/messages`, {
       params: { page, limit },
     }),
+  createGroup: (name, participantIds) =>
+    api.post("/chats/groups", { name, participantIds }),
+  removeGroupMember: (conversationId, memberId) =>
+    api.post(`/chats/groups/${conversationId}/remove-member`, { memberId }),
+  leaveGroup: (conversationId) =>
+    api.post(`/chats/groups/${conversationId}/leave`),
+  addGroupMembers: (conversationId, participantIds) =>
+    api.post(`/chats/groups/${conversationId}/add-members`, { participantIds }),
 };
 
 export const adminAPI = {
