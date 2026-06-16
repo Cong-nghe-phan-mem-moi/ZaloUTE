@@ -1,9 +1,25 @@
+import { useState } from "react";
+
+const isUsableMedia = (item) => {
+  const url = item?.url?.trim?.();
+
+  return (
+    url &&
+    url !== "/uploads/" &&
+    url !== "undefined" &&
+    url !== "null" &&
+    ["image", "video"].includes(item.type)
+  );
+};
+
 const SharedPostPreview = ({ post, onOpen }) => {
   if (!post) {
     return null;
   }
 
-  const firstMedia = Array.isArray(post.media) ? post.media[0] : null;
+  const firstMedia = Array.isArray(post.media)
+    ? post.media.find(isUsableMedia)
+    : null;
 
   return (
     <button
@@ -31,24 +47,48 @@ const SharedPostPreview = ({ post, onOpen }) => {
         </p>
       ) : null}
 
-      {firstMedia ? (
-        <div className="overflow-hidden rounded-md bg-gray-100">
-          {firstMedia.type === "image" ? (
-            <img
-              src={firstMedia.url}
-              alt="Shared post media"
-              className="max-h-64 w-full object-contain"
-            />
-          ) : (
-            <div className="flex h-32 items-center justify-center bg-black text-white">
-              <span className="material-symbols-outlined mr-2">play_circle</span>
-              Video
-            </div>
-          )}
-        </div>
-      ) : null}
+      <SharedMediaPreview media={firstMedia} />
     </button>
   );
+};
+
+const SharedMediaPreview = ({ media }) => {
+  const [failed, setFailed] = useState(false);
+
+  if (!media || failed) {
+    return null;
+  }
+
+  if (media.type === "image") {
+    return (
+      <div className="overflow-hidden rounded-md bg-gray-100">
+        <img
+          src={media.url}
+          alt=""
+          className="max-h-64 w-full object-contain"
+          onError={() => setFailed(true)}
+        />
+      </div>
+    );
+  }
+
+  if (media.type === "video") {
+    return (
+      <div className="overflow-hidden rounded-md bg-black">
+        <video
+          src={media.url}
+          controls
+          preload="metadata"
+          className="max-h-64 w-full object-contain"
+          onError={() => setFailed(true)}
+          onClick={(event) => event.stopPropagation()}
+          onMouseDown={(event) => event.stopPropagation()}
+        />
+      </div>
+    );
+  }
+
+  return null;
 };
 
 export default SharedPostPreview;
