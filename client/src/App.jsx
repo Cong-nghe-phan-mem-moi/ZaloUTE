@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { Routes, Route, Navigate, useParams } from "react-router-dom";
 import { useAppSelector, useAppDispatch } from "./store/hooks";
 import { setCurrentPage } from "./store/slices/uiSlice";
 import { clearError, clearMessage } from "./store/slices/postSlice";
@@ -15,6 +16,18 @@ import FriendRequests from "./pages/FriendRequests";
 import Friends from "./pages/Friends";
 import AdminDashboard from "./pages/AdminDashboard";
 import ChatPage from "./pages/ChatPage";
+
+const ProtectedPage = ({ token, children }) => {
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+  return children;
+};
+
+const OtherProfilePage = () => {
+  const { userId } = useParams();
+  return <ProfilePage userId={userId} />;
+};
 
 function App() {
   const dispatch = useAppDispatch();
@@ -70,40 +83,28 @@ function App() {
     }
   }, [dispatch, path, token]);
 
-  const renderPage = () => {
-    switch (currentPage) {
-      case "login":
-        return <LoginPage />;
-      case "verify-otp":
-        return <VerifyOtp />;
-      case "forgot-password":
-        return <ForgotPassword />;
-      case "home":
-        return <Home />;
-      case "friends":
-        return <Friends />;
-      case "friend-requests":
-        return <FriendRequests />;
-      case "messages":
-        return <ChatPage />;
-      case "admin-dashboard":
-        return <AdminDashboard />;
-      case "profile":
-        return <ProfilePage />;
-      case "other-profile":
-        return <ProfilePage userId={otherProfileId} />;
-      case "post-test":
-        return <PostTestPage />;
-      case "register":
-        return <Register />;
-      default:
-        return <LoginPage />;
-    }
-  };
-
   return (
     <div className="w-full">
-      {renderPage()}
+      <Routes>
+        <Route path="/login" element={token ? <Navigate to="/" replace /> : <LoginPage />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/verify-otp" element={<VerifyOtp />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/" element={<ProtectedPage token={token}><Home /></ProtectedPage>} />
+        <Route path="/home" element={<Navigate to="/" replace />} />
+        <Route path="/friends" element={<ProtectedPage token={token}><Friends /></ProtectedPage>} />
+        <Route path="/friend-requests" element={<ProtectedPage token={token}><FriendRequests /></ProtectedPage>} />
+        <Route path="/messages" element={<ProtectedPage token={token}><ChatPage /></ProtectedPage>} />
+        <Route path="/admin/dashboard" element={<ProtectedPage token={token}><AdminDashboard /></ProtectedPage>} />
+        <Route path="/admin-dashboard" element={<Navigate to="/admin/dashboard" replace />} />
+        <Route path="/profile" element={<ProtectedPage token={token}><ProfilePage /></ProtectedPage>} />
+        <Route path="/user/profile" element={<ProtectedPage token={token}><ProfilePage /></ProtectedPage>} />
+        <Route path="/admin/profile" element={<ProtectedPage token={token}><ProfilePage /></ProtectedPage>} />
+        <Route path="/edit-profile" element={<ProtectedPage token={token}><ProfilePage /></ProtectedPage>} />
+        <Route path="/users/profile/:userId" element={<ProtectedPage token={token}><OtherProfilePage /></ProtectedPage>} />
+        <Route path="/post-test" element={<PostTestPage />} />
+        <Route path="*" element={<Navigate to={token ? "/" : "/login"} replace />} />
+      </Routes>
       <PostFeedbackToast />
     </div>
   );
