@@ -17,6 +17,8 @@ const buildPreview = (text) => {
   return `${words.slice(0, PREVIEW_WORD_LIMIT).join(" ")}...`;
 };
 
+const onlineTracker = require("../utils/onlineTracker");
+
 const sendToUser = (userId, payload) => {
   const userClients = clients.get(userId.toString());
   if (!userClients) return;
@@ -32,11 +34,17 @@ const sendToUser = (userId, payload) => {
   });
 };
 
+// Register notification sendToUser helper with onlineTracker
+onlineTracker.setNotificationSendHelper(sendToUser);
+
 const addClient = (userId, socket) => {
   const key = userId.toString();
   const userClients = clients.get(key) || new Set();
   userClients.add(socket);
   clients.set(key, userClients);
+
+  // Notify online tracker that a connection has been established
+  onlineTracker.handleConnectionChange(userId, true, "notification");
 
   socket.on("close", () => {
     const currentClients = clients.get(key);
@@ -46,6 +54,8 @@ const addClient = (userId, socket) => {
     if (currentClients.size === 0) {
       clients.delete(key);
     }
+    // Notify online tracker that a connection has been closed
+    onlineTracker.handleConnectionChange(userId, false, "notification");
   });
 };
 

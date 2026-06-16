@@ -14,6 +14,8 @@ const throwError = (statusCode, code, message) => {
   throw error;
 };
 
+const onlineTracker = require("../utils/onlineTracker");
+
 // Gửi payload dạng JSON tới người dùng cụ thể
 const sendToUser = (userId, payload) => {
   const userClients = clients.get(userId.toString());
@@ -33,11 +35,17 @@ const sendToUser = (userId, payload) => {
   }
 };
 
+// Register chat sendToUser helper with onlineTracker
+onlineTracker.setChatSendHelper(sendToUser);
+
 const addClient = (userId, socket) => {
   const key = userId.toString();
   const userClients = clients.get(key) || new Set();
   userClients.add(socket);
   clients.set(key, userClients);
+
+  // Notify online tracker that a connection has been established
+  onlineTracker.handleConnectionChange(userId, true, "chat");
 
   socket.on("close", () => {
     const currentClients = clients.get(key);
@@ -46,6 +54,8 @@ const addClient = (userId, socket) => {
     if (currentClients.size === 0) {
       clients.delete(key);
     }
+    // Notify online tracker that a connection has been closed
+    onlineTracker.handleConnectionChange(userId, false, "chat");
   });
 };
 
@@ -114,11 +124,11 @@ class ChatService {
 
   static async createGroup(creatorId, name, participantIds) {
     if (!name || name.trim() === "") {
-      throwError(400, "MISSING_NAME", "Tên nhóm không được để trống");
+      throwError(400, "MISSING_NAME", "Group name cannot be empty");
     }
 
     if (!Array.isArray(participantIds)) {
-      throwError(400, "INVALID_PARTICIPANTS", "Danh sách thành viên không hợp lệ");
+      throwError(400, "INVALID_PARTICIPANTS", "Invalid list of members");
     }
 
     // Đảm bảo có creatorId trong danh sách và loại bỏ trùng lặp
@@ -127,7 +137,7 @@ class ChatService {
     );
 
     if (uniqueParticipants.length < 3) {
-      throwError(400, "MIN_MEMBERS", "Một nhóm phải có ít nhất 3 thành viên");
+      throwError(400, "MIN_MEMBERS", "A group must have at least 3 members");
     }
 
     // Tạo nhóm
@@ -144,7 +154,7 @@ class ChatService {
     const savedMessage = await chatRepository.saveMessage({
       conversationId: conversation._id,
       senderId: creatorId,
-      content: `${creator.fullName} đã tạo nhóm "${name.trim()}"`,
+      content: `${creator.fullName} created the group "${name.trim()}"`,
       messageType: "system",
       readBy: [creatorId],
     });
@@ -175,26 +185,26 @@ class ChatService {
   static async removeGroupMember(adminId, conversationId, targetUserId) {
     const conversation = await chatRepository.getConversationById(conversationId);
     if (!conversation) {
-      throwError(404, "CONVERSATION_NOT_FOUND", "Không tìm thấy cuộc trò chuyện");
+      throwError(404, "CONVERSATION_NOT_FOUND", "Conversation not found");
     }
 
     if (!conversation.isGroup) {
-      throwError(400, "NOT_A_GROUP", "Cuộc trò chuyện này không phải là nhóm");
+      throwError(400, "NOT_A_GROUP", "This conversation is not a group");
     }
 
     if (conversation.admin?._id.toString() !== adminId.toString()) {
-      throwError(403, "FORBIDDEN", "Bạn không có quyền xóa thành viên (chỉ trưởng nhóm mới có quyền)");
+      throwError(403, "FORBIDDEN", "You do not have permission to remove members (only the group creator/admin has this right)");
     }
 
     const isParticipant = conversation.participants.some(
       (p) => p._id.toString() === targetUserId.toString()
     );
     if (!isParticipant) {
-      throwError(400, "NOT_PARTICIPANT", "Người dùng này không thuộc nhóm");
+      throwError(400, "NOT_PARTICIPANT", "This user is not a member of the group");
     }
 
     if (adminId.toString() === targetUserId.toString()) {
-      throwError(400, "CANNOT_REMOVE_SELF", "Trưởng nhóm không thể tự xóa mình. Hãy dùng chức năng rời nhóm");
+      throwError(400, "CANNOT_REMOVE_SELF", "Group admin cannot remove themselves. Please use the leave group feature.");
     }
 
     // Xóa thành viên
@@ -207,7 +217,7 @@ class ChatService {
     const savedMessage = await chatRepository.saveMessage({
       conversationId,
       senderId: adminId,
-      content: `${adminUser.fullName} đã xóa ${targetUser.fullName} khỏi nhóm`,
+      content: `${adminUser.fullName} removed ${targetUser.fullName} from the group`,
       messageType: "system",
       readBy: [adminId],
     });
@@ -245,25 +255,25 @@ class ChatService {
   static async leaveGroup(userId, conversationId) {
     const conversation = await chatRepository.getConversationById(conversationId);
     if (!conversation) {
-      throwError(404, "CONVERSATION_NOT_FOUND", "Không tìm thấy cuộc trò chuyện");
+      throwError(404, "CONVERSATION_NOT_FOUND", "Conversation not found");
     }
 
     if (!conversation.isGroup) {
-      throwError(400, "NOT_A_GROUP", "Cuộc trò chuyện này không phải là nhóm");
+      throwError(400, "NOT_A_GROUP", "This conversation is not a group");
     }
 
     const isParticipant = conversation.participants.some(
       (p) => p._id.toString() === userId.toString()
     );
     if (!isParticipant) {
-      throwError(400, "NOT_PARTICIPANT", "Bạn không thuộc nhóm này");
+      throwError(400, "NOT_PARTICIPANT", "You are not a member of this group");
     }
 
     // Xóa thành viên khỏi cuộc trò chuyện
     let updatedConv = await chatRepository.removeParticipant(conversationId, userId);
 
     const leavingUser = await UserRepository.findById(userId);
-    let systemMsgContent = `${leavingUser.fullName} đã rời nhóm`;
+    let systemMsgContent = `${leavingUser.fullName} left the group`;
 
     // Nếu người rời đi là admin
     if (conversation.admin?._id.toString() === userId.toString()) {
@@ -273,7 +283,7 @@ class ChatService {
         const newAdminId = remainingParticipants[0]._id;
         updatedConv = await chatRepository.updateConversationAdmin(conversationId, newAdminId);
         const newAdminUser = await UserRepository.findById(newAdminId);
-        systemMsgContent = `${leavingUser.fullName} đã rời nhóm và chuyển quyền trưởng nhóm cho ${newAdminUser.fullName}`;
+        systemMsgContent = `${leavingUser.fullName} left the group and transferred group admin privileges to ${newAdminUser.fullName}`;
       }
     }
 
@@ -314,36 +324,36 @@ class ChatService {
 
     return {
       success: true,
-      message: "Rời nhóm thành công",
+      message: "Left group successfully",
     };
   }
 
   static async addGroupMembers(userId, conversationId, targetUserIds) {
     if (!Array.isArray(targetUserIds) || targetUserIds.length === 0) {
-      throwError(400, "INVALID_PARTICIPANTS", "Danh sách thành viên cần thêm không hợp lệ");
+      throwError(400, "INVALID_PARTICIPANTS", "Invalid list of members to add");
     }
 
     const conversation = await chatRepository.getConversationById(conversationId);
     if (!conversation) {
-      throwError(404, "CONVERSATION_NOT_FOUND", "Không tìm thấy cuộc trò chuyện");
+      throwError(404, "CONVERSATION_NOT_FOUND", "Conversation not found");
     }
 
     if (!conversation.isGroup) {
-      throwError(400, "NOT_A_GROUP", "Cuộc trò chuyện này không phải là nhóm");
+      throwError(400, "NOT_A_GROUP", "This conversation is not a group");
     }
 
     const isParticipant = conversation.participants.some(
       (p) => p._id.toString() === userId.toString()
     );
     if (!isParticipant) {
-      throwError(403, "FORBIDDEN", "Bạn không có quyền thêm thành viên vào nhóm này");
+      throwError(403, "FORBIDDEN", "You do not have permission to add members to this group");
     }
 
     const existingIds = conversation.participants.map(p => p._id.toString());
     const newMembersToAdd = targetUserIds.filter(id => !existingIds.includes(id.toString()));
 
     if (newMembersToAdd.length === 0) {
-      throwError(400, "NO_NEW_MEMBERS", "Tất cả người dùng được chọn đã là thành viên của nhóm");
+      throwError(400, "NO_NEW_MEMBERS", "All selected users are already members of this group");
     }
 
     // Thêm thành viên
@@ -356,7 +366,7 @@ class ChatService {
       newMembersToAdd.map(id => UserRepository.findById(id))
     );
     const addedNames = addedUsers.map(u => u.fullName).join(", ");
-    const systemMsgText = `${adderUser.fullName} đã thêm ${addedNames} vào nhóm`;
+    const systemMsgText = `${adderUser.fullName} added ${addedNames} to the group`;
 
     // Lưu tin nhắn hệ thống
     const savedMessage = await chatRepository.saveMessage({
@@ -393,7 +403,7 @@ class ChatService {
   static async muteConversation(userId, conversationId, duration) {
     const conversation = await Conversation.findById(conversationId);
     if (!conversation) {
-      throwError(404, "CONVERSATION_NOT_FOUND", "Không tìm thấy cuộc trò chuyện");
+      throwError(404, "CONVERSATION_NOT_FOUND", "Conversation not found");
     }
 
     let untilDate = new Date();
@@ -409,7 +419,7 @@ class ChatService {
     } else if (duration === -1) {
       untilDate = new Date("9999-12-31T23:59:59Z");
     } else {
-      throwError(400, "INVALID_DURATION", "Thời gian tắt thông báo không hợp lệ");
+      throwError(400, "INVALID_DURATION", "Invalid notification mute duration");
     }
 
     const index = conversation.mutedUntil.findIndex(
@@ -430,7 +440,7 @@ class ChatService {
   static async unmuteConversation(userId, conversationId) {
     const conversation = await Conversation.findById(conversationId);
     if (!conversation) {
-      throwError(404, "CONVERSATION_NOT_FOUND", "Không tìm thấy cuộc trò chuyện");
+      throwError(404, "CONVERSATION_NOT_FOUND", "Conversation not found");
     }
 
     conversation.mutedUntil = conversation.mutedUntil.filter(
@@ -446,7 +456,7 @@ class ChatService {
   static async blockConversation(userId, conversationId) {
     const conversation = await Conversation.findById(conversationId);
     if (!conversation) {
-      throwError(404, "CONVERSATION_NOT_FOUND", "Không tìm thấy cuộc trò chuyện");
+      throwError(404, "CONVERSATION_NOT_FOUND", "Conversation not found");
     }
 
     if (!conversation.blockedBy.includes(userId)) {
@@ -461,7 +471,7 @@ class ChatService {
   static async unblockConversation(userId, conversationId) {
     const conversation = await Conversation.findById(conversationId);
     if (!conversation) {
-      throwError(404, "CONVERSATION_NOT_FOUND", "Không tìm thấy cuộc trò chuyện");
+      throwError(404, "CONVERSATION_NOT_FOUND", "Conversation not found");
     }
 
     conversation.blockedBy = conversation.blockedBy.filter(
@@ -476,7 +486,7 @@ class ChatService {
   static async deleteConversation(userId, conversationId) {
     const conversation = await Conversation.findById(conversationId);
     if (!conversation) {
-      throwError(404, "CONVERSATION_NOT_FOUND", "Không tìm thấy cuộc trò chuyện");
+      throwError(404, "CONVERSATION_NOT_FOUND", "Conversation not found");
     }
 
     conversation.participants = conversation.participants.filter(
@@ -571,11 +581,11 @@ class ChatService {
                   (id) => id.toString() === ws.userId.toString()
                 );
 
-                let errMsg = "Cuộc hội thoại đã bị chặn";
+                let errMsg = "The conversation is blocked";
                 if (isBlockedByOther) {
-                  errMsg = "Bạn đã bị chặn bởi người dùng này";
+                  errMsg = "You have been blocked by this user";
                 } else if (hasBlockedOther) {
-                  errMsg = "Bạn đã chặn người dùng này. Vui lòng bỏ chặn để tiếp tục nhắn tin.";
+                  errMsg = "You have blocked this user. Please unblock to continue messaging.";
                 }
 
                 ws.send(JSON.stringify({
@@ -615,7 +625,7 @@ class ChatService {
                       receiver: receiverId,
                       sender: ws.userId,
                       type: "mention",
-                      content: `${savedMessage.senderId.fullName} đã nhắc đến bạn trong nhóm ${conversation.name || "hội thoại"}`,
+                      content: `${savedMessage.senderId.fullName} mentioned you in the group ${conversation.name || "chat"}`,
                       preview: content.trim(),
                       relatedId: conversationId,
                       relatedType: null,
@@ -651,7 +661,7 @@ class ChatService {
                         receiver: partner._id,
                         sender: ws.userId,
                         type: "new_message",
-                        content: `${savedMessage.senderId.fullName} đã gửi cho bạn một tin nhắn`,
+                        content: `${savedMessage.senderId.fullName} sent you a message`,
                         preview: content.trim(),
                         relatedId: conversationId,
                         relatedType: null,
@@ -708,7 +718,7 @@ class ChatService {
 
               // Update message in DB to revoke it
               message.isRevoked = true;
-              message.content = "Tin nhắn đã bị thu hồi";
+              message.content = "Message has been unsent";
               message.messageType = "text";
               await message.save();
 

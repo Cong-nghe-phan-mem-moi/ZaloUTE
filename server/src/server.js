@@ -51,7 +51,12 @@ app.use(
   }),
 );
 
-connectDB();
+connectDB().then(() => {
+  const User = require("./models/user.model");
+  User.updateMany({}, { isOnline: false })
+    .then(() => console.log("Reset all users online status to offline"))
+    .catch((err) => console.error("Failed to reset online statuses:", err));
+});
 
 const apiRoutes = require('./routes/api');
 const NotificationService = require('./service/notification.service');
