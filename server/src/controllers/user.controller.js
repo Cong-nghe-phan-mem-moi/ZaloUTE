@@ -343,9 +343,9 @@ async function getOtherUserProfile(req, res) {
     return res.status(200).json({
       success: true,
       data: user,
-    });   
+    });
 
-  } catch (error) { 
+  } catch (error) {
     console.error('Get Other User Profile Error:', error);
 
     return res.status(500).json({
@@ -376,6 +376,7 @@ async function logout(req, res) {
   }
 }
 
+
 module.exports = {
   editProfile,
   uploadAvatar,
@@ -386,8 +387,5 @@ module.exports = {
   getMyProfileIsAdmin,
   searchUsers,
   getOtherUserProfile,
-  logout
+  logout,
 };
-
-
-
