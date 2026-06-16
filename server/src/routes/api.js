@@ -11,6 +11,7 @@ const { validateEditProfile } = require("../middleware/validateRequest");
 const { editProfileLimiter } = require("../middleware/rateLimiter");
 const userRoutes = require("./user.route");
 const upload = require("../middleware/uploadMiddleware");
+const chatRoutes = require("./chat.route");
 
 // Basic health check endpoint
 router.get("/health", (req, res) => {
@@ -62,6 +63,7 @@ router.put(
 // Comment Routes
 router.use("/comments", commentRoutes);
 router.use("/notifications", notificationRoutes);
+router.use("/chats", chatRoutes);
 
 // Authentication routes
 router.use("/auth", authRoutes);

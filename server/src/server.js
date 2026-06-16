@@ -55,6 +55,7 @@ connectDB();
 
 const apiRoutes = require('./routes/api');
 const NotificationService = require('./service/notification.service');
+const ChatService = require('./service/chat.service');
 
 app.use('/api', apiRoutes);
 
@@ -64,3 +65,4 @@ const server = app.listen(PORT, () => {
 });
 
 NotificationService.attachWebSocketServer(server);
+ChatService.attachWebSocketServer(server);

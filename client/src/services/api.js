@@ -1,4 +1,4 @@
-﻿import axios from "axios";
+import axios from "axios";
 
 const api = axios.create({
   baseURL: "/api",
@@ -81,6 +81,24 @@ export const notificationAPI = {
   markAsRead: (notificationId) =>
     api.put(`/notifications/${notificationId}/read`),
   markAllAsRead: () => api.put("/notifications/read-all"),
+};
+
+export const chatAPI = {
+  getConversations: () => api.get("/chats/conversations"),
+  getOrCreateConversation: (targetUserId) =>
+    api.post("/chats/conversations", { targetUserId }),
+  getMessages: (conversationId, page = 1, limit = 50) =>
+    api.get(`/chats/conversations/${conversationId}/messages`, {
+      params: { page, limit },
+    }),
+  createGroup: (name, participantIds) =>
+    api.post("/chats/groups", { name, participantIds }),
+  removeGroupMember: (conversationId, memberId) =>
+    api.post(`/chats/groups/${conversationId}/remove-member`, { memberId }),
+  leaveGroup: (conversationId) =>
+    api.post(`/chats/groups/${conversationId}/leave`),
+  addGroupMembers: (conversationId, participantIds) =>
+    api.post(`/chats/groups/${conversationId}/add-members`, { participantIds }),
 };
 
 export const adminAPI = {
