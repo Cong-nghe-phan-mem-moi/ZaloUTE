@@ -316,7 +316,11 @@ const HomeHeader = ({ profile, activePage = "home" }) => {
       </nav>
 
       <div className="flex items-center gap-3">
-        <CircleIcon icon="forum" label="Messages" />
+        <CircleIcon
+          icon="forum"
+          label="Messages"
+          onClick={() => window.location.assign("/messages")}
+        />
         <div className="relative" ref={notificationsRef}>
           <CircleIcon
             icon="notifications"
@@ -578,6 +582,8 @@ const notificationLinks = {
   comment_reply: "/",
   comment_like: "/",
   story_reaction: "/",
+  mention: "/messages",
+  new_message: "/messages",
 };
 
 const isFriendAcceptNotification = (notification) =>
@@ -586,6 +592,16 @@ const isFriendAcceptNotification = (notification) =>
 
 const getNotificationHref = (notification) => {
   const data = notification.data || {};
+
+  if (notification.type === "mention") {
+    const conversationId = data.conversationId || notification.relatedId;
+    return conversationId ? `/messages?conversationId=${conversationId}` : "/messages";
+  }
+
+  if (notification.type === "new_message") {
+    const conversationId = data.conversationId || notification.relatedId;
+    return conversationId ? `/messages?conversationId=${conversationId}` : "/messages";
+  }
 
   if (notification.type === "friend_request") {
     const userId = data.profileId || notification.sender?._id;
@@ -637,6 +653,8 @@ const popupTitles = {
   comment_reply: "New reply",
   comment_like: "New comment like",
   story_reaction: "New story reaction",
+  mention: "Nhắc đến",
+  new_message: "Tin nhắn mới",
 };
 
 const NotificationPopup = ({ notification, onClose }) => {

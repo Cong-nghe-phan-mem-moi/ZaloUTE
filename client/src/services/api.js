@@ -1,4 +1,4 @@
-﻿import axios from "axios";
+import axios from "axios";
 
 const api = axios.create({
   baseURL: "/api",
@@ -102,6 +102,32 @@ export const storyAPI = {
     api.post(`/stories/${storyId}/react`, { reactionType }),
   reply: (storyId, content) => api.post(`/stories/${storyId}/reply`, { content }),
   getViewers: (storyId) => api.get(`/stories/${storyId}/viewers`),
+export const chatAPI = {
+  getConversations: () => api.get("/chats/conversations"),
+  getOrCreateConversation: (targetUserId) =>
+    api.post("/chats/conversations", { targetUserId }),
+  getMessages: (conversationId, page = 1, limit = 50) =>
+    api.get(`/chats/conversations/${conversationId}/messages`, {
+      params: { page, limit },
+    }),
+  createGroup: (name, participantIds) =>
+    api.post("/chats/groups", { name, participantIds }),
+  removeGroupMember: (conversationId, memberId) =>
+    api.post(`/chats/groups/${conversationId}/remove-member`, { memberId }),
+  leaveGroup: (conversationId) =>
+    api.post(`/chats/groups/${conversationId}/leave`),
+  addGroupMembers: (conversationId, participantIds) =>
+    api.post(`/chats/groups/${conversationId}/add-members`, { participantIds }),
+  muteConversation: (conversationId, duration) =>
+    api.post(`/chats/conversations/${conversationId}/mute`, { duration }),
+  unmuteConversation: (conversationId) =>
+    api.post(`/chats/conversations/${conversationId}/unmute`),
+  blockConversation: (conversationId) =>
+    api.post(`/chats/conversations/${conversationId}/block`),
+  unblockConversation: (conversationId) =>
+    api.post(`/chats/conversations/${conversationId}/unblock`),
+  deleteConversation: (conversationId) =>
+    api.delete(`/chats/conversations/${conversationId}`),
 };
 
 export const adminAPI = {

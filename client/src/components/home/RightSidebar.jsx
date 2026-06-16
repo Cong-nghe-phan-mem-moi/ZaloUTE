@@ -9,8 +9,9 @@ const RightSidebar = ({
   requestActionId = "",
   onAcceptRequest,
   onRejectRequest,
+  onContactClick,
 }) => (
-  <aside className="hidden bg-white px-6 py-6 lg:block">
+  <aside className="hidden bg-white px-6 py-6 lg:block h-full overflow-y-auto min-h-0">
     <PanelTitle title="News Update" action="See All" />
     <div className="space-y-4">
       {newsItems.map((item) => (
@@ -62,7 +63,7 @@ const RightSidebar = ({
       ) : (
         <div className="space-y-4">
           {contacts.map((contact) => (
-            <Contact key={contact.id || contact.name} contact={contact} />
+            <Contact key={contact.id || contact.name} contact={contact} onClick={onContactClick} />
           ))}
         </div>
       )}
@@ -140,9 +141,8 @@ const Contact = ({ contact }) => (
       <p className="text-sm font-bold">{contact.name}</p>
       <p className="flex items-center gap-2 text-xs text-[#6b7280]">
         <span
-          className={`h-2 w-2 rounded-full ${
-            contact.online ? "bg-emerald-500" : "bg-[#9ca3af]"
-          }`}
+          className={`h-2 w-2 rounded-full ${contact.online ? "bg-emerald-500" : "bg-[#9ca3af]"
+            }`}
         />
         {contact.status}
       </p>
@@ -153,9 +153,8 @@ const Contact = ({ contact }) => (
 const EmptyState = ({ icon, text, loading = false }) => (
   <div className="rounded bg-[#f2f3f5] p-4 text-center text-xs font-semibold text-[#6b7280]">
     <span
-      className={`material-symbols-outlined mb-2 block text-[22px] ${
-        loading ? "animate-spin" : ""
-      }`}
+      className={`material-symbols-outlined mb-2 block text-[22px] ${loading ? "animate-spin" : ""
+        }`}
     >
       {icon}
     </span>
