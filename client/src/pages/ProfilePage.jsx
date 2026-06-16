@@ -323,7 +323,7 @@ const ProfilePage = ({ userId }) => {
   return (
     <div className="min-h-screen bg-[#f2f3f5] text-[#111827]">
       <div className="min-h-screen w-full bg-white">
-        <HomeHeader profile={profile} />
+        <HomeHeader profile={profile} activePage={null} />
 
         <main className="min-h-[calc(100vh-80px)] bg-[#f2f3f5] px-5 py-5">
           <div className="w-full space-y-5">
