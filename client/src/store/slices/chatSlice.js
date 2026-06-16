@@ -162,6 +162,13 @@ const chatSlice = createSlice({
         }
       }
     },
+    updateMessage: (state, action) => {
+      const message = action.payload;
+      const index = state.messages.findIndex((m) => m._id === message._id);
+      if (index !== -1) {
+        state.messages[index] = message;
+      }
+    },
     updateConversationListItem: (state, action) => {
       const updatedConv = action.payload;
       const index = state.conversations.findIndex((c) => c._id === updatedConv._id);
@@ -258,6 +265,7 @@ export const {
   setTypingStatus,
   clearError,
   removeConversationFromList,
+  updateMessage,
 } = chatSlice.actions;
 
 export default chatSlice.reducer;

@@ -18,6 +18,7 @@ import {
   leaveGroup,
   removeConversationFromList,
   addGroupMembers,
+  updateMessage,
 } from "../store/slices/chatSlice";
 
 const getChatWsUrl = (token) => {
@@ -55,6 +56,20 @@ const ChatPage = () => {
   const [typingState, setTypingState] = useState(false);
   const typingTimeoutRef = useRef(null);
   const messageEndRef = useRef(null);
+
+  const [replyingMessage, setReplyingMessage] = useState(null);
+  const [activeMenuMessageId, setActiveMenuMessageId] = useState(null);
+
+  // Click outside message action menu to close it
+  useEffect(() => {
+    const handleOutsideClick = () => {
+      setActiveMenuMessageId(null);
+    };
+    document.addEventListener("click", handleOutsideClick);
+    return () => {
+      document.removeEventListener("click", handleOutsideClick);
+    };
+  }, []);
 
   const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false);
   const [isAddMembersOpen, setIsAddMembersOpen] = useState(false);
@@ -157,7 +172,7 @@ const ChatPage = () => {
 
     const connect = () => {
       ws = new WebSocket(wsUrl);
-      
+
       ws.onopen = () => {
         console.log("Chat websocket connected");
       };
@@ -169,7 +184,7 @@ const ChatPage = () => {
 
           if (type === "message") {
             dispatch(addReceivedMessage(payload.data));
-            
+
             // Nếu nhận được tin nhắn và đang mở hội thoại đó, đánh dấu đã đọc
             if (activeConversation && activeConversation._id === payload.data.conversationId) {
               ws.send(
@@ -179,6 +194,8 @@ const ChatPage = () => {
                 })
               );
             }
+          } else if (type === "message_update") {
+            dispatch(updateMessage(payload.data));
           } else if (type === "conversation_update") {
             dispatch(updateConversationListItem(payload.data));
           } else if (type === "conversation_remove") {
@@ -251,9 +268,14 @@ const ChatPage = () => {
       messageType: "text",
     };
 
+    if (replyingMessage) {
+      payload.replyTo = replyingMessage._id;
+    }
+
     socket.send(JSON.stringify(payload));
     setMessageText("");
-    
+    setReplyingMessage(null);
+
     // Ngắt thông báo đang gõ ngay khi gửi tin
     if (typingState) {
       socket.send(
@@ -265,6 +287,19 @@ const ChatPage = () => {
       );
       setTypingState(false);
     }
+  };
+
+  // Xử lý thu hồi tin nhắn
+  const handleRevokeMessage = (msg) => {
+    if (!socket || socket.readyState !== WebSocket.OPEN || !activeConversation) return;
+
+    socket.send(
+      JSON.stringify({
+        type: "revoke_message",
+        conversationId: activeConversation._id,
+        messageId: msg._id,
+      })
+    );
   };
 
   // Trạng thái đang gõ
@@ -320,8 +355,8 @@ const ChatPage = () => {
   // Lấy danh sách bạn bè dựa trên query tìm kiếm
   const filteredFriends = searchQuery.trim()
     ? (profile?.friends || []).filter((friend) =>
-        friend.fullName.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+      friend.fullName.toLowerCase().includes(searchQuery.toLowerCase())
+    )
     : [];
 
   // Bắt đầu chat với bạn bè được chọn
@@ -333,13 +368,13 @@ const ChatPage = () => {
   // Xác định những người dùng đang gõ trong cuộc trò chuyện hiện tại
   const currentTypingUsers = activeConversation
     ? Object.keys(typingUsers[activeConversation._id] || {})
-        .filter((uid) => typingUsers[activeConversation._id][uid])
-        .map((uid) => {
-          const participant = activeConversation.participants.find(
-            (p) => p._id.toString() === uid
-          );
-          return participant?.fullName || "Ai đó";
-        })
+      .filter((uid) => typingUsers[activeConversation._id][uid])
+      .map((uid) => {
+        const participant = activeConversation.participants.find(
+          (p) => p._id.toString() === uid
+        );
+        return participant?.fullName || "Ai đó";
+      })
     : [];
 
   const rightSidebarContacts = (profile?.friends || []).map((friend) => ({
@@ -434,9 +469,8 @@ const ChatPage = () => {
                         <button
                           key={conv._id}
                           onClick={() => dispatch(selectConversationAndFetchMessages(conv))}
-                          className={`w-full flex items-center gap-3 p-3 rounded-xl transition text-left ${
-                            isSelected ? "bg-[#e7f3ff] text-[#1877f2]" : "hover:bg-gray-100"
-                          }`}
+                          className={`w-full flex items-center gap-3 p-3 rounded-xl transition text-left ${isSelected ? "bg-[#e7f3ff] text-[#1877f2]" : "hover:bg-gray-100"
+                            }`}
                         >
                           <div className="relative">
                             <HomeAvatar image={partner.avatar} name={partner.fullName} />
@@ -447,9 +481,8 @@ const ChatPage = () => {
                           <div className="min-w-0 flex-1">
                             <div className="flex justify-between items-baseline">
                               <p
-                                className={`text-sm truncate ${
-                                  hasUnread ? "font-bold text-black" : "font-semibold text-gray-800"
-                                }`}
+                                className={`text-sm truncate ${hasUnread ? "font-bold text-black" : "font-semibold text-gray-800"
+                                  }`}
                               >
                                 {partner.fullName}
                               </p>
@@ -460,14 +493,15 @@ const ChatPage = () => {
                               ) : null}
                             </div>
                             <p
-                              className={`text-xs truncate ${
-                                hasUnread ? "font-semibold text-black" : "text-gray-500"
-                              }`}
+                              className={`text-xs truncate ${hasUnread ? "font-semibold text-black" : "text-gray-500"
+                                }`}
                             >
                               {conv.lastMessage
-                                ? conv.lastMessage.senderId?._id === (profile?.id || profile?.userId)
-                                  ? `You: ${conv.lastMessage.content}`
-                                  : conv.lastMessage.content
+                                ? conv.lastMessage.isRevoked
+                                  ? "Tin nhắn đã bị thu hồi"
+                                  : conv.lastMessage.senderId?._id === (profile?.id || profile?.userId)
+                                    ? `You: ${conv.lastMessage.content}`
+                                    : conv.lastMessage.content
                                 : "No messages yet"}
                             </p>
                           </div>
@@ -526,9 +560,8 @@ const ChatPage = () => {
                     {activeConversation?.isGroup ? (
                       <button
                         onClick={() => setShowGroupInfo(!showGroupInfo)}
-                        className={`p-2 hover:bg-gray-100 rounded-full transition ${
-                          showGroupInfo ? "text-blue-600 bg-blue-50" : "text-[#1877f2]"
-                        }`}
+                        className={`p-2 hover:bg-gray-100 rounded-full transition ${showGroupInfo ? "text-blue-600 bg-blue-50" : "text-[#1877f2]"
+                          }`}
                         title="Thông tin nhóm"
                       >
                         <span className="material-symbols-outlined">info</span>
@@ -587,15 +620,113 @@ const ChatPage = () => {
                                 {msg.senderId.fullName}
                               </span>
                             )}
-                            <div
-                              className={`px-4 py-2.5 rounded-2xl shadow-sm text-sm break-all ${
-                                isMe
-                                  ? "bg-[#1877f2] text-white rounded-br-none"
-                                  : "bg-white text-gray-800 rounded-bl-none"
-                              }`}
+
+                            <div 
+                              className={`flex items-center gap-2 group ${isMe ? "flex-row-reverse" : "flex-row"}`}
+                              onMouseLeave={() => {
+                                if (activeMenuMessageId === msg._id) {
+                                  setActiveMenuMessageId(null);
+                                }
+                              }}
                             >
-                              {msg.content}
+                              {msg.isRevoked ? (
+                                <div
+                                  className={`px-4 py-2.5 rounded-2xl border text-sm italic shadow-sm break-all ${isMe
+                                      ? "bg-gray-100 text-gray-400 border-gray-200 rounded-br-none"
+                                      : "bg-gray-200 text-gray-400 border-gray-300 rounded-bl-none"
+                                    }`}
+                                >
+                                  Tin nhắn đã bị thu hồi
+                                </div>
+                              ) : (
+                                <div
+                                  className={`px-4 py-2.5 rounded-2xl shadow-sm text-sm break-all ${isMe
+                                      ? "bg-[#1877f2] text-white rounded-br-none"
+                                      : "bg-white text-gray-800 rounded-bl-none"
+                                    }`}
+                                >
+                                  {/* Quoted Reply Message Preview */}
+                                  {msg.replyTo && (
+                                    <div className={`mb-2 rounded-lg p-2 text-xs flex flex-col gap-0.5 max-w-full border-l-[3px] ${isMe
+                                        ? "bg-white/20 border-white/60 text-white/90"
+                                        : "bg-black/5 border-black/20 text-gray-800/90"
+                                      }`}>
+                                      <span className={`font-bold ${isMe ? "text-white" : "text-gray-800"} truncate`}>
+                                        {msg.replyTo.senderId?._id === (profile?.id || profile?.userId)
+                                          ? "Bạn"
+                                          : msg.replyTo.senderId?.fullName || "Người dùng"}
+                                      </span>
+                                      <span className={`truncate ${isMe ? "text-white/80" : "text-gray-500"}`}>
+                                        {msg.replyTo.isRevoked ? "Tin nhắn đã bị thu hồi" : msg.replyTo.content}
+                                      </span>
+                                    </div>
+                                  )}
+                                  {msg.content}
+                                </div>
+                              )}
+
+                              {/* Hover actions menu */}
+                              {!msg.isRevoked && (
+                                <div className={`hidden group-hover:flex items-center gap-1.5 transition-all duration-200 shrink-0`}>
+                                  <div className="relative">
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setActiveMenuMessageId(activeMenuMessageId === msg._id ? null : msg._id);
+                                      }}
+                                      className="w-6 h-6 rounded-full bg-white shadow-sm border border-gray-200 flex items-center justify-center text-gray-500 hover:text-[#1877f2] hover:bg-blue-50 transition active:scale-95"
+                                      title="Khác"
+                                    >
+                                      <span className="material-symbols-outlined text-[13px] block">more_horiz</span>
+                                    </button>
+                                    {activeMenuMessageId === msg._id && (
+                                      <div className={`absolute top-7 z-30 w-36 bg-white border border-gray-200 rounded-xl shadow-lg py-1 ${isMe ? "right-0" : "left-0"}`}>
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            navigator.clipboard.writeText(msg.content);
+                                            setActiveMenuMessageId(null);
+                                          }}
+                                          className="w-full text-left px-4 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                                        >
+                                          <span className="material-symbols-outlined text-[16px] block">content_copy</span>
+                                          Sao chép
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setReplyingMessage(msg);
+                                            setActiveMenuMessageId(null);
+                                          }}
+                                          className="w-full text-left px-4 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                                        >
+                                          <span className="material-symbols-outlined text-[16px] block">format_quote</span>
+                                          Trả lời
+                                        </button>
+                                        {isMe && (
+                                          <button
+                                            type="button"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleRevokeMessage(msg);
+                                              setActiveMenuMessageId(null);
+                                            }}
+                                            className="w-full text-left px-4 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 flex items-center gap-2"
+                                          >
+                                            <span className="material-symbols-outlined text-[16px] block">undo</span>
+                                            Thu hồi
+                                          </button>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
                             </div>
+
                             <span className={`text-[10px] text-gray-400 mt-1 px-1 ${isMe ? "text-right" : "text-left"}`}>
                               {format(new Date(msg.createdAt), "HH:mm")}
                             </span>
@@ -621,6 +752,29 @@ const ChatPage = () => {
                 </div>
 
                 {/* Khung soạn tin */}
+                {replyingMessage && (
+                  <div className="bg-[#f8f9fa] border-t border-gray-200 px-6 py-2.5 flex items-center justify-between shrink-0 animate-in slide-in-from-bottom-2 duration-200">
+                    <div className="flex items-center gap-2 border-l-[3px] border-[#1877f2] pl-3 min-w-0">
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-xs font-bold text-[#1877f2]">
+                          Đang trả lời {replyingMessage.senderId?._id === (profile?.id || profile?.userId)
+                            ? "chính mình"
+                            : replyingMessage.senderId?.fullName || "người dùng"}
+                        </span>
+                        <span className="text-xs text-gray-500 truncate max-w-[500px]">
+                          {replyingMessage.isRevoked ? "Tin nhắn đã bị thu hồi" : replyingMessage.content}
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setReplyingMessage(null)}
+                      className="p-1 hover:bg-gray-200 rounded-full text-gray-400 hover:text-gray-600 transition"
+                    >
+                      <span className="material-symbols-outlined text-[18px] block">close</span>
+                    </button>
+                  </div>
+                )}
                 <form
                   onSubmit={handleSendMessage}
                   className="bg-white border-t border-gray-200 p-4 flex items-center gap-3 shrink-0"
@@ -719,7 +873,7 @@ export default ChatPage;
 
 const GroupSidebar = ({ conversation, profile, onLeaveGroup, onRemoveMember, onAddMemberClick }) => {
   const currentUserId = profile?.id || profile?.userId;
-  const isAdmin = conversation?.admin?._id 
+  const isAdmin = conversation?.admin?._id
     ? conversation.admin._id.toString() === currentUserId?.toString()
     : conversation?.admin?.toString() === currentUserId?.toString();
 
@@ -884,17 +1038,15 @@ const CreateGroupModal = ({ isOpen, onClose, friends, onCreateGroup }) => {
                     <div
                       key={friend.id || friend._id}
                       onClick={() => handleToggleFriend(friend.id || friend._id)}
-                      className={`flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition ${
-                        isChecked ? "bg-blue-50/50 border-blue-100" : "hover:bg-gray-50 border-transparent"
-                      } border`}
+                      className={`flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition ${isChecked ? "bg-blue-50/50 border-blue-100" : "hover:bg-gray-50 border-transparent"
+                        } border`}
                     >
                       <div className="flex items-center gap-3">
                         <HomeAvatar image={friend.avatar} name={friend.fullName} size="sm" />
                         <span className="text-sm font-semibold text-gray-800">{friend.fullName}</span>
                       </div>
-                      <div className={`w-5 h-5 rounded-full flex items-center justify-center border transition ${
-                        isChecked ? "bg-blue-600 border-blue-600 text-white" : "border-gray-300 bg-white"
-                      }`}>
+                      <div className={`w-5 h-5 rounded-full flex items-center justify-center border transition ${isChecked ? "bg-blue-600 border-blue-600 text-white" : "border-gray-300 bg-white"
+                        }`}>
                         {isChecked && <span className="material-symbols-outlined text-[14px] font-bold">check</span>}
                       </div>
                     </div>
@@ -946,9 +1098,8 @@ const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, confirmBtnTe
           <button
             type="button"
             onClick={onConfirm}
-            className={`px-4 py-2 text-sm font-semibold text-white rounded-xl shadow-md transition hover:scale-[1.02] ${
-              isDanger ? "bg-red-600 hover:bg-red-700" : "bg-blue-600 hover:bg-blue-700"
-            }`}
+            className={`px-4 py-2 text-sm font-semibold text-white rounded-xl shadow-md transition hover:scale-[1.02] ${isDanger ? "bg-red-600 hover:bg-red-700" : "bg-blue-600 hover:bg-blue-700"
+              }`}
           >
             {confirmBtnText}
           </button>
@@ -1033,17 +1184,15 @@ const AddMembersModal = ({ isOpen, onClose, friends, conversation, onAddMembers 
                     <div
                       key={friend.id || friend._id}
                       onClick={() => handleToggleFriend(friend.id || friend._id)}
-                      className={`flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition ${
-                        isChecked ? "bg-blue-50/50 border-blue-100" : "hover:bg-gray-50 border-transparent"
-                      } border`}
+                      className={`flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition ${isChecked ? "bg-blue-50/50 border-blue-100" : "hover:bg-gray-50 border-transparent"
+                        } border`}
                     >
                       <div className="flex items-center gap-3">
                         <HomeAvatar image={friend.avatar} name={friend.fullName} size="sm" />
                         <span className="text-sm font-semibold text-gray-800">{friend.fullName}</span>
                       </div>
-                      <div className={`w-5 h-5 rounded-full flex items-center justify-center border transition ${
-                        isChecked ? "bg-blue-600 border-blue-600 text-white" : "border-gray-300 bg-white"
-                      }`}>
+                      <div className={`w-5 h-5 rounded-full flex items-center justify-center border transition ${isChecked ? "bg-blue-600 border-blue-600 text-white" : "border-gray-300 bg-white"
+                        }`}>
                         {isChecked && <span className="material-symbols-outlined text-[14px] font-bold">check</span>}
                       </div>
                     </div>

@@ -1,5 +1,6 @@
 const chatRepository = require("../repo/chat.repository");
 const UserRepository = require("../repo/user.repository");
+const Message = require("../models/message.model");
 const jwt = require("jsonwebtoken");
 const { WebSocketServer, WebSocket } = require("ws");
 
@@ -447,7 +448,7 @@ class ChatService {
             if (!isParticipant) return;
 
             if (type === "send_message") {
-              const { content, messageType } = payload;
+              const { content, messageType, replyTo } = payload;
               if (!content || String(content).trim() === "") return;
 
               // 1. Lưu tin nhắn vào CSDL
@@ -456,7 +457,8 @@ class ChatService {
                 senderId: ws.userId,
                 content: content.trim(),
                 messageType: messageType || "text",
-                readBy: [ws.userId]
+                readBy: [ws.userId],
+                replyTo: replyTo || null,
               });
 
               // 2. Cập nhật tin nhắn cuối trong cuộc hội thoại
@@ -478,6 +480,58 @@ class ChatService {
                 });
 
                 // Gửi hội thoại được cập nhật để cập nhật danh sách hội thoại của họ
+                sendToUser(participantIdStr, {
+                  type: "conversation_update",
+                  data: conversationForThisId || conversation,
+                });
+              });
+
+            } else if (type === "revoke_message") {
+              const { messageId } = payload;
+              if (!messageId) return;
+
+              // Find message
+              const message = await Message.findById(messageId);
+              if (!message) return;
+
+              // Check if the user is the sender
+              if (message.senderId.toString() !== ws.userId.toString()) return;
+
+              // Check if message belongs to the conversation
+              if (message.conversationId.toString() !== conversationId.toString()) return;
+
+              // Update message in DB to revoke it
+              message.isRevoked = true;
+              message.content = "Tin nhắn đã bị thu hồi";
+              message.messageType = "text";
+              await message.save();
+
+              const populatedMessage = await Message.findById(message._id)
+                .populate("senderId", "fullName avatar")
+                .populate({
+                  path: "replyTo",
+                  populate: {
+                    path: "senderId",
+                    select: "fullName avatar",
+                  },
+                });
+
+              // Fetch updated conversation to send for sidebar updates
+              const updatedConversation = await chatRepository.getConversationsByUserId(ws.userId);
+              const conversationForThisId = updatedConversation.find(
+                (c) => c._id.toString() === conversationId.toString()
+              );
+
+              // Broadcast update to all participants
+              conversation.participants.forEach((participant) => {
+                const participantIdStr = participant._id.toString();
+                // Broadcast updated message
+                sendToUser(participantIdStr, {
+                  type: "message_update",
+                  data: populatedMessage,
+                });
+
+                // Broadcast updated conversation
                 sendToUser(participantIdStr, {
                   type: "conversation_update",
                   data: conversationForThisId || conversation,

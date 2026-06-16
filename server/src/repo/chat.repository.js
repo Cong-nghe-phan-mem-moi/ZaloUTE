@@ -61,7 +61,15 @@ async function getConversationById(conversationId) {
 async function saveMessage(messageData) {
   const message = new Message(messageData);
   const savedMessage = await message.save();
-  return await Message.findById(savedMessage._id).populate("senderId", "fullName avatar");
+  return await Message.findById(savedMessage._id)
+    .populate("senderId", "fullName avatar")
+    .populate({
+      path: "replyTo",
+      populate: {
+        path: "senderId",
+        select: "fullName avatar",
+      },
+    });
 }
 
 /**
