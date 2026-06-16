@@ -97,19 +97,6 @@ function App() {
   );
 }
 
-const ProtectedPage = ({ token, children }) => {
-  if (!token) {
-    return <Navigate to="/login" replace />;
-  }
-
-  return children;
-};
-
-const OtherProfilePage = () => {
-  const { userId } = useParams();
-  return <ProfilePage userId={userId} />;
-};
-
 const PostFeedbackToast = () => {
   const dispatch = useAppDispatch();
   const { error, message } = useAppSelector((state) => state.posts);

@@ -127,6 +127,77 @@ export const leaveGroup = createAsyncThunk(
   }
 );
 
+export const muteConversation = createAsyncThunk(
+  "chat/muteConversation",
+  async ({ conversationId, duration }, { rejectWithValue }) => {
+    try {
+      const response = await chatAPI.muteConversation(conversationId, duration);
+      return response.data.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to mute conversation"
+      );
+    }
+  }
+);
+
+export const unmuteConversation = createAsyncThunk(
+  "chat/unmuteConversation",
+  async (conversationId, { rejectWithValue }) => {
+    try {
+      const response = await chatAPI.unmuteConversation(conversationId);
+      return response.data.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to unmute conversation"
+      );
+    }
+  }
+);
+
+export const blockConversation = createAsyncThunk(
+  "chat/blockConversation",
+  async (conversationId, { rejectWithValue }) => {
+    try {
+      const response = await chatAPI.blockConversation(conversationId);
+      return response.data.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to block user"
+      );
+    }
+  }
+);
+
+export const unblockConversation = createAsyncThunk(
+  "chat/unblockConversation",
+  async (conversationId, { rejectWithValue }) => {
+    try {
+      const response = await chatAPI.unblockConversation(conversationId);
+      return response.data.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to unblock user"
+      );
+    }
+  }
+);
+
+export const deleteConversation = createAsyncThunk(
+  "chat/deleteConversation",
+  async (conversationId, { dispatch, rejectWithValue }) => {
+    try {
+      await chatAPI.deleteConversation(conversationId);
+      dispatch(removeConversationFromList(conversationId));
+      return conversationId;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to delete conversation"
+      );
+    }
+  }
+);
+
 const chatSlice = createSlice({
   name: "chat",
   initialState,
@@ -252,6 +323,47 @@ const chatSlice = createSlice({
         const index = state.conversations.findIndex((c) => c._id === updatedConv._id);
         if (index !== -1) {
           state.conversations[index] = updatedConv;
+        }
+      })
+      // Mute / Unmute / Block / Unblock Conversation updates
+      .addCase(muteConversation.fulfilled, (state, action) => {
+        const updatedConv = action.payload;
+        if (state.activeConversation && state.activeConversation._id === updatedConv._id) {
+          state.activeConversation = updatedConv;
+        }
+        const index = state.conversations.findIndex((c) => c._id === updatedConv._id);
+        if (index !== -1) {
+          state.conversations[index] = { ...state.conversations[index], ...updatedConv };
+        }
+      })
+      .addCase(unmuteConversation.fulfilled, (state, action) => {
+        const updatedConv = action.payload;
+        if (state.activeConversation && state.activeConversation._id === updatedConv._id) {
+          state.activeConversation = updatedConv;
+        }
+        const index = state.conversations.findIndex((c) => c._id === updatedConv._id);
+        if (index !== -1) {
+          state.conversations[index] = { ...state.conversations[index], ...updatedConv };
+        }
+      })
+      .addCase(blockConversation.fulfilled, (state, action) => {
+        const updatedConv = action.payload;
+        if (state.activeConversation && state.activeConversation._id === updatedConv._id) {
+          state.activeConversation = updatedConv;
+        }
+        const index = state.conversations.findIndex((c) => c._id === updatedConv._id);
+        if (index !== -1) {
+          state.conversations[index] = { ...state.conversations[index], ...updatedConv };
+        }
+      })
+      .addCase(unblockConversation.fulfilled, (state, action) => {
+        const updatedConv = action.payload;
+        if (state.activeConversation && state.activeConversation._id === updatedConv._id) {
+          state.activeConversation = updatedConv;
+        }
+        const index = state.conversations.findIndex((c) => c._id === updatedConv._id);
+        if (index !== -1) {
+          state.conversations[index] = { ...state.conversations[index], ...updatedConv };
         }
       });
   },

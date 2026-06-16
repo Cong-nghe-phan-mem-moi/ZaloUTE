@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
 import HomeHeader from "../components/home/HomeHeader";
 import LeftSidebar from "../components/home/LeftSidebar";
@@ -19,6 +20,11 @@ import {
   removeConversationFromList,
   addGroupMembers,
   updateMessage,
+  muteConversation,
+  unmuteConversation,
+  blockConversation,
+  unblockConversation,
+  deleteConversation,
 } from "../store/slices/chatSlice";
 
 const getChatWsUrl = (token) => {
@@ -56,14 +62,31 @@ const ChatPage = () => {
   const [typingState, setTypingState] = useState(false);
   const typingTimeoutRef = useRef(null);
   const messageEndRef = useRef(null);
+  const inputRef = useRef(null);
 
   const [replyingMessage, setReplyingMessage] = useState(null);
   const [activeMenuMessageId, setActiveMenuMessageId] = useState(null);
+
+  // States for mentioning/tagging group members
+  const [showTagDropdown, setShowTagDropdown] = useState(false);
+  const [tagSearchQuery, setTagSearchQuery] = useState("");
+  const [tagTriggerIndex, setTagTriggerIndex] = useState(-1);
+  const [selectedTagIndex, setSelectedTagIndex] = useState(0);
+  const [mentionedUsers, setMentionedUsers] = useState([]);
+
+  // States for conversation action dropdown menus
+  const [activeMenuConvId, setActiveMenuConvId] = useState(null);
+  const [showMuteSubmenu, setShowMuteSubmenu] = useState(false);
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const queryConversationId = searchParams.get("conversationId");
 
   // Click outside message action menu to close it
   useEffect(() => {
     const handleOutsideClick = () => {
       setActiveMenuMessageId(null);
+      setActiveMenuConvId(null);
+      setShowMuteSubmenu(false);
     };
     document.addEventListener("click", handleOutsideClick);
     return () => {
@@ -149,11 +172,98 @@ const ChatPage = () => {
     });
   };
 
+  // Xử lý tắt thông báo hội thoại
+  const handleMuteConversation = (conversationId, duration) => {
+    dispatch(muteConversation({ conversationId, duration }))
+      .unwrap()
+      .then(() => {
+        setActiveMenuConvId(null);
+        setShowMuteSubmenu(false);
+      })
+      .catch((err) => {
+        alert(err || "Lỗi tắt thông báo");
+      });
+  };
+
+  // Xử lý bật lại thông báo
+  const handleUnmuteConversation = (conversationId) => {
+    dispatch(unmuteConversation(conversationId))
+      .unwrap()
+      .then(() => {
+        setActiveMenuConvId(null);
+      })
+      .catch((err) => {
+        alert(err || "Lỗi bật thông báo");
+      });
+  };
+
+  // Xử lý chặn cuộc hội thoại
+  const handleBlockConversation = (conversationId) => {
+    dispatch(blockConversation(conversationId))
+      .unwrap()
+      .then(() => {
+        setActiveMenuConvId(null);
+      })
+      .catch((err) => {
+        alert(err || "Lỗi chặn người dùng");
+      });
+  };
+
+  // Xử lý bỏ chặn cuộc hội thoại
+  const handleUnblockConversation = (conversationId) => {
+    dispatch(unblockConversation(conversationId))
+      .unwrap()
+      .then(() => {
+        setActiveMenuConvId(null);
+      })
+      .catch((err) => {
+        alert(err || "Lỗi bỏ chặn người dùng");
+      });
+  };
+
+  // Xử lý xóa cuộc hội thoại
+  const handleDeleteConversation = (conversationId) => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Xóa cuộc hội thoại",
+      message: "Bạn có chắc chắn muốn xóa cuộc hội thoại này? Toàn bộ lịch sử tin nhắn sẽ bị xóa đối với bạn.",
+      confirmBtnText: "Xóa",
+      isDanger: true,
+      onConfirm: () => {
+        dispatch(deleteConversation(conversationId))
+          .unwrap()
+          .then(() => {
+            setConfirmModal(prev => ({ ...prev, isOpen: false }));
+            setActiveMenuConvId(null);
+          })
+          .catch((err) => {
+            alert(err || "Lỗi xóa cuộc hội thoại");
+          });
+      }
+    });
+  };
+
   // Load profile và danh sách hội thoại lúc khởi động
   useEffect(() => {
     dispatch(fetchUserProfile());
     dispatch(fetchConversations());
   }, [dispatch]);
+
+  // Mở cuộc hội thoại khi có query parameter conversationId từ thông báo
+  useEffect(() => {
+    if (queryConversationId && conversations.length > 0) {
+      const targetConv = conversations.find(
+        (c) => c._id.toString() === queryConversationId.toString()
+      );
+      if (targetConv) {
+        dispatch(selectConversationAndFetchMessages(targetConv));
+
+        // Xóa query param để không lặp lại hành động
+        searchParams.delete("conversationId");
+        setSearchParams(searchParams);
+      }
+    }
+  }, [queryConversationId, conversations, dispatch, searchParams, setSearchParams]);
 
   // Cuộn xuống tin nhắn mới nhất
   useEffect(() => {
@@ -203,6 +313,18 @@ const ChatPage = () => {
           } else if (type === "typing") {
             const { conversationId, userId, isTyping } = payload;
             dispatch(setTypingStatus({ conversationId, userId, isTyping }));
+          } else if (type === "error") {
+            const { conversationId, message } = payload;
+            dispatch(
+              addReceivedMessage({
+                _id: "error-" + Date.now(),
+                conversationId: conversationId || (activeConversation && activeConversation._id),
+                senderId: { _id: "system", fullName: "System" },
+                content: message,
+                messageType: "system",
+                createdAt: new Date().toISOString(),
+              })
+            );
           }
         } catch (error) {
           console.error("Error parsing websocket message:", error);
@@ -261,11 +383,18 @@ const ChatPage = () => {
     )
       return;
 
+    // Lọc ra các thành viên thực sự còn nằm trong text tin nhắn
+    const activeMentions = mentionedUsers.filter((u) =>
+      messageText.includes(`@${u.fullName}`)
+    );
+    const mentions = activeMentions.map((u) => u.id);
+
     const payload = {
       type: "send_message",
       conversationId: activeConversation._id,
       content: messageText.trim(),
       messageType: "text",
+      mentions: mentions,
     };
 
     if (replyingMessage) {
@@ -275,6 +404,7 @@ const ChatPage = () => {
     socket.send(JSON.stringify(payload));
     setMessageText("");
     setReplyingMessage(null);
+    setMentionedUsers([]);
 
     // Ngắt thông báo đang gõ ngay khi gửi tin
     if (typingState) {
@@ -303,7 +433,30 @@ const ChatPage = () => {
   };
 
   // Trạng thái đang gõ
-  const handleKeyDown = () => {
+  const handleKeyDown = (e) => {
+    if (showTagDropdown && filteredMembersForTag.length > 0) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setSelectedTagIndex((prev) => (prev + 1) % filteredMembersForTag.length);
+        return;
+      }
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setSelectedTagIndex((prev) => (prev - 1 + filteredMembersForTag.length) % filteredMembersForTag.length);
+        return;
+      }
+      if (e.key === "Enter") {
+        e.preventDefault();
+        handleSelectTagMember(filteredMembersForTag[selectedTagIndex]);
+        return;
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setShowTagDropdown(false);
+        return;
+      }
+    }
+
     if (!socket || !activeConversation || socket.readyState !== WebSocket.OPEN)
       return;
 
@@ -352,6 +505,59 @@ const ChatPage = () => {
     return partner || { fullName: "ZaloUTE User", avatar: null, isOnline: false };
   };
 
+  // Helper hiển thị nội dung tin nhắn và highlight các phần được tag/mention
+  const renderMessageContent = (content, mentionsList, isMe) => {
+    if (!content) return "";
+
+    const mentions = mentionsList || [];
+    const validMentions = mentions
+      .filter((m) => m && m.fullName)
+      .sort((a, b) => b.fullName.length - a.fullName.length);
+
+    const escapeRegex = (string) => string.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
+    const patterns = ["@All"];
+    validMentions.forEach((m) => {
+      patterns.push(`@${escapeRegex(m.fullName)}`);
+    });
+
+    const regex = new RegExp(`(${patterns.join("|")})`, "g");
+    const parts = content.split(regex);
+
+    return parts.map((part, idx) => {
+      if (part === "@All") {
+        return (
+          <span
+            key={idx}
+            className={`font-bold ${
+              isMe ? "text-amber-200" : "text-amber-600"
+            }`}
+          >
+            {part}
+          </span>
+        );
+      }
+
+      if (part.startsWith("@")) {
+        const name = part.slice(1);
+        const mentioned = validMentions.find((m) => m.fullName === name);
+        if (mentioned) {
+          return (
+            <span
+              key={idx}
+              className={`font-semibold ${
+                isMe ? "text-blue-100 underline decoration-dotted" : "text-[#1877f2] font-bold"
+              }`}
+            >
+              {part}
+            </span>
+          );
+        }
+      }
+
+      return part;
+    });
+  };
+
   // Lấy danh sách bạn bè dựa trên query tìm kiếm
   const filteredFriends = searchQuery.trim()
     ? (profile?.friends || []).filter((friend) =>
@@ -363,6 +569,89 @@ const ChatPage = () => {
   const handleStartChatWithFriend = (friendId) => {
     dispatch(getOrCreateConversationAndSelect(friendId));
     setSearchQuery("");
+  };
+
+  // Lấy danh sách thành viên cho chức năng tag
+  const filteredMembersForTag = useMemo(() => {
+    if (!activeConversation || !activeConversation.isGroup || !showTagDropdown) return [];
+
+    const currentUserId = (profile?.id || profile?.userId || "").toString();
+    const otherParticipants = (activeConversation.participants || []).filter(
+      (p) => p._id.toString() !== currentUserId
+    );
+
+    const allOption = { _id: "all", type: "all", fullName: "Báo cho cả nhóm", tagText: "@All" };
+    let result = [allOption, ...otherParticipants];
+
+    if (tagSearchQuery.trim() !== "") {
+      const query = tagSearchQuery.toLowerCase();
+      result = result.filter((item) => {
+        if (item.type === "all") {
+          return "all".includes(query) || "báo cho cả nhóm".includes(query);
+        }
+        return item.fullName.toLowerCase().includes(query);
+      });
+    }
+
+    return result;
+  }, [activeConversation, profile, showTagDropdown, tagSearchQuery]);
+
+  // Xử lý thay đổi input tin nhắn để nhận diện ký tự tag @
+  const handleInputChange = (e) => {
+    const value = e.target.value;
+    setMessageText(value);
+
+    if (!activeConversation || !activeConversation.isGroup) {
+      if (showTagDropdown) setShowTagDropdown(false);
+      return;
+    }
+
+    const selectionStart = e.target.selectionStart;
+    const textBeforeCursor = value.slice(0, selectionStart);
+    const lastAtIdx = textBeforeCursor.lastIndexOf("@");
+
+    if (lastAtIdx !== -1) {
+      const textBetween = textBeforeCursor.slice(lastAtIdx + 1);
+      const charBeforeAt = lastAtIdx > 0 ? textBeforeCursor[lastAtIdx - 1] : "";
+
+      if (!textBetween.includes(" ") && (charBeforeAt === "" || /\s/.test(charBeforeAt))) {
+        setShowTagDropdown(true);
+        setTagSearchQuery(textBetween);
+        setTagTriggerIndex(lastAtIdx);
+        setSelectedTagIndex(0);
+        return;
+      }
+    }
+
+    setShowTagDropdown(false);
+  };
+
+  // Xử lý chọn thành viên từ danh sách gợi ý tag
+  const handleSelectTagMember = (member) => {
+    const textBeforeAt = messageText.slice(0, tagTriggerIndex);
+    const textAfterQuery = messageText.slice(tagTriggerIndex + 1 + tagSearchQuery.length);
+
+    const tagText = member.type === "all" ? "@All" : `@${member.fullName}`;
+    const mentionString = `${tagText} `;
+    const newText = `${textBeforeAt}${mentionString}${textAfterQuery}`;
+
+    setMessageText(newText);
+
+    if (member.type !== "all") {
+      if (!mentionedUsers.some((u) => u.id === member._id)) {
+        setMentionedUsers((prev) => [...prev, { id: member._id, fullName: member.fullName }]);
+      }
+    }
+
+    setShowTagDropdown(false);
+
+    setTimeout(() => {
+      if (inputRef.current) {
+        inputRef.current.focus();
+        const cursorPosition = tagTriggerIndex + mentionString.length;
+        inputRef.current.setSelectionRange(cursorPosition, cursorPosition);
+      }
+    }, 0);
   };
 
   // Xác định những người dùng đang gõ trong cuộc trò chuyện hiện tại
@@ -465,12 +754,21 @@ const ChatPage = () => {
                         profile &&
                         !conv.lastMessage.readBy?.includes(profile.id || profile.userId);
 
+                      const isMuted = conv.mutedUntil?.some(
+                        (m) =>
+                          m.user.toString() === (profile?.id || profile?.userId || "").toString() &&
+                          m.until &&
+                          new Date(m.until) > new Date()
+                      );
+                      const isBlocked = conv.blockedBy?.includes(profile?.id || profile?.userId);
+
                       return (
-                        <button
+                        <div
                           key={conv._id}
                           onClick={() => dispatch(selectConversationAndFetchMessages(conv))}
-                          className={`w-full flex items-center gap-3 p-3 rounded-xl transition text-left ${isSelected ? "bg-[#e7f3ff] text-[#1877f2]" : "hover:bg-gray-100"
-                            }`}
+                          className={`group relative w-full flex items-center gap-3 p-3 rounded-xl transition text-left cursor-pointer ${
+                            isSelected ? "bg-[#e7f3ff] text-[#1877f2]" : "hover:bg-gray-100 text-gray-800"
+                          }`}
                         >
                           <div className="relative">
                             <HomeAvatar image={partner.avatar} name={partner.fullName} />
@@ -478,22 +776,21 @@ const ChatPage = () => {
                               <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full"></span>
                             ) : null}
                           </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex justify-between items-baseline">
-                              <p
-                                className={`text-sm truncate ${hasUnread ? "font-bold text-black" : "font-semibold text-gray-800"
-                                  }`}
-                              >
-                                {partner.fullName}
-                              </p>
-                              {conv.updatedAt ? (
-                                <span className="text-[10px] text-gray-400 shrink-0">
-                                  {format(new Date(conv.updatedAt), "HH:mm")}
-                                </span>
-                              ) : null}
-                            </div>
+                          <div className="min-w-0 flex-1 pr-1">
                             <p
-                              className={`text-xs truncate ${hasUnread ? "font-semibold text-black" : "text-gray-500"
+                              className={`text-sm truncate flex items-center gap-1.5 ${
+                                hasUnread ? "font-bold text-black" : "font-semibold text-gray-800"
+                              }`}
+                            >
+                              {partner.fullName}
+                              {isMuted && (
+                                <span className="material-symbols-outlined text-xs text-gray-455 select-none" style={{ fontSize: '14px' }}>
+                                  notifications_off
+                                </span>
+                              )}
+                            </p>
+                            <p
+                              className={`text-xs truncate mt-0.5 ${hasUnread ? "font-semibold text-black" : "text-gray-500"
                                 }`}
                             >
                               {conv.lastMessage
@@ -505,10 +802,172 @@ const ChatPage = () => {
                                 : "No messages yet"}
                             </p>
                           </div>
-                          {hasUnread ? (
-                            <span className="w-2.5 h-2.5 bg-blue-600 rounded-full shrink-0"></span>
-                          ) : null}
-                        </button>
+
+                          {/* Right column: meta info & action button */}
+                          <div className="w-12 flex flex-col items-end justify-between self-stretch py-0.5 shrink-0 relative">
+                            {/* Meta Info (visible when menu is not active and not hovered) */}
+                            <div
+                              className={`${
+                                activeMenuConvId === conv._id ? "hidden" : "flex group-hover:hidden"
+                              } flex-col items-end justify-between h-full`}
+                            >
+                              {conv.updatedAt ? (
+                                <span className="text-[10px] text-gray-400 shrink-0">
+                                  {format(new Date(conv.updatedAt), "HH:mm")}
+                                </span>
+                              ) : (
+                                <span className="h-3"></span>
+                              )}
+                              {hasUnread && !isMuted ? (
+                                <span className="w-2 h-2 bg-blue-600 rounded-full shrink-0"></span>
+                              ) : (
+                                <span className="h-2"></span>
+                              )}
+                            </div>
+
+                            {/* Action Button (visible when menu is active OR hovered) */}
+                            <div
+                              className={`${
+                                activeMenuConvId === conv._id ? "flex" : "hidden group-hover:flex"
+                              } items-center justify-center h-full`}
+                            >
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveMenuConvId(activeMenuConvId === conv._id ? null : conv._id);
+                                  setShowMuteSubmenu(false);
+                                }}
+                                className="w-6 h-6 rounded-full bg-white shadow border border-gray-200 flex items-center justify-center text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition active:scale-95 shrink-0"
+                              >
+                                <span className="material-symbols-outlined text-[14px] block font-bold">more_horiz</span>
+                              </button>
+                            </div>
+
+                            {/* Dropdown Menu Overlay */}
+                            {activeMenuConvId === conv._id && (
+                              <div className="absolute right-0 top-7 z-40 w-48 bg-white border border-gray-200 rounded-xl shadow-xl py-1 text-xs text-gray-700">
+                                {showMuteSubmenu ? (
+                                  <div className="animate-fade-in">
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowMuteSubmenu(false);
+                                      }}
+                                      className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-1.5 font-bold text-gray-800 border-b border-gray-100"
+                                    >
+                                      <span className="material-symbols-outlined text-[14px]">arrow_back</span>
+                                      <span>Quay lại</span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleMuteConversation(conv._id, 1);
+                                        setActiveMenuConvId(null);
+                                      }}
+                                      className="w-full text-left px-4 py-2 hover:bg-gray-50 font-semibold"
+                                    >
+                                      Trong 1 giờ
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleMuteConversation(conv._id, 4);
+                                        setActiveMenuConvId(null);
+                                      }}
+                                      className="w-full text-left px-4 py-2 hover:bg-gray-50 font-semibold"
+                                    >
+                                      Trong 4 giờ
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleMuteConversation(conv._id, 8);
+                                        setActiveMenuConvId(null);
+                                      }}
+                                      className="w-full text-left px-4 py-2 hover:bg-gray-50 font-semibold"
+                                    >
+                                      Cho đến 8:00 AM
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleMuteConversation(conv._id, -1);
+                                        setActiveMenuConvId(null);
+                                      }}
+                                      className="w-full text-left px-4 py-2 hover:bg-gray-50 text-blue-600 font-bold"
+                                    >
+                                      Cho đến khi được mở lại
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <div>
+                                    {isMuted ? (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleUnmuteConversation(conv._id);
+                                          setActiveMenuConvId(null);
+                                        }}
+                                        className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center justify-between font-semibold"
+                                      >
+                                        <span>Bật lại thông báo</span>
+                                      </button>
+                                    ) : (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setShowMuteSubmenu(true);
+                                        }}
+                                        className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center justify-between font-semibold"
+                                      >
+                                        <span>Tắt thông báo</span>
+                                        <span className="material-symbols-outlined text-[12px] block">chevron_right</span>
+                                      </button>
+                                    )}
+
+                                    {!conv.isGroup && (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          if (isBlocked) {
+                                            handleUnblockConversation(conv._id);
+                                          } else {
+                                            handleBlockConversation(conv._id);
+                                          }
+                                          setActiveMenuConvId(null);
+                                        }}
+                                        className="w-full text-left px-4 py-2 hover:bg-gray-50 font-semibold border-t border-gray-100"
+                                      >
+                                        {isBlocked ? "Bỏ chặn" : "Chặn người dùng"}
+                                      </button>
+                                    )}
+
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDeleteConversation(conv._id);
+                                        setActiveMenuConvId(null);
+                                      }}
+                                      className="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600 font-semibold border-t border-gray-100"
+                                    >
+                                      Xóa hội thoại
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       );
                     })
                   )}
@@ -657,11 +1116,11 @@ const ChatPage = () => {
                                           : msg.replyTo.senderId?.fullName || "Người dùng"}
                                       </span>
                                       <span className={`truncate ${isMe ? "text-white/80" : "text-gray-500"}`}>
-                                        {msg.replyTo.isRevoked ? "Tin nhắn đã bị thu hồi" : msg.replyTo.content}
+                                        {msg.replyTo.isRevoked ? "Tin nhắn đã bị thu hồi" : renderMessageContent(msg.replyTo.content, msg.replyTo.mentions, isMe)}
                                       </span>
                                     </div>
                                   )}
-                                  {msg.content}
+                                  {renderMessageContent(msg.content, msg.mentions, isMe)}
                                 </div>
                               )}
 
@@ -775,6 +1234,68 @@ const ChatPage = () => {
                     </button>
                   </div>
                 )}
+              <div className="relative w-full">
+                {showTagDropdown && filteredMembersForTag.length > 0 && (
+                  <div className="absolute bottom-full left-4 mb-2 z-50 w-[300px] bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden flex flex-col animate-in fade-in slide-in-from-bottom-2 duration-150">
+                    {/* Header: Bulb tip */}
+                    <div className="flex items-start gap-3 p-3 bg-white border-b border-gray-150">
+                      <div className="w-8 h-8 rounded-full bg-amber-500 text-white flex items-center justify-center shrink-0">
+                        <span className="material-symbols-outlined text-[16px]">lightbulb</span>
+                      </div>
+                      <div className="flex-1 min-w-0 pt-0.5">
+                        <p className="text-[11px] font-semibold text-gray-600 leading-normal">
+                          Di chuyển bằng ↑, ↓ và nhấn Enter để sử dụng
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowTagDropdown(false)}
+                        className="p-0.5 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600 transition shrink-0"
+                      >
+                        <span className="material-symbols-outlined text-[15px] block">close</span>
+                      </button>
+                    </div>
+
+                    {/* Member list */}
+                    <div className="max-h-60 overflow-y-auto py-1">
+                      {filteredMembersForTag.map((member, idx) => {
+                        const isSelected = idx === selectedTagIndex;
+                        const isAll = member.type === "all";
+
+                        return (
+                          <button
+                            type="button"
+                            key={member._id}
+                            onClick={() => handleSelectTagMember(member)}
+                            className={`w-full flex items-center gap-3 px-4 py-2 text-left transition-colors ${
+                              isSelected ? "bg-gray-100 text-[#1877f2]" : "hover:bg-gray-50 text-gray-700"
+                            }`}
+                          >
+                            {isAll ? (
+                              <div className="w-8 h-8 rounded-full bg-[#1877f2] text-white flex items-center justify-center shrink-0 font-bold text-sm">
+                                @
+                              </div>
+                            ) : (
+                              <HomeAvatar image={member.avatar} name={member.fullName} size="sm" />
+                            )}
+
+                            <div className="flex-1 min-w-0 flex items-center gap-1">
+                              <span className={`text-sm truncate ${isSelected ? "font-bold" : "font-medium"}`}>
+                                {member.fullName}
+                              </span>
+                              {isAll && (
+                                <span className="text-xs text-blue-600 font-semibold shrink-0">
+                                  · @All
+                                </span>
+                              )}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 <form
                   onSubmit={handleSendMessage}
                   className="bg-white border-t border-gray-200 p-4 flex items-center gap-3 shrink-0"
@@ -789,10 +1310,11 @@ const ChatPage = () => {
                     <span className="material-symbols-outlined">sticky_note_2</span>
                   </button>
                   <input
+                    ref={inputRef}
                     type="text"
                     placeholder="Type a message..."
                     value={messageText}
-                    onChange={(e) => setMessageText(e.target.value)}
+                    onChange={handleInputChange}
                     onKeyDown={handleKeyDown}
                     className="flex-1 bg-[#f0f2f5] px-4 py-2.5 text-sm rounded-full outline-none placeholder:text-gray-500 focus:bg-white focus:ring-1 focus:ring-[#1877f2]"
                   />
@@ -804,6 +1326,7 @@ const ChatPage = () => {
                     <span className="material-symbols-outlined text-[20px] block">send</span>
                   </button>
                 </form>
+              </div>
               </>
             ) : (
               // Trạng thái trống
