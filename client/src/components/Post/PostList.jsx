@@ -1,5 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import {
   getNewsFeed,
   getPostsByAuthor,
@@ -12,6 +13,9 @@ import { enUS } from "date-fns/locale";
 import LoadingSpinner from "../common/LoadingSpinner";
 import PostDetail from "./PostDetail";
 import EditPost from "./EditPost";
+import SharePostModal from "./SharePostModal";
+import SharedPostPreview from "./SharedPostPreview";
+import PostEngagement from "./PostEngagement";
 
 const getUserId = (user) => user?.userId || user?._id || user?.id;
 
@@ -20,37 +24,82 @@ const getMediaGridClass = (count) => {
     return "grid-cols-2";
   }
 
-  return "grid-cols-2";
+  if (count === 3) {
+    return "grid-cols-2";
+  }
+
+  return "grid-cols-6";
 };
 
 const getMediaTileClass = (count, index) => {
   if (count === 1) {
-    return "max-h-[620px]";
+    return "max-h-[520px]";
   }
 
   if (count === 3 && index === 0) {
-    return "col-span-2 h-80";
+    return "col-span-2 aspect-[2/1]";
   }
 
-  return "h-56";
+  if (count >= 4 && index < 2) {
+    return "col-span-3 aspect-square";
+  }
+
+  if (count >= 4) {
+    return "col-span-2 aspect-square";
+  }
+
+  return "aspect-square";
 };
 
 const PostMediaPreview = ({ media }) => {
+  const [singleImageOrientation, setSingleImageOrientation] = useState(null);
+
   if (!Array.isArray(media) || media.length === 0) {
     return null;
   }
 
-  const visibleMedia = media.slice(0, 4);
+  const visibleMedia = media.slice(0, 5);
   const remainingCount = media.length - visibleMedia.length;
-  const isSingleImage = media.length === 1 && media[0]?.type === "image";
+  const isSingleMedia = media.length === 1;
+  const isSingleImage = isSingleMedia && media[0]?.type === "image";
+  const isSingleVideo = isSingleMedia && media[0]?.type !== "image";
 
   if (isSingleImage) {
+    const imageClass =
+      singleImageOrientation === "wide"
+        ? "w-full max-h-[620px] object-contain"
+        : "max-h-[680px] max-w-full object-contain";
+
     return (
-      <div className="mb-3 overflow-hidden rounded-lg bg-gray-100">
+      <div className="mb-3 flex w-full items-center justify-center overflow-hidden rounded-lg bg-[#f0f2f5]">
         <img
           src={media[0].url}
           alt="Post media"
-          className="max-h-[620px] w-full object-cover"
+          className={imageClass}
+          onLoad={(event) => {
+            const { naturalWidth, naturalHeight } = event.currentTarget;
+            setSingleImageOrientation(
+              naturalWidth >= naturalHeight ? "wide" : "tall",
+            );
+          }}
+          onError={(event) => {
+            event.target.style.display = "none";
+          }}
+        />
+      </div>
+    );
+  }
+
+  if (isSingleVideo) {
+    return (
+      <div className="mb-3 flex w-full items-center justify-center overflow-hidden rounded-lg bg-black">
+        <video
+          src={media[0].url}
+          controls
+          preload="metadata"
+          className="max-h-[620px] w-full object-contain"
+          onClick={(event) => event.stopPropagation()}
+          onMouseDown={(event) => event.stopPropagation()}
           onError={(event) => {
             event.target.style.display = "none";
           }}
@@ -64,7 +113,7 @@ const PostMediaPreview = ({ media }) => {
       {visibleMedia.map((item, index) => (
         <div
           key={`${item.url || "media"}-${index}`}
-          className={`relative overflow-hidden rounded-lg bg-gray-200 ${getMediaTileClass(
+          className={`relative overflow-hidden bg-white ${getMediaTileClass(
             media.length,
             index,
           )}`}
@@ -107,16 +156,21 @@ const PostList = ({
   authorId = null,
   allowedAuthorIds = null,
   refreshKey = 0,
+  initialSelectedPostId = null,
+  focusedCommentId = null,
+  focusedParentCommentId = null,
   emptyMessage = "No posts yet",
   emptyDetail = "Add friends to see their posts.",
 }) => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { posts, loading, pagination } = useSelector(
     (state) => state.posts,
   );
   const currentUser = useSelector((state) => state.user?.profile);
-  const [selectedPostId, setSelectedPostId] = useState(null);
+  const [selectedPostId, setSelectedPostId] = useState(initialSelectedPostId);
   const [editingPostId, setEditingPostId] = useState(null);
+  const [sharingPostId, setSharingPostId] = useState(null);
   const [page, setPage] = useState(1);
 
   const allowedAuthorIdSet = useMemo(() => {
@@ -167,8 +221,8 @@ const PostList = ({
     dispatch(getNewsFeed({ page, limit: 10 }));
   }, [authorId, page, dispatch]);
 
-  const handleToggleLike = (postId) => {
-    dispatch(toggleLike(postId));
+  const handleReaction = (postId, reactionType = "like") => {
+    dispatch(toggleLike({ postId, reactionType }));
   };
 
   const handleDeletePost = (postId) => {
@@ -190,7 +244,7 @@ const PostList = ({
       currentUserId && String(currentUserId) === String(authorProfileId)
         ? "/profile"
         : `/users/profile/${authorProfileId}`;
-    window.location.assign(profileUrl);
+    navigate(profileUrl);
   };
 
   const reloadCurrentList = () => {
@@ -205,7 +259,7 @@ const PostList = ({
   if (loading && visiblePosts.length === 0) return <LoadingSpinner />;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-4 pb-8">
+    <div className="w-full space-y-4 pb-8">
       {visiblePosts.length === 0 ? (
         <div className="p-8 text-center text-gray-500 bg-white rounded-lg">
           <p className="text-lg">{emptyMessage}</p>
@@ -274,44 +328,18 @@ const PostList = ({
                 ) : null}
 
                 <PostMediaPreview media={post.media} />
+                <SharedPostPreview
+                  post={post.sharedFrom}
+                  onOpen={setSelectedPostId}
+                />
               </div>
 
-              <div className="px-4 py-2 border-t border-b border-gray-100 text-sm text-gray-600 flex justify-between">
-                <button
-                  onClick={() => setSelectedPostId(post._id)}
-                  className="hover:text-blue-500 transition"
-                >
-                  {post.likes?.length || 0} likes
-                </button>
-                <button
-                  onClick={() => setSelectedPostId(post._id)}
-                  className="hover:text-blue-500 transition"
-                >
-                  {post.commentCount || 0} comments
-                </button>
-              </div>
-
-              <div className="p-2 flex gap-1 text-gray-600">
-                <button
-                  onClick={() => handleToggleLike(post._id)}
-                  className={`flex-1 py-2 rounded-lg transition flex items-center justify-center gap-2 font-medium ${
-                    post.isLiked
-                      ? "bg-blue-100 text-blue-600"
-                      : "hover:bg-gray-100 text-gray-600"
-                  }`}
-                >
-                  {post.isLiked ? "Unlike" : "Like"}
-                </button>
-                <button
-                  onClick={() => setSelectedPostId(post._id)}
-                  className="flex-1 py-2 rounded-lg hover:bg-gray-100 transition flex items-center justify-center gap-2 font-medium text-gray-600"
-                >
-                  Comment
-                </button>
-                <button className="flex-1 py-2 rounded-lg hover:bg-gray-100 transition flex items-center justify-center gap-2 font-medium text-gray-600">
-                  Share
-                </button>
-              </div>
+              <PostEngagement
+                post={post}
+                onReact={(reactionType) => handleReaction(post._id, reactionType)}
+                onComment={() => setSelectedPostId(post._id)}
+                onShare={() => setSharingPostId(post._id)}
+              />
             </div>
           ))}
 
@@ -342,7 +370,15 @@ const PostList = ({
       <PostDetail
         postId={selectedPostId}
         isOpen={!!selectedPostId}
+        focusedCommentId={focusedCommentId}
+        focusedParentCommentId={focusedParentCommentId}
         onClose={() => setSelectedPostId(null)}
+      />
+
+      <SharePostModal
+        post={posts.find((post) => post._id === sharingPostId)}
+        isOpen={!!sharingPostId}
+        onClose={() => setSharingPostId(null)}
       />
     </div>
   );

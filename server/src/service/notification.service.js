@@ -58,6 +58,7 @@ class NotificationService {
     preview,
     relatedId = null,
     relatedType = null,
+    data = {},
   }) {
     const receiverId = getId(receiver);
     const senderId = getId(sender);
@@ -97,6 +98,7 @@ class NotificationService {
       preview: buildPreview(preview),
       relatedId,
       relatedType,
+      data,
     });
 
     const [populatedNotification, unreadCount] = await Promise.all([

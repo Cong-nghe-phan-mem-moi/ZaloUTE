@@ -1,7 +1,9 @@
+import { Link } from "react-router-dom";
+
 const FriendCard = ({ friend }) => {
   return (
-    <a
-      href={`/users/profile/${friend.id}`}
+    <Link
+      to={`/users/profile/${friend.id}`}
       className="group block cursor-pointer space-y-2"
     >
       <div className="aspect-square overflow-hidden rounded-md bg-[#f2f3f5] shadow-sm ring-1 ring-[#eef0f2]">
@@ -20,7 +22,7 @@ const FriendCard = ({ friend }) => {
       <p className="truncate text-xs font-semibold text-[#111827]">
         {friend.name}
       </p>
-    </a>
+    </Link>
   );
 };
 

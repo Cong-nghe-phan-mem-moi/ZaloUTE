@@ -169,7 +169,11 @@ export const postAPI = {
   deletePost: (postId) => api.delete(`/posts/${postId}`),
 
   // Like/Unlike post
-  toggleLike: (postId) => api.post(`/posts/${postId}/like`),
+  toggleLike: (postId, reactionType = "like") =>
+    api.post(`/posts/${postId}/like`, { reactionType }),
+
+  // Share post to timeline or message
+  sharePost: (postId, payload) => api.post(`/posts/${postId}/share`, payload),
 
   // Get post likes
   getPostLikes: (postId, page = 1, limit = 10) =>

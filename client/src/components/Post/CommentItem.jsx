@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   updateComment,
@@ -16,12 +16,28 @@ const getLikeCount = (comment) => {
   return comment?.likes?.length || 0;
 };
 
-const CommentItem = ({ comment, postId, onReplyAdded, depth = 0 }) => {
+const CommentItem = ({
+  comment,
+  postId,
+  focusedCommentId = null,
+  focusedParentCommentId = null,
+  onReplyAdded,
+  depth = 0,
+}) => {
   const dispatch = useDispatch();
   const currentUser = useSelector((state) => state.user?.profile);
+  const itemRef = useRef(null);
+  const autoOpenedRepliesRef = useRef(false);
+  const commentId = comment?._id;
+  const currentUserId = currentUser?.userId || currentUser?._id || currentUser?.id;
+  const isAuthor = String(currentUserId) === String(comment?.author?._id);
+  const isFocused = String(focusedCommentId || "") === String(commentId || "");
+  const shouldOpenReplies =
+    focusedParentCommentId &&
+    String(focusedParentCommentId) === String(commentId);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(comment?.content || "");
-  const [showReplies, setShowReplies] = useState(false);
+  const [showReplies, setShowReplies] = useState(Boolean(shouldOpenReplies));
   const [replies, setReplies] = useState([]);
   const [replyCount, setReplyCount] = useState(comment?.replyCount || 0);
   const [replyContent, setReplyContent] = useState("");
@@ -29,8 +45,20 @@ const CommentItem = ({ comment, postId, onReplyAdded, depth = 0 }) => {
   const [repliesLoading, setRepliesLoading] = useState(false);
   const [replySubmitting, setReplySubmitting] = useState(false);
 
-  const currentUserId = currentUser?.userId || currentUser?._id || currentUser?.id;
-  const isAuthor = String(currentUserId) === String(comment?.author?._id);
+  const loadReplies = async () => {
+    if (!commentId || repliesLoading) return;
+
+    setRepliesLoading(true);
+
+    try {
+      const response = await commentAPI.getCommentReplies(commentId, 1, 20);
+      setReplies(response.data?.data?.replies || []);
+    } catch (error) {
+      console.error("Unable to load replies:", error);
+    } finally {
+      setRepliesLoading(false);
+    }
+  };
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -40,20 +68,41 @@ const CommentItem = ({ comment, postId, onReplyAdded, depth = 0 }) => {
     return () => window.clearTimeout(timer);
   }, [comment?.replyCount]);
 
-  const loadReplies = async () => {
-    if (!comment?._id || repliesLoading) return;
+  useEffect(() => {
+    if (!isFocused) return undefined;
 
-    setRepliesLoading(true);
+    const timer = window.setTimeout(() => {
+      itemRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 150);
 
-    try {
-      const response = await commentAPI.getCommentReplies(comment._id, 1, 20);
-      setReplies(response.data?.data?.replies || []);
-    } catch (error) {
-      console.error("Unable to load replies:", error);
-    } finally {
-      setRepliesLoading(false);
+    return () => window.clearTimeout(timer);
+  }, [isFocused]);
+
+  useEffect(() => {
+    if (!shouldOpenReplies || replies.length > 0 || autoOpenedRepliesRef.current) {
+      return undefined;
     }
-  };
+
+    autoOpenedRepliesRef.current = true;
+
+    const timer = window.setTimeout(async () => {
+      setShowReplies(true);
+      if (!commentId || repliesLoading) return;
+
+      setRepliesLoading(true);
+
+      try {
+        const response = await commentAPI.getCommentReplies(commentId, 1, 20);
+        setReplies(response.data?.data?.replies || []);
+      } catch (error) {
+        console.error("Unable to load replies:", error);
+      } finally {
+        setRepliesLoading(false);
+      }
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [commentId, replies.length, repliesLoading, shouldOpenReplies]);
 
   const handleToggleReplies = async () => {
     const nextShowReplies = !showReplies;
@@ -130,7 +179,12 @@ const CommentItem = ({ comment, postId, onReplyAdded, depth = 0 }) => {
       : "flex gap-3 py-3 border-b border-gray-100 last:border-b-0";
 
   return (
-    <div className={containerClass}>
+    <div
+      ref={itemRef}
+      className={`${containerClass} ${
+        isFocused ? "rounded-lg bg-blue-50 px-2 ring-2 ring-blue-200" : ""
+      }`}
+    >
       <img
         src={comment?.author?.avatar || "/default-avatar.png"}
         alt={comment?.author?.fullName}
@@ -299,6 +353,8 @@ const CommentItem = ({ comment, postId, onReplyAdded, depth = 0 }) => {
                   key={reply._id}
                   comment={reply}
                   postId={postId}
+                  focusedCommentId={focusedCommentId}
+                  focusedParentCommentId={focusedParentCommentId}
                   onReplyAdded={onReplyAdded}
                   depth={depth + 1}
                 />

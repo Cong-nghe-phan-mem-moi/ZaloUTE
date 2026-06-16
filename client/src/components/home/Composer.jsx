@@ -13,17 +13,23 @@ const Composer = ({ profile }) => {
   const canSubmit = content.trim().length > 0 || files.length > 0;
 
   const handleFileChange = (event) => {
-    setFiles(Array.from(event.target.files || []));
+    const selectedFiles = Array.from(event.target.files || []);
+
+    if (selectedFiles.length === 0) {
+      return;
+    }
+
+    setFiles((currentFiles) => [...currentFiles, ...selectedFiles]);
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   const handleRemoveFile = (indexToRemove) => {
     setFiles((currentFiles) =>
       currentFiles.filter((_, index) => index !== indexToRemove),
     );
-
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
   };
 
   const handleSubmit = async (event) => {
@@ -134,7 +140,7 @@ const SelectedMediaPreview = ({ files, onRemove }) => {
     return null;
   }
 
-  const visibleFiles = files.slice(0, 4);
+  const visibleFiles = files.slice(0, 5);
   const remainingCount = files.length - visibleFiles.length;
   const isSingleImage = files.length === 1 && files[0].type.startsWith("image/");
 
@@ -147,7 +153,7 @@ const SelectedMediaPreview = ({ files, onRemove }) => {
           <img
             src={previewUrl}
             alt={files[0].name}
-            className="max-h-[420px] w-full object-cover"
+            className="max-h-[420px] w-full object-contain"
             onLoad={() => URL.revokeObjectURL(previewUrl)}
           />
           <RemovePreviewButton
@@ -160,7 +166,7 @@ const SelectedMediaPreview = ({ files, onRemove }) => {
   }
 
   return (
-    <div className="mt-4 grid grid-cols-2 gap-1">
+    <div className="mt-4 grid grid-cols-6 gap-1 overflow-hidden rounded-lg">
       {visibleFiles.map((file, index) => {
         const previewUrl = URL.createObjectURL(file);
         const isImage = file.type.startsWith("image/");
@@ -205,11 +211,27 @@ const SelectedMediaPreview = ({ files, onRemove }) => {
 };
 
 const getPreviewTileClass = (count, index) => {
-  if (count === 3 && index === 0) {
-    return "col-span-2 h-64";
+  if (count === 2) {
+    return "col-span-3 aspect-square";
   }
 
-  return "h-48";
+  if (count === 3 && index === 0) {
+    return "col-span-6 aspect-[2/1]";
+  }
+
+  if (count === 3) {
+    return "col-span-3 aspect-square";
+  }
+
+  if (count >= 4 && index < 2) {
+    return "col-span-3 aspect-square";
+  }
+
+  if (count >= 4) {
+    return "col-span-2 aspect-square";
+  }
+
+  return "col-span-6 aspect-[2/1]";
 };
 
 const RemovePreviewButton = ({ label, onClick }) => (

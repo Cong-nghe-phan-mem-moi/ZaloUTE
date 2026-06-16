@@ -1,5 +1,6 @@
 ﻿import { useEffect, useRef, useState } from "react";
 import { userAPI } from "../../services/api";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAppDispatch } from "../../store/hooks";
 import { clearProfile } from "../../store/slices/userSlice";
 
@@ -14,8 +15,10 @@ const getInitials = (name = "") =>
 
 const TopAppBar = ({ profile }) => {
   const dispatch = useAppDispatch();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const pathname = window.location.pathname;
+  const pathname = location.pathname;
   const isHomePage = pathname === "/" || pathname === "/home";
   const isFriendRequestsPage = pathname === "/friend-requests";
 
@@ -31,7 +34,7 @@ const TopAppBar = ({ profile }) => {
     } finally {
       localStorage.removeItem("token");
       dispatch(clearProfile());
-      window.location.assign("/login");
+      navigate("/login", { replace: true });
     }
   };
 
@@ -39,13 +42,13 @@ const TopAppBar = ({ profile }) => {
     <header className="sticky top-0 w-full z-50 bg-white border-b border-[#dddfe2] shadow-sm h-14">
       <div className="h-full px-4 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0 flex-1 md:flex-none">
-          <a
-            href="/"
+          <Link
+            to="/"
             className="w-10 h-10 rounded-full bg-[#1877f2] text-white flex items-center justify-center text-2xl font-bold shrink-0"
             aria-label="ZaloUTE home"
           >
             z
-          </a>
+          </Link>
           <SearchBox />
         </div>
 
@@ -70,8 +73,8 @@ const TopAppBar = ({ profile }) => {
             onClick={handleLogout}
             disabled={isLoggingOut}
           />
-          <a
-            href="/user/profile"
+          <Link
+            to="/user/profile"
             className="hidden sm:flex items-center gap-2 rounded-full hover:bg-[#f0f2f5] p-1 pr-3 text-[#050505]"
           >
             <Avatar
@@ -82,7 +85,7 @@ const TopAppBar = ({ profile }) => {
             <span className="font-semibold text-sm max-w-28 truncate">
               {profile?.fullName?.split(" ")?.slice(-1)?.[0] || "Profile"}
             </span>
-          </a>
+          </Link>
         </div>
       </div>
     </header>
@@ -206,8 +209,8 @@ const SearchBox = () => {
 };
 
 const SearchResultItem = ({ user }) => (
-  <a
-    href={`/users/profile/${user.id}`}
+  <Link
+    to={`/users/profile/${user.id}`}
     className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#f0f2f5] text-[#050505]"
   >
     <Avatar image={user.avatar} name={user.fullName} />
@@ -223,12 +226,12 @@ const SearchResultItem = ({ user }) => (
               : "View profile"}
       </p>
     </div>
-  </a>
+  </Link>
 );
 
 const NavIcon = ({ icon, label, href, active = false }) => (
-  <a
-    href={href}
+  <NavLink
+    to={href}
     className={`h-12 w-24 rounded-lg flex items-center justify-center ${
       active
         ? "text-[#1877f2] border-b-4 border-[#1877f2]"
@@ -238,7 +241,7 @@ const NavIcon = ({ icon, label, href, active = false }) => (
     aria-label={label}
   >
     <span className="material-symbols-outlined text-[28px]">{icon}</span>
-  </a>
+  </NavLink>
 );
 
 const CircleButton = ({ icon, label, onClick, disabled = false }) => (

@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Routes, Route, Navigate, useParams } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation, useParams } from "react-router-dom";
 import { useAppSelector, useAppDispatch } from "./store/hooks";
 import { setCurrentPage } from "./store/slices/uiSlice";
 import { clearError, clearMessage } from "./store/slices/postSlice";
@@ -31,28 +31,15 @@ const OtherProfilePage = () => {
 
 function App() {
   const dispatch = useAppDispatch();
-  const currentPage = useAppSelector(
-    (state) => state.ui?.currentPage || "login",
-  );
-  const path = window.location.pathname;
+  const location = useLocation();
+  const path = location.pathname;
   const token = localStorage.getItem("token");
-  const otherProfileId = path.match(/^\/users\/profile\/([^/]+)$/)?.[1] || null;
 
   useEffect(() => {
-    const otherProfileMatch = path.match(/^\/users\/profile\/([^/]+)$/);
-
-    if (path === "/home") {
-      window.history.replaceState(null, "", "/");
-      dispatch(setCurrentPage(token ? "home" : "login"));
-    } else if (path === "/") {
+    if (path === "/" || path === "/home") {
       dispatch(setCurrentPage(token ? "home" : "login"));
     } else if (path === "/login") {
-      if (token) {
-        window.history.replaceState(null, "", "/");
-        dispatch(setCurrentPage("home"));
-      } else {
-        dispatch(setCurrentPage("login"));
-      }
+      dispatch(setCurrentPage(token ? "home" : "login"));
     } else if (path === "/register") {
       dispatch(setCurrentPage("register"));
     } else if (path === "/verify-otp") {
@@ -76,7 +63,7 @@ function App() {
       path === "/edit-profile"
     ) {
       dispatch(setCurrentPage("profile"));
-    } else if (otherProfileMatch) {
+    } else if (path.startsWith("/users/profile/")) {
       dispatch(setCurrentPage("other-profile"));
     } else if (path === "/post-test") {
       dispatch(setCurrentPage("post-test"));
@@ -109,6 +96,19 @@ function App() {
     </div>
   );
 }
+
+const ProtectedPage = ({ token, children }) => {
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return children;
+};
+
+const OtherProfilePage = () => {
+  const { userId } = useParams();
+  return <ProfilePage userId={userId} />;
+};
 
 const PostFeedbackToast = () => {
   const dispatch = useAppDispatch();

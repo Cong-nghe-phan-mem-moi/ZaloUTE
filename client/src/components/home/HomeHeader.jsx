@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { notificationAPI, userAPI } from "../../services/api";
 import { useAppDispatch } from "../../store/hooks";
 import { clearProfile } from "../../store/slices/userSlice";
@@ -56,6 +57,7 @@ const rememberNotificationsSeen = (notifications) => {
 
 const HomeHeader = ({ profile, activePage = "home" }) => {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -80,7 +82,7 @@ const HomeHeader = ({ profile, activePage = "home" }) => {
     } finally {
       localStorage.removeItem("token");
       dispatch(clearProfile());
-      window.location.assign("/login");
+      navigate("/login", { replace: true });
     }
   };
 
@@ -270,7 +272,7 @@ const HomeHeader = ({ profile, activePage = "home" }) => {
 
   const handleNotificationClick = async (notification, href) => {
     if (notification.isRead) {
-      window.location.assign(href);
+      navigate(href);
       return;
     }
 
@@ -285,20 +287,20 @@ const HomeHeader = ({ profile, activePage = "home" }) => {
     } catch (error) {
       console.error("Unable to mark notification as read:", error);
     } finally {
-      window.location.assign(href);
+      navigate(href);
     }
   };
 
   return (
     <header className="flex h-20 items-center justify-between gap-4 bg-white px-6 lg:px-12">
       <div className="flex items-center gap-5">
-        <a
-          href="/"
+        <Link
+          to="/"
           className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1877f2] text-xl font-bold text-white"
           aria-label="ZaloUTE home"
         >
           z
-        </a>
+        </Link>
         <SearchBox />
       </div>
 
@@ -378,8 +380,8 @@ const HomeHeader = ({ profile, activePage = "home" }) => {
 
 const ProfileMenu = ({ profile, isLoggingOut, onLogout }) => (
   <div className="absolute right-0 top-12 z-50 w-72 rounded-lg border border-[#dddfe2] bg-white p-2 shadow-2xl">
-    <a
-      href="/user/profile"
+    <Link
+      to="/user/profile"
       className="flex items-center gap-3 rounded-lg p-3 text-[#111827] hover:bg-[#f2f3f5]"
     >
       <HomeAvatar image={profile?.avatar} name={profile?.fullName} size="sm" />
@@ -389,7 +391,7 @@ const ProfileMenu = ({ profile, isLoggingOut, onLogout }) => (
         </p>
         <p className="text-xs text-[#6b7280]">View your profile</p>
       </div>
-    </a>
+    </Link>
 
     <div className="my-1 h-px bg-[#e5e7eb]" />
 
@@ -520,8 +522,8 @@ const SearchBox = () => {
 };
 
 const SearchResultItem = ({ user }) => (
-  <a
-    href={`/users/profile/${user.id}`}
+  <Link
+    to={`/users/profile/${user.id}`}
     className="flex items-center gap-3 rounded-lg p-2 text-[#050505] hover:bg-[#f0f2f5]"
   >
     <HomeAvatar image={user.avatar} name={user.fullName} size="sm" />
@@ -537,12 +539,12 @@ const SearchResultItem = ({ user }) => (
               : "View profile"}
       </p>
     </div>
-  </a>
+  </Link>
 );
 
 const HeaderTab = ({ icon, active = false, href = "/" }) => (
-  <a
-    href={href}
+  <Link
+    to={href}
     className={`flex h-14 w-20 items-center justify-center border-b-4 ${
       active
         ? "border-[#1877f2] text-[#1877f2]"
@@ -550,7 +552,7 @@ const HeaderTab = ({ icon, active = false, href = "/" }) => (
     }`}
   >
     <span className="material-symbols-outlined text-[24px]">{icon}</span>
-  </a>
+  </Link>
 );
 
 const CircleIcon = ({ icon, label, onClick, disabled = false, badge = 0 }) => (
@@ -576,6 +578,7 @@ const notificationLinks = {
   friend_accept: "/friends",
   post_like: "/",
   post_comment: "/",
+  post_share: "/",
   comment_reply: "/",
   comment_like: "/",
 };
@@ -585,9 +588,39 @@ const isFriendAcceptNotification = (notification) =>
   notification.content === "accepted your friend request";
 
 const getNotificationHref = (notification) => {
+  const data = notification.data || {};
+
+  if (notification.type === "friend_request") {
+    const userId = data.profileId || notification.sender?._id;
+    return userId ? `/users/profile/${userId}` : "/friend-requests";
+  }
+
   if (isFriendAcceptNotification(notification)) {
-    const userId = notification.sender?._id || notification.relatedId;
+    const userId = data.profileId || notification.sender?._id || notification.relatedId;
     return userId ? `/users/profile/${userId}` : "/friends";
+  }
+
+  if (["post_like", "post_share"].includes(notification.type)) {
+    const postId = data.postId || data.sharedPostId || notification.relatedId;
+    return postId ? `/?postId=${encodeURIComponent(postId)}` : "/";
+  }
+
+  if (["post_comment", "comment_reply", "comment_like"].includes(notification.type)) {
+    const postId =
+      data.postId ||
+      (notification.relatedType === "Post" ? notification.relatedId : null);
+    const commentId =
+      data.commentId ||
+      (notification.relatedType === "Comment" ? notification.relatedId : null);
+    const parentCommentId = data.parentCommentId;
+
+    if (!postId) return "/";
+
+    const params = new URLSearchParams({ postId: String(postId) });
+    if (commentId) params.set("commentId", String(commentId));
+    if (parentCommentId) params.set("parentCommentId", String(parentCommentId));
+
+    return `/?${params.toString()}`;
   }
 
   return notificationLinks[notification.type] || "/";
@@ -598,6 +631,7 @@ const popupTitles = {
   friend_accept: "Friend request accepted",
   post_like: "New like",
   post_comment: "New comment",
+  post_share: "New share",
   comment_reply: "New reply",
   comment_like: "New comment like",
 };
@@ -633,7 +667,7 @@ const NotificationPopup = ({ notification, onClose }) => {
         </button>
       </div>
 
-      <a href={href} className="block rounded-md hover:bg-[#f8fafc]">
+      <Link to={href} className="block rounded-md hover:bg-[#f8fafc]">
         <p className="text-sm text-[#111827]">
           <span className="font-semibold">{senderName}</span>{" "}
           {notification.content || "sent you a notification"}
@@ -643,7 +677,7 @@ const NotificationPopup = ({ notification, onClose }) => {
             "{notification.preview}"
           </p>
         ) : null}
-      </a>
+      </Link>
     </div>
   );
 };
@@ -701,8 +735,8 @@ const NotificationItem = ({ notification, onClick }) => {
   const href = getNotificationHref(notification);
 
   return (
-    <a
-      href={href}
+    <Link
+      to={href}
       onClick={(event) => {
         event.preventDefault();
         onClick?.(notification, href);
@@ -733,7 +767,7 @@ const NotificationItem = ({ notification, onClick }) => {
       {!notification.isRead ? (
         <span className="mt-2 h-2 w-2 rounded-full bg-[#1877f2]" />
       ) : null}
-    </a>
+    </Link>
   );
 };
 

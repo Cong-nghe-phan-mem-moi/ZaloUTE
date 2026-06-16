@@ -24,6 +24,9 @@ router.get('/search', PostController.searchPosts);
 // Get posts by author
 router.get('/author/:authorId', PostController.getPostsByAuthor);
 
+// Share post to timeline or message
+router.post('/:postId/share', PostController.sharePost);
+
 // Get single post (must be after /feed, /search, /author)
 router.get('/:postId', PostController.getPost);
 

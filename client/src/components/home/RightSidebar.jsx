@@ -75,9 +75,9 @@ const PanelTitle = ({ title, action, href = "/" }) => (
   <div className="mb-5 flex items-center justify-between">
     <h2 className="text-base font-bold">{title}</h2>
     {action ? (
-      <a className="text-xs font-semibold text-[#1877f2]" href={href}>
+      <Link className="text-xs font-semibold text-[#1877f2]" to={href}>
         {action}
-      </a>
+      </Link>
     ) : null}
   </div>
 );
@@ -96,8 +96,8 @@ const FriendRequestCard = ({
 
   return (
     <div className="rounded bg-[#f2f3f5] p-4">
-      <a
-        href={senderId ? `/users/profile/${senderId}` : "/friend-requests"}
+      <Link
+        to={senderId ? `/users/profile/${senderId}` : "/friend-requests"}
         className="mb-3 flex items-center gap-3"
       >
         <HomeAvatar image={sender.avatar} name={sender.fullName || "User"} />
@@ -107,7 +107,7 @@ const FriendRequestCard = ({
           </p>
           <p className="text-xs text-[#6b7280]">Sent you a friend request</p>
         </div>
-      </a>
+      </Link>
 
       <div className="flex gap-3 pl-12">
         <button
