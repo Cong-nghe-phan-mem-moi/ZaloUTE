@@ -17,6 +17,24 @@ router.get(
   userController.getOtherUserProfile,
 );
 
+router.get(
+  "/blocked",
+  authMiddleware.authMiddleware,
+  userController.getBlockedUsers,
+);
+
+router.post(
+  "/:id/block",
+  authMiddleware.authMiddleware,
+  userController.blockUser,
+);
+
+router.post(
+  "/:id/unblock",
+  authMiddleware.authMiddleware,
+  userController.unblockUser,
+);
+
 router.post(
   "/friend-request",
   authMiddleware.authMiddleware,

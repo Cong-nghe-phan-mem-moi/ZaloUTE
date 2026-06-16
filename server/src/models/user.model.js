@@ -41,11 +41,42 @@ const userSchema = new mongoose.Schema({
     type: String,
     maxlength: 100
   },
+  socialLinks: {
+    facebook: {
+      type: String,
+      default: "",
+      maxlength: 255,
+    },
+    instagram: {
+      type: String,
+      default: "",
+      maxlength: 255,
+    },
+    tiktok: {
+      type: String,
+      default: "",
+      maxlength: 255,
+    },
+    youtube: {
+      type: String,
+      default: "",
+      maxlength: 255,
+    },
+    website: {
+      type: String,
+      default: "",
+      maxlength: 255,
+    },
+  },
   account: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Account'
   },
   friends: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
+  blockedUsers: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   }],
@@ -80,6 +111,7 @@ userSchema.pre("findOneAndUpdate", async function () {
 });
 
 module.exports = mongoose.model('User', userSchema);
+
 
 
 

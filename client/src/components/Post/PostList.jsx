@@ -161,6 +161,7 @@ const PostList = ({
   focusedParentCommentId = null,
   emptyMessage = "No posts yet",
   emptyDetail = "Add friends to see their posts.",
+  onPostsLoaded,
 }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -190,6 +191,10 @@ const PostList = ({
       allowedAuthorIdSet.has(String(post.author?._id)),
     );
   }, [allowedAuthorIdSet, posts]);
+
+  useEffect(() => {
+    onPostsLoaded?.(visiblePosts);
+  }, [onPostsLoaded, visiblePosts]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
