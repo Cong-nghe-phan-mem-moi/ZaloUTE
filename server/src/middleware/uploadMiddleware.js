@@ -75,6 +75,20 @@ upload.postMedia = [
     next();
   },
 ];
+upload.storyMedia = [
+  upload.fields([
+    { name: 'media', maxCount: 1 },
+    { name: 'image', maxCount: 1 },
+    { name: 'video', maxCount: 1 },
+  ]),
+  (req, res, next) => {
+    if (req.files && !Array.isArray(req.files)) {
+      req.files = Object.values(req.files).flat();
+    }
+
+    next();
+  },
+];
 upload.handleUploadError = (err, req, res, next) => {
   if (!err) {
     return next();
