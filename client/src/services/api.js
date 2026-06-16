@@ -102,6 +102,8 @@ export const storyAPI = {
     api.post(`/stories/${storyId}/react`, { reactionType }),
   reply: (storyId, content) => api.post(`/stories/${storyId}/reply`, { content }),
   getViewers: (storyId) => api.get(`/stories/${storyId}/viewers`),
+}
+
 export const chatAPI = {
   getConversations: () => api.get("/chats/conversations"),
   getOrCreateConversation: (targetUserId) =>
