@@ -113,7 +113,7 @@ const ChatPage = () => {
         setIsCreateGroupOpen(false);
       })
       .catch((err) => {
-        alert(err || "Lỗi tạo nhóm");
+        alert(err || "Error creating group");
       });
   };
 
@@ -125,7 +125,7 @@ const ChatPage = () => {
         setIsAddMembersOpen(false);
       })
       .catch((err) => {
-        alert(err || "Lỗi thêm thành viên");
+        alert(err || "Error adding member");
       });
   };
 
@@ -133,9 +133,9 @@ const ChatPage = () => {
     if (!activeConversation) return;
     setConfirmModal({
       isOpen: true,
-      title: "Xóa thành viên",
-      message: "Bạn có chắc chắn muốn xóa thành viên này khỏi nhóm?",
-      confirmBtnText: "Xóa",
+      title: "Remove member",
+      message: "Are you sure you want to remove this member from the group?",
+      confirmBtnText: "Remove",
       isDanger: true,
       onConfirm: () => {
         dispatch(removeGroupMember({ conversationId: activeConversation._id, memberId }))
@@ -144,7 +144,7 @@ const ChatPage = () => {
             setConfirmModal(prev => ({ ...prev, isOpen: false }));
           })
           .catch((err) => {
-            alert(err || "Lỗi xóa thành viên");
+            alert(err || "Error removing member");
           });
       }
     });
@@ -154,9 +154,9 @@ const ChatPage = () => {
     if (!activeConversation) return;
     setConfirmModal({
       isOpen: true,
-      title: "Rời khỏi nhóm",
-      message: "Bạn có chắc chắn muốn rời khỏi nhóm này?",
-      confirmBtnText: "Rời nhóm",
+      title: "Leave group",
+      message: "Are you sure you want to leave this group?",
+      confirmBtnText: "Leave group",
       isDanger: true,
       onConfirm: () => {
         dispatch(leaveGroup(activeConversation._id))
@@ -166,7 +166,7 @@ const ChatPage = () => {
             setConfirmModal(prev => ({ ...prev, isOpen: false }));
           })
           .catch((err) => {
-            alert(err || "Lỗi rời nhóm");
+            alert(err || "Error leaving group");
           });
       }
     });
@@ -181,7 +181,7 @@ const ChatPage = () => {
         setShowMuteSubmenu(false);
       })
       .catch((err) => {
-        alert(err || "Lỗi tắt thông báo");
+        alert(err || "Error muting notifications");
       });
   };
 
@@ -193,7 +193,7 @@ const ChatPage = () => {
         setActiveMenuConvId(null);
       })
       .catch((err) => {
-        alert(err || "Lỗi bật thông báo");
+        alert(err || "Error unmuting notifications");
       });
   };
 
@@ -205,7 +205,7 @@ const ChatPage = () => {
         setActiveMenuConvId(null);
       })
       .catch((err) => {
-        alert(err || "Lỗi chặn người dùng");
+        alert(err || "Error blocking user");
       });
   };
 
@@ -217,7 +217,7 @@ const ChatPage = () => {
         setActiveMenuConvId(null);
       })
       .catch((err) => {
-        alert(err || "Lỗi bỏ chặn người dùng");
+        alert(err || "Error unblocking user");
       });
   };
 
@@ -225,9 +225,9 @@ const ChatPage = () => {
   const handleDeleteConversation = (conversationId) => {
     setConfirmModal({
       isOpen: true,
-      title: "Xóa cuộc hội thoại",
-      message: "Bạn có chắc chắn muốn xóa cuộc hội thoại này? Toàn bộ lịch sử tin nhắn sẽ bị xóa đối với bạn.",
-      confirmBtnText: "Xóa",
+      title: "Delete conversation",
+      message: "Are you sure you want to delete this conversation? All message history will be deleted for you.",
+      confirmBtnText: "Delete",
       isDanger: true,
       onConfirm: () => {
         dispatch(deleteConversation(conversationId))
@@ -237,7 +237,7 @@ const ChatPage = () => {
             setActiveMenuConvId(null);
           })
           .catch((err) => {
-            alert(err || "Lỗi xóa cuộc hội thoại");
+            alert(err || "Error deleting conversation");
           });
       }
     });
@@ -580,14 +580,14 @@ const ChatPage = () => {
       (p) => p._id.toString() !== currentUserId
     );
 
-    const allOption = { _id: "all", type: "all", fullName: "Báo cho cả nhóm", tagText: "@All" };
+    const allOption = { _id: "all", type: "all", fullName: "Notify everyone", tagText: "@All" };
     let result = [allOption, ...otherParticipants];
 
     if (tagSearchQuery.trim() !== "") {
       const query = tagSearchQuery.toLowerCase();
       result = result.filter((item) => {
         if (item.type === "all") {
-          return "all".includes(query) || "báo cho cả nhóm".includes(query);
+          return "all".includes(query) || "notify everyone".includes(query);
         }
         return item.fullName.toLowerCase().includes(query);
       });
@@ -675,11 +675,11 @@ const ChatPage = () => {
   }));
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0f49b5] via-[#1e63d6] to-[#3b82f6] px-4 py-6 text-[#111827]">
-      <div className="mx-auto max-w-[1320px] overflow-hidden rounded-[28px] bg-white shadow-2xl">
+    <div className="min-h-screen bg-[#f2f3f5] text-[#111827]">
+      <div className="min-h-screen w-full bg-white flex flex-col">
         <HomeHeader profile={profile} activePage="messages" />
 
-        <main className="grid h-[760px] grid-cols-1 bg-[#f2f3f5] lg:grid-cols-[300px_minmax(0,1fr)_300px] overflow-hidden">
+        <main className="grid h-[calc(100vh-80px)] grid-cols-1 bg-[#f2f3f5] lg:grid-cols-[300px_minmax(0,1fr)_300px] overflow-hidden">
           {/* Thanh menu bên trái */}
           <aside className="border-r border-gray-200 bg-white flex flex-col h-full min-h-0">
             <div className="p-4 border-b border-gray-100">
@@ -688,7 +688,7 @@ const ChatPage = () => {
                 <button
                   onClick={() => setIsCreateGroupOpen(true)}
                   className="p-1.5 hover:bg-gray-100 rounded-full text-[#1877f2] transition flex items-center justify-center hover:scale-105"
-                  title="Tạo nhóm"
+                  title="Create group"
                 >
                   <span className="material-symbols-outlined text-[22px]">group_add</span>
                 </button>
@@ -795,7 +795,7 @@ const ChatPage = () => {
                             >
                               {conv.lastMessage
                                 ? conv.lastMessage.isRevoked
-                                  ? "Tin nhắn đã bị thu hồi"
+                                  ? "Message has been unsent"
                                   : conv.lastMessage.senderId?._id === (profile?.id || profile?.userId)
                                     ? `You: ${conv.lastMessage.content}`
                                     : conv.lastMessage.content
@@ -858,7 +858,7 @@ const ChatPage = () => {
                                       className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-1.5 font-bold text-gray-800 border-b border-gray-100"
                                     >
                                       <span className="material-symbols-outlined text-[14px]">arrow_back</span>
-                                      <span>Quay lại</span>
+                                      <span>Back</span>
                                     </button>
                                     <button
                                       type="button"
@@ -869,7 +869,7 @@ const ChatPage = () => {
                                       }}
                                       className="w-full text-left px-4 py-2 hover:bg-gray-50 font-semibold"
                                     >
-                                      Trong 1 giờ
+                                      For 1 hour
                                     </button>
                                     <button
                                       type="button"
@@ -880,7 +880,7 @@ const ChatPage = () => {
                                       }}
                                       className="w-full text-left px-4 py-2 hover:bg-gray-50 font-semibold"
                                     >
-                                      Trong 4 giờ
+                                      For 4 hours
                                     </button>
                                     <button
                                       type="button"
@@ -891,7 +891,7 @@ const ChatPage = () => {
                                       }}
                                       className="w-full text-left px-4 py-2 hover:bg-gray-50 font-semibold"
                                     >
-                                      Cho đến 8:00 AM
+                                      Until 8:00 AM
                                     </button>
                                     <button
                                       type="button"
@@ -902,7 +902,7 @@ const ChatPage = () => {
                                       }}
                                       className="w-full text-left px-4 py-2 hover:bg-gray-50 text-blue-600 font-bold"
                                     >
-                                      Cho đến khi được mở lại
+                                      Until turned back on
                                     </button>
                                   </div>
                                 ) : (
@@ -917,7 +917,7 @@ const ChatPage = () => {
                                         }}
                                         className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center justify-between font-semibold"
                                       >
-                                        <span>Bật lại thông báo</span>
+                                        <span>Unmute notifications</span>
                                       </button>
                                     ) : (
                                       <button
@@ -928,7 +928,7 @@ const ChatPage = () => {
                                         }}
                                         className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center justify-between font-semibold"
                                       >
-                                        <span>Tắt thông báo</span>
+                                        <span>Mute notifications</span>
                                         <span className="material-symbols-outlined text-[12px] block">chevron_right</span>
                                       </button>
                                     )}
@@ -947,7 +947,7 @@ const ChatPage = () => {
                                         }}
                                         className="w-full text-left px-4 py-2 hover:bg-gray-50 font-semibold border-t border-gray-100"
                                       >
-                                        {isBlocked ? "Bỏ chặn" : "Chặn người dùng"}
+                                        {isBlocked ? "Unblock" : "Block user"}
                                       </button>
                                     )}
 
@@ -960,7 +960,7 @@ const ChatPage = () => {
                                       }}
                                       className="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600 font-semibold border-t border-gray-100"
                                     >
-                                      Xóa hội thoại
+                                      Delete conversation
                                     </button>
                                   </div>
                                 )}
@@ -1021,7 +1021,7 @@ const ChatPage = () => {
                         onClick={() => setShowGroupInfo(!showGroupInfo)}
                         className={`p-2 hover:bg-gray-100 rounded-full transition ${showGroupInfo ? "text-blue-600 bg-blue-50" : "text-[#1877f2]"
                           }`}
-                        title="Thông tin nhóm"
+                        title="Group info"
                       >
                         <span className="material-symbols-outlined">info</span>
                       </button>
@@ -1095,7 +1095,7 @@ const ChatPage = () => {
                                       : "bg-gray-200 text-gray-400 border-gray-300 rounded-bl-none"
                                     }`}
                                 >
-                                  Tin nhắn đã bị thu hồi
+                                  Message has been unsent
                                 </div>
                               ) : (
                                 <div
@@ -1112,11 +1112,11 @@ const ChatPage = () => {
                                       }`}>
                                       <span className={`font-bold ${isMe ? "text-white" : "text-gray-800"} truncate`}>
                                         {msg.replyTo.senderId?._id === (profile?.id || profile?.userId)
-                                          ? "Bạn"
-                                          : msg.replyTo.senderId?.fullName || "Người dùng"}
+                                          ? "You"
+                                          : msg.replyTo.senderId?.fullName || "User"}
                                       </span>
                                       <span className={`truncate ${isMe ? "text-white/80" : "text-gray-500"}`}>
-                                        {msg.replyTo.isRevoked ? "Tin nhắn đã bị thu hồi" : renderMessageContent(msg.replyTo.content, msg.replyTo.mentions, isMe)}
+                                        {msg.replyTo.isRevoked ? "Message has been unsent" : renderMessageContent(msg.replyTo.content, msg.replyTo.mentions, isMe)}
                                       </span>
                                     </div>
                                   )}
@@ -1135,7 +1135,7 @@ const ChatPage = () => {
                                         setActiveMenuMessageId(activeMenuMessageId === msg._id ? null : msg._id);
                                       }}
                                       className="w-6 h-6 rounded-full bg-white shadow-sm border border-gray-200 flex items-center justify-center text-gray-500 hover:text-[#1877f2] hover:bg-blue-50 transition active:scale-95"
-                                      title="Khác"
+                                      title="More"
                                     >
                                       <span className="material-symbols-outlined text-[13px] block">more_horiz</span>
                                     </button>
@@ -1151,7 +1151,7 @@ const ChatPage = () => {
                                           className="w-full text-left px-4 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                                         >
                                           <span className="material-symbols-outlined text-[16px] block">content_copy</span>
-                                          Sao chép
+                                          Copy
                                         </button>
                                         <button
                                           type="button"
@@ -1163,7 +1163,7 @@ const ChatPage = () => {
                                           className="w-full text-left px-4 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                                         >
                                           <span className="material-symbols-outlined text-[16px] block">format_quote</span>
-                                          Trả lời
+                                          Reply
                                         </button>
                                         {isMe && (
                                           <button
@@ -1176,7 +1176,7 @@ const ChatPage = () => {
                                             className="w-full text-left px-4 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 flex items-center gap-2"
                                           >
                                             <span className="material-symbols-outlined text-[16px] block">undo</span>
-                                            Thu hồi
+                                            Unsend
                                           </button>
                                         )}
                                       </div>
@@ -1216,12 +1216,12 @@ const ChatPage = () => {
                     <div className="flex items-center gap-2 border-l-[3px] border-[#1877f2] pl-3 min-w-0">
                       <div className="flex flex-col min-w-0">
                         <span className="text-xs font-bold text-[#1877f2]">
-                          Đang trả lời {replyingMessage.senderId?._id === (profile?.id || profile?.userId)
-                            ? "chính mình"
-                            : replyingMessage.senderId?.fullName || "người dùng"}
+                          Replying to {replyingMessage.senderId?._id === (profile?.id || profile?.userId)
+                            ? "yourself"
+                            : replyingMessage.senderId?.fullName || "user"}
                         </span>
                         <span className="text-xs text-gray-500 truncate max-w-[500px]">
-                          {replyingMessage.isRevoked ? "Tin nhắn đã bị thu hồi" : replyingMessage.content}
+                          {replyingMessage.isRevoked ? "Message has been unsent" : replyingMessage.content}
                         </span>
                       </div>
                     </div>
@@ -1244,7 +1244,7 @@ const ChatPage = () => {
                       </div>
                       <div className="flex-1 min-w-0 pt-0.5">
                         <p className="text-[11px] font-semibold text-gray-600 leading-normal">
-                          Di chuyển bằng ↑, ↓ và nhấn Enter để sử dụng
+                          Use ↑, ↓ arrows and press Enter to select
                         </p>
                       </div>
                       <button
@@ -1406,7 +1406,7 @@ const GroupSidebar = ({ conversation, profile, onLeaveGroup, onRemoveMember, onA
         <HomeAvatar image={conversation.avatar} name={conversation.name} size="lg" />
         <h3 className="text-lg font-bold text-gray-900 mt-3 text-center">{conversation.name}</h3>
         <span className="text-xs bg-blue-50 text-blue-600 px-2.5 py-1 rounded-full font-semibold mt-2">
-          Nhóm ({conversation.participants?.length || 0} thành viên)
+          Group ({conversation.participants?.length || 0} members)
         </span>
       </div>
 
@@ -1414,12 +1414,12 @@ const GroupSidebar = ({ conversation, profile, onLeaveGroup, onRemoveMember, onA
         <div className="mb-4">
           <div className="flex justify-between items-center mb-3">
             <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-              Thành viên nhóm
+              Group members
             </h4>
             <button
               onClick={onAddMemberClick}
               className="p-1 hover:bg-gray-100 rounded-full text-blue-600 transition flex items-center justify-center hover:scale-105"
-              title="Thêm thành viên"
+              title="Add members"
             >
               <span className="material-symbols-outlined text-[18px]">person_add</span>
             </button>
@@ -1437,12 +1437,12 @@ const GroupSidebar = ({ conversation, profile, onLeaveGroup, onRemoveMember, onA
                     <HomeAvatar image={member.avatar} name={member.fullName} size="sm" />
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-gray-800 truncate">
-                        {member.fullName} {isSelf && <span className="text-xs text-gray-400 font-normal">(Bạn)</span>}
+                        {member.fullName} {isSelf && <span className="text-xs text-gray-400 font-normal">(You)</span>}
                       </p>
                       {isMemberAdmin && (
                         <span className="text-[10px] text-amber-600 font-bold flex items-center gap-0.5 mt-0.5">
                           <span className="material-symbols-outlined text-[12px]">shield</span>
-                          Trưởng nhóm
+                          Group Admin
                         </span>
                       )}
                     </div>
@@ -1452,7 +1452,7 @@ const GroupSidebar = ({ conversation, profile, onLeaveGroup, onRemoveMember, onA
                     <button
                       onClick={() => onRemoveMember(member._id)}
                       className="p-1 hover:bg-red-50 text-red-500 rounded-full transition hover:scale-105"
-                      title="Xóa khỏi nhóm"
+                      title="Remove from group"
                     >
                       <span className="material-symbols-outlined text-[18px]">person_remove</span>
                     </button>
@@ -1470,7 +1470,7 @@ const GroupSidebar = ({ conversation, profile, onLeaveGroup, onRemoveMember, onA
           className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-red-50 hover:bg-red-100 text-red-600 font-semibold text-sm rounded-xl transition hover:scale-[1.02]"
         >
           <span className="material-symbols-outlined text-[18px]">logout</span>
-          Rời khỏi nhóm
+          Leave group
         </button>
       </div>
     </aside>
@@ -1503,11 +1503,11 @@ const CreateGroupModal = ({ isOpen, onClose, friends, onCreateGroup }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!groupName.trim()) {
-      setErrorMsg("Tên nhóm không được để trống");
+      setErrorMsg("Group name cannot be empty");
       return;
     }
     if (selectedFriends.length < 2) {
-      setErrorMsg("Vui lòng chọn ít nhất 2 bạn bè để tạo nhóm (tối thiểu 3 người tính cả bạn)");
+      setErrorMsg("Please select at least 2 friends to create a group (minimum 3 people including you)");
       return;
     }
     onCreateGroup(groupName.trim(), selectedFriends);
@@ -1519,7 +1519,7 @@ const CreateGroupModal = ({ isOpen, onClose, friends, onCreateGroup }) => {
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-white">
           <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
             <span className="material-symbols-outlined text-blue-600">group_add</span>
-            Tạo Nhóm Mới
+            Create New Group
           </h3>
           <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-full text-gray-400 transition">
             <span className="material-symbols-outlined text-[20px]">close</span>
@@ -1535,11 +1535,11 @@ const CreateGroupModal = ({ isOpen, onClose, friends, onCreateGroup }) => {
 
           <div className="mb-4">
             <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-              Tên Nhóm
+              Group Name
             </label>
             <input
               type="text"
-              placeholder="Nhập tên nhóm của bạn..."
+              placeholder="Enter your group name..."
               value={groupName}
               onChange={(e) => setGroupName(e.target.value)}
               className="w-full bg-gray-50 px-4 py-2.5 text-sm rounded-xl outline-none border border-transparent focus:border-blue-500 focus:bg-white transition"
@@ -1549,10 +1549,10 @@ const CreateGroupModal = ({ isOpen, onClose, friends, onCreateGroup }) => {
 
           <div className="flex-1 overflow-y-auto mb-6 max-h-[260px] pr-1">
             <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-              Chọn Thành Viên ({selectedFriends.length} đã chọn)
+              Select Members ({selectedFriends.length} selected)
             </label>
             {friends.length === 0 ? (
-              <p className="text-sm text-gray-400 py-4 text-center">Bạn chưa có bạn bè nào để tạo nhóm.</p>
+              <p className="text-sm text-gray-400 py-4 text-center">You don't have any friends to create a group yet.</p>
             ) : (
               <div className="space-y-1">
                 {friends.map((friend) => {
@@ -1585,13 +1585,13 @@ const CreateGroupModal = ({ isOpen, onClose, friends, onCreateGroup }) => {
               onClick={onClose}
               className="px-5 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition"
             >
-              Hủy
+              Cancel
             </button>
             <button
               type="submit"
               className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl shadow-md transition hover:scale-[1.02] disabled:bg-gray-200 disabled:text-gray-400 disabled:scale-100 disabled:cursor-not-allowed"
             >
-              Tạo nhóm
+              Create group
             </button>
           </div>
         </form>
@@ -1600,7 +1600,7 @@ const CreateGroupModal = ({ isOpen, onClose, friends, onCreateGroup }) => {
   );
 };
 
-const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, confirmBtnText = "Xác nhận", isDanger = false }) => {
+const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, confirmBtnText = "Confirm", isDanger = false }) => {
   if (!isOpen) return null;
 
   return (
@@ -1616,7 +1616,7 @@ const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, confirmBtnTe
             onClick={onClose}
             className="px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition"
           >
-            Hủy
+            Cancel
           </button>
           <button
             type="button"
@@ -1667,7 +1667,7 @@ const AddMembersModal = ({ isOpen, onClose, friends, conversation, onAddMembers 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (selectedFriends.length === 0) {
-      setErrorMsg("Vui lòng chọn ít nhất 1 bạn bè để thêm");
+      setErrorMsg("Please select at least 1 friend to add");
       return;
     }
     onAddMembers(selectedFriends);
@@ -1679,7 +1679,7 @@ const AddMembersModal = ({ isOpen, onClose, friends, conversation, onAddMembers 
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-white">
           <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
             <span className="material-symbols-outlined text-blue-600">person_add</span>
-            Thêm Thành Viên Vào Nhóm
+            Add Members to Group
           </h3>
           <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-full text-gray-400 transition">
             <span className="material-symbols-outlined text-[20px]">close</span>
@@ -1695,10 +1695,10 @@ const AddMembersModal = ({ isOpen, onClose, friends, conversation, onAddMembers 
 
           <div className="flex-1 overflow-y-auto mb-6 max-h-[260px] pr-1">
             <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-              Chọn Bạn Bè ({selectedFriends.length} đã chọn)
+              Select Friends ({selectedFriends.length} selected)
             </label>
             {addableFriends.length === 0 ? (
-              <p className="text-sm text-gray-400 py-6 text-center">Tất cả bạn bè của bạn đều đã có mặt trong nhóm này.</p>
+              <p className="text-sm text-gray-400 py-6 text-center">All of your friends are already in this group.</p>
             ) : (
               <div className="space-y-1">
                 {addableFriends.map((friend) => {
@@ -1731,14 +1731,14 @@ const AddMembersModal = ({ isOpen, onClose, friends, conversation, onAddMembers 
               onClick={onClose}
               className="px-5 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition"
             >
-              Hủy
+              Cancel
             </button>
             <button
               type="submit"
               disabled={addableFriends.length === 0}
               className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl shadow-md transition hover:scale-[1.02] disabled:bg-gray-200 disabled:text-gray-400 disabled:scale-100 disabled:cursor-not-allowed"
             >
-              Thêm vào nhóm
+              Add to group
             </button>
           </div>
         </form>

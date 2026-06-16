@@ -653,8 +653,8 @@ const popupTitles = {
   comment_reply: "New reply",
   comment_like: "New comment like",
   story_reaction: "New story reaction",
-  mention: "Nhắc đến",
-  new_message: "Tin nhắn mới",
+  mention: "Mention",
+  new_message: "New message",
 };
 
 const NotificationPopup = ({ notification, onClose }) => {
