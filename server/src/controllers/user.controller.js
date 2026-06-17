@@ -11,6 +11,7 @@ async function editProfile(req, res) {
       dateOfBirth: req.body.dateOfBirth,
       gender: req.body.gender,
       address: req.body.address,
+      socialLinks: req.body.socialLinks,
       avatar: req.body.avatar,
     };
 
@@ -348,6 +349,22 @@ async function getOtherUserProfile(req, res) {
   } catch (error) { 
     console.error('Get Other User Profile Error:', error);
 
+    if (error.statusCode === 403) {
+      return res.status(403).json({
+        success: false,
+        code: error.code,
+        message: error.message,
+      });
+    }
+
+    if (error.statusCode === 404) {
+      return res.status(404).json({
+        success: false,
+        code: error.code,
+        message: error.message,
+      });
+    }
+
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
@@ -355,6 +372,62 @@ async function getOtherUserProfile(req, res) {
     });
   }
 
+}
+
+async function blockUser(req, res) {
+  try {
+    const result = await UserService.blockUser(req.user.userId, req.params.id);
+    return res.status(200).json({
+      success: true,
+      message: result.message,
+      data: result.data,
+    });
+  } catch (error) {
+    console.error('Block User Error:', error);
+
+    return res.status(error.statusCode || 500).json({
+      success: false,
+      code: error.code || 'INTERNAL_SERVER_ERROR',
+      message: error.message || 'Internal server error',
+    });
+  }
+}
+
+async function unblockUser(req, res) {
+  try {
+    const result = await UserService.unblockUser(req.user.userId, req.params.id);
+    return res.status(200).json({
+      success: true,
+      message: result.message,
+      data: result.data,
+    });
+  } catch (error) {
+    console.error('Unblock User Error:', error);
+
+    return res.status(error.statusCode || 500).json({
+      success: false,
+      code: error.code || 'INTERNAL_SERVER_ERROR',
+      message: error.message || 'Internal server error',
+    });
+  }
+}
+
+async function getBlockedUsers(req, res) {
+  try {
+    const result = await UserService.getBlockedUsers(req.user.userId);
+    return res.status(200).json({
+      success: true,
+      data: result.data,
+    });
+  } catch (error) {
+    console.error('Get Blocked Users Error:', error);
+
+    return res.status(error.statusCode || 500).json({
+      success: false,
+      code: error.code || 'INTERNAL_SERVER_ERROR',
+      message: error.message || 'Internal server error',
+    });
+  }
 }
 
 // [POST] /api/users/logout
@@ -386,8 +459,12 @@ module.exports = {
   getMyProfileIsAdmin,
   searchUsers,
   getOtherUserProfile,
-  logout
+  logout,
+  blockUser,
+  unblockUser,
+  getBlockedUsers,
 };
+
 
 
 

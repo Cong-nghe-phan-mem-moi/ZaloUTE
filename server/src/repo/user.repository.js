@@ -39,7 +39,8 @@ async function getUserById(userId) {
     console.log("getUserById - userId:", userId);
     const user = await User.findById(userId)
       .populate("account")
-      .populate("friends", "fullName avatar isOnline lastActive");
+      .populate("friends", "fullName avatar isOnline lastActive")
+      .populate("blockedUsers", "fullName avatar");
     console.log("getUserById - user found:", !!user, user?.fullName);
     return user;
   } catch (error) {
@@ -77,7 +78,29 @@ async function countUsers(condition) {
 async function getOtherUserById(userId) {
   return await User.findById(userId)
     .select("-account")
-    .populate("friends", "fullName avatar isOnline lastActive");
+    .populate("friends", "fullName avatar isOnline lastActive")
+    .populate("blockedUsers", "fullName avatar");
+}
+
+async function blockUser(userId, blockedUserId) {
+  return await User.updateOne(
+    { _id: userId },
+    { $addToSet: { blockedUsers: blockedUserId }, $pull: { friends: blockedUserId } },
+  );
+}
+
+async function unblockUser(userId, blockedUserId) {
+  return await User.updateOne(
+    { _id: userId },
+    { $pull: { blockedUsers: blockedUserId } },
+  );
+}
+
+async function removeUsersFromFriends(userId, otherUserId) {
+  return await Promise.all([
+    User.updateOne({ _id: userId }, { $pull: { friends: otherUserId } }),
+    User.updateOne({ _id: otherUserId }, { $pull: { friends: userId } }),
+  ]);
 }
 
 async function addFriend(userId, friendId) {
@@ -115,4 +138,7 @@ module.exports = {
   addFriend,
   removeFriend,
   setUserOffline,
+  blockUser,
+  unblockUser,
+  removeUsersFromFriends,
 };

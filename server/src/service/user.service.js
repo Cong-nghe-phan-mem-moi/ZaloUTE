@@ -21,6 +21,13 @@ const buildProfileResponse = (user) => ({
   dateOfBirth: user.dateOfBirth,
   gender: user.gender,
   address: user.address,
+  socialLinks: {
+    facebook: user.socialLinks?.facebook || "",
+    instagram: user.socialLinks?.instagram || "",
+    tiktok: user.socialLinks?.tiktok || "",
+    youtube: user.socialLinks?.youtube || "",
+    website: user.socialLinks?.website || "",
+  },
   isOnline: user.isOnline,
   lastActive: user.lastActive,
   friendsCount: user.friends?.length || 0,
@@ -35,9 +42,19 @@ const buildProfileResponse = (user) => ({
       lastActive: friend.lastActive || null,
     };
   }),
+  blockedUsers: (user.blockedUsers || []).map((blockedUser) => ({
+    id: blockedUser?._id?.toString?.() || blockedUser?.toString?.() || blockedUser,
+    fullName: blockedUser?.fullName || "Unknown",
+    avatar: blockedUser?.avatar || null,
+  })),
   createdAt: user.createdAt,
   updatedAt: user.updatedAt,
 });
+
+const isUserBlocked = (user, targetUserId) =>
+  (user?.blockedUsers || []).some(
+    (blockedUser) => String(blockedUser?._id || blockedUser) === String(targetUserId),
+  );
 
 async function editProfile(userId, updateData) {
   const user = await UserRepository.getUserById(userId);
@@ -141,8 +158,15 @@ async function getMyProfileByRole(userId, role) {
 }
 
 async function getOtherUserProfile(userId, myId) {
+  const myUser = await UserRepository.getUserById(myId);
+  if (!myUser) throwError(404, "USER_NOT_FOUND", "User not found");
+
   const user = await UserRepository.getOtherUserById(userId);
   if (!user) throwError(404, "USER_NOT_FOUND", "User not found");
+
+  if (isUserBlocked(user, myId) || isUserBlocked(myUser, userId)) {
+    throwError(403, "PROFILE_BLOCKED", "You cannot view this profile");
+  }
 
   const userObj = user.toObject();
   userObj.relation = await FriendRequestService.getFriendRelation(
@@ -151,6 +175,62 @@ async function getOtherUserProfile(userId, myId) {
   );
 
   return userObj;
+}
+
+async function blockUser(userId, blockedUserId) {
+  if (String(userId) === String(blockedUserId)) {
+    throwError(400, "INVALID_BLOCK_TARGET", "You cannot block yourself");
+  }
+
+  const [user, blockedUser] = await Promise.all([
+    UserRepository.getUserById(userId),
+    UserRepository.getUserById(blockedUserId),
+  ]);
+
+  if (!user || !blockedUser) {
+    throwError(404, "USER_NOT_FOUND", "User not found");
+  }
+
+  await UserRepository.blockUser(userId, blockedUserId);
+  await UserRepository.removeUsersFromFriends(userId, blockedUserId);
+
+  const updatedUser = await UserRepository.getUserById(userId);
+
+  return {
+    success: true,
+    message: "User blocked successfully",
+    data: buildProfileResponse(updatedUser),
+  };
+}
+
+async function unblockUser(userId, blockedUserId) {
+  const [user, blockedUser] = await Promise.all([
+    UserRepository.getUserById(userId),
+    UserRepository.getUserById(blockedUserId),
+  ]);
+
+  if (!user || !blockedUser) {
+    throwError(404, "USER_NOT_FOUND", "User not found");
+  }
+
+  await UserRepository.unblockUser(userId, blockedUserId);
+  const updatedUser = await UserRepository.getUserById(userId);
+
+  return {
+    success: true,
+    message: "User unblocked successfully",
+    data: buildProfileResponse(updatedUser),
+  };
+}
+
+async function getBlockedUsers(userId) {
+  const user = await UserRepository.getUserById(userId);
+  if (!user) throwError(404, "USER_NOT_FOUND", "User not found");
+
+  return {
+    success: true,
+    data: buildProfileResponse(user).blockedUsers,
+  };
 }
 
 async function searchUsers(keyword, page, limit, myId) {
@@ -225,4 +305,7 @@ module.exports = {
   getMyProfileByRole,
   getOtherUserProfile,
   logout,
+  blockUser,
+  unblockUser,
+  getBlockedUsers,
 };
