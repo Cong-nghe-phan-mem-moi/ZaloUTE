@@ -13,7 +13,7 @@ const populatePostQuery = (query) =>
         { path: 'reactions.user', select: 'fullName avatar email' },
       ],
     });
-
+ 
 class PostRepository {
   static async createPost(postData) {
     const post = new Post(postData);
@@ -155,4 +155,23 @@ class PostRepository {
   }
 }
 
-module.exports = PostRepository;
+async function searchPosts({keyword, limit = 10}){
+  return await Post.find({
+    $text: { $search: keyword }
+  })
+  .limit(limit)
+  .lean()
+}
+
+async function countSearchPosts({ keyword }) {
+    return await Post.countDocuments({
+        $text: { $search: keyword } 
+    });
+}
+
+
+module.exports = {
+  PostRepository,
+  searchPosts, 
+  countSearchPosts
+};

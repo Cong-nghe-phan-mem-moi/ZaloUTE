@@ -51,7 +51,7 @@ async function removeInviteAndAddMember(groupId, userId) {
             $addToSet: { members: userId }
         }
     );
-}
+} 
 
 async function removeRequestAndAddMember(groupId, userId) {
     return await Group.updateOne(
@@ -70,6 +70,21 @@ async function addAdmin(groupId, targetUserId) {
     );
 }
 
+async function searchGroups({ keyword, limit = 10 }) {
+    return await Group.find({
+        searchName: { $regex: keyword, $options: 'i' }
+    })
+    .select('name avatar')
+    .limit(limit)
+    .lean();
+}
+
+async function countSearchGroups({ keyword }) {
+    return await Group.countDocuments({
+        searchName: { $regex: keyword, $options: 'i' }
+    });
+}
+
 module.exports = {
     createGroup,
     findGroupById,
@@ -79,5 +94,7 @@ module.exports = {
     addPendingInvites,
     removeInviteAndAddMember,
     removeRequestAndAddMember,
-    addAdmin
+    addAdmin,
+    searchGroups,
+    countSearchGroups
 };

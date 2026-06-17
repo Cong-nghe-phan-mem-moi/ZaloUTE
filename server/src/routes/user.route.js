@@ -8,7 +8,7 @@ const friendRequestController = require("../controllers/friendRequest.controller
 router.get(
   "/search",
   authMiddleware.authMiddleware,
-  userController.searchUsers,
+  userController.handleGlobalSearch,
 );
 
 router.get(

@@ -137,7 +137,7 @@ async function acceptGroupInvitation(userId, groupId) {
 
   return await GroupRepository.removeInviteAndAddMember(groupId, userId);
 }
-
+ 
 async function approveJoinRequest(adminId, groupId, targetUserId) {
   const group = await GroupRepository.findGroupById(groupId);
   if (!group) throwCustomError(404, 'Không tìm thấy nhóm', 'GROUP_NOT_FOUND');

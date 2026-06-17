@@ -16,7 +16,7 @@ async function findPendingRequestBetweenUsers(userA, userB) {
       { sender: userB, receiver: userA, status: "pending" },
     ],
   });
-}
+} 
 
 async function findRequestBetweenUsers(userA, userB) {
   return await FriendRequest.findOne({
@@ -72,6 +72,17 @@ async function updateRequestStatus(requestId, newStatus) {
   );
 }
 
+
+async function findPendingRequestsInUserList(myId, foundUserIds){
+  return await FriendRequest.find({
+    status: "pending",
+    $or: [
+      { sender: myId, receiver: {$in: foundUserIds }},
+      { receiver: myId, sender: {$in: foundUserIds }}
+    ]
+  }).lean();
+}
+
 module.exports = {
   checkExistingRequest,
   createRequest,
@@ -82,4 +93,5 @@ module.exports = {
   getPendingRequestsByReceiver,
   getPendingRequestsBySender,
   updateRequestStatus,
+  findPendingRequestsInUserList
 };

@@ -376,6 +376,45 @@ async function logout(req, res) {
   }
 }
 
+async function handleGlobalSearch(req, res) {
+  try {
+    const { q, type, limit } = req.query;
+    const myId = req.user.userId;
+
+    if (!q || !q.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Vui lòng nhập từ khóa để tìm kiếm!'
+      });
+    }
+
+    const result = await UserService.globalSearch({
+      q: q.trim(),
+      type: type || 'all',
+      limit: limit,
+      myId
+    });
+
+    return res.status(200).json({
+      success: true,
+      type: result.type,
+      data: result.data,
+      nextLimit: result.nextLimit
+    });
+
+  } catch (error) {
+    console.error('Global Search Error:', error);
+
+    if (error.statusCode === 400) {
+      return res.status(400).json({
+        success: false,
+        code: error.code,
+        message: error.message,
+      });
+    }
+  }
+}
+
 
 module.exports = {
   editProfile,
@@ -388,4 +427,5 @@ module.exports = {
   searchUsers,
   getOtherUserProfile,
   logout,
-};
+  handleGlobalSearch,
+}; 
