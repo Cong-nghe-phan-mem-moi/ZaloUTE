@@ -1,11 +1,17 @@
 const mongoose = require('mongoose');
-const User = require('./user.model');
+const { removeVietnameseTones } = require("../utils/stringUtil");
+
 const groupSchema = new mongoose.Schema({
   name: {
     type: String,
     required: [true, 'Tên nhóm không được để trống'],
     trim: true,
     maxLength: [100, 'Tên nhóm không được vượt quá 100 ký tự']
+  },
+  searchName: {
+    type: String,
+    lowercase: true,
+    select: false
   },
   avatar: {
     type: String,
@@ -23,7 +29,7 @@ const groupSchema = new mongoose.Schema({
   },
   admins: [{
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User' 
+    ref: 'User'
   }],
   members: [{
     type: mongoose.Schema.Types.ObjectId,
@@ -46,7 +52,25 @@ const groupSchema = new mongoose.Schema({
   timestamps: true
 });
 
-groupSchema.index({ name: 'text' }); 
+groupSchema.index({ searchName: 1 });
+
+groupSchema.pre("save", async function() {
+  if (this.isModified('name')) {
+    this.searchName = removeVietnameseTones(this.name);
+  }
+})
+
+groupSchema.pre("findOneAndUpdate", async function() {
+  const update = this.getUpdate();
+
+  if (update.$set && update.$set.name) {
+    update.$set.searchName = removeVietnameseTones(update.$set.name);
+  } else if (update.name) {
+    update.searchName = removeVietnameseTones(update.name);
+  }
+
+});
+
 
 const Group = mongoose.model('Group', groupSchema);
 
