@@ -412,6 +412,12 @@ async function handleGlobalSearch(req, res) {
         message: error.message,
       });
     }
+
+    return res.status(error.statusCode || 500).json({
+      success: false,
+      code: error.code || 'GLOBAL_SEARCH_ERROR',
+      message: error.message || 'Internal server error',
+    });
   }
 }
 

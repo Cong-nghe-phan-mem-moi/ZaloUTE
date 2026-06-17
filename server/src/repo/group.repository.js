@@ -21,6 +21,8 @@ async function findGroupDetailById(groupId) {
 async function getGroupsByUserId(userId) {
     return await Group.find({ members: userId })
         .select('name avatar description members admins isPrivate creator')
+        .populate('members', 'fullName avatar isOnline lastActive')
+        .populate('admins', 'fullName avatar isOnline lastActive')
         .lean();
 }
 

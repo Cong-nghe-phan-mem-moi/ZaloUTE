@@ -67,7 +67,6 @@ const buildPostsResponse = async (posts, userId = null) =>
   await Promise.all(posts.map((post) => buildPostResponse(post, userId)));
 
 class PostService {
-  // 4.1 Táº¡o bÃ i viáº¿t
   static async createPost(userId, content, media = []) {
     const trimmedContent = content?.trim() || '';
     // Validate content
@@ -179,7 +178,6 @@ class PostService {
     };
   }
 
-  // 4.2 Chá»‰nh sá»­a bÃ i viáº¿t
   static async updatePost(postId, userId, content, media = []) {
     const trimmedContent = content?.trim() || '';
     // Find post
@@ -217,7 +215,6 @@ class PostService {
     return await PostRepository.updatePost(postId, updateData);
   }
 
-  // 4.3 XÃ³a bÃ i viáº¿t
   static async deletePost(postId, userId) {
     // Find post
     const post = await PostRepository.findPostById(postId);

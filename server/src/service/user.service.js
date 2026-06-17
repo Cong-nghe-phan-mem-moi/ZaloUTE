@@ -232,9 +232,9 @@ async function globalSearch({ q, type = "all", limit = 10, myId }) {
 
     if (type === "all") {
         const [rawUsers, groups, posts] = await Promise.all([
-            UserRepository.searchUsers({ keyword, currentLimit, myId }),
-            GroupRepository.searchGroups({ keyword, currentLimit }),
-            PostRepository.searchPosts({ keyword: q, currentLimit }),
+            UserRepository.searchUsers({ keyword, limit: currentLimit, myId }),
+            GroupRepository.searchGroups({ keyword, limit: currentLimit }),
+            PostRepository.searchPosts({ keyword: q, limit: currentLimit }),
         ])
 
         const mappedUsers = await getUsersWithRelationStatus(myId, rawUsers);

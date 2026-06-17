@@ -159,6 +159,7 @@ async function searchPosts({keyword, limit = 10}){
   return await Post.find({
     $text: { $search: keyword }
   })
+  .populate('author', '_id fullName avatar')
   .limit(limit)
   .lean()
 }
@@ -170,8 +171,7 @@ async function countSearchPosts({ keyword }) {
 }
 
 
-module.exports = {
-  PostRepository,
-  searchPosts, 
-  countSearchPosts
-};
+PostRepository.searchPosts = searchPosts;
+PostRepository.countSearchPosts = countSearchPosts;
+
+module.exports = PostRepository;
