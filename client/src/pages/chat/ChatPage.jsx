@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { format, formatDistanceToNow } from "date-fns";
 import { enUS } from "date-fns/locale";
 import HomeHeader from "../../components/home/HomeHeader";
 import RightSidebar from "../../components/home/RightSidebar";
 import UserAvatar from "../../components/common/UserAvatar";
+import SharedPostPreview from "../../components/post/SharedPostPreview";
+import getImageUrl from "../../utils/imageUrl";
 import {
   AddMembersModal,
   ConfirmModal,
@@ -61,8 +63,52 @@ const formatLastActive = (lastActive) => {
   }
 };
 
+const StoryReplyPreview = ({ story, onOpen }) => {
+  if (!story) {
+    return (
+      <div className="mt-2 rounded-xl border border-white/20 bg-black/10 p-3 text-xs">
+        Story is no longer available.
+      </div>
+    );
+  }
+
+  const mediaUrl = story.media?.url ? getImageUrl(story.media.url) : null;
+
+  return (
+    <button
+      type="button"
+      onClick={() => onOpen?.(story._id)}
+      className="mt-2 flex w-full max-w-xs items-center gap-3 rounded-xl border border-gray-200 bg-white p-2 text-left text-gray-900 hover:bg-gray-50"
+    >
+      <div
+        className="flex h-16 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg text-center text-[10px] font-bold text-white"
+        style={{ background: mediaUrl ? "#111827" : story.background || "#1877f2" }}
+      >
+        {mediaUrl ? (
+          story.type === "video" ? (
+            <video className="h-full w-full object-cover" src={mediaUrl} muted />
+          ) : (
+            <img className="h-full w-full object-cover" src={mediaUrl} alt="" />
+          )
+        ) : (
+          <span className="line-clamp-3 px-1">{story.text || "Story"}</span>
+        )}
+      </div>
+      <div className="min-w-0">
+        <p className="truncate text-xs font-bold">
+          {story.author?.fullName || "Story"}
+        </p>
+        <p className="line-clamp-2 text-xs text-gray-500">
+          {story.text || (story.media ? "Story media" : "Story")}
+        </p>
+      </div>
+    </button>
+  );
+};
+
 const ChatPage = () => {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const { profile } = useAppSelector((state) => state.user);
   const {
     conversations,
@@ -1120,6 +1166,38 @@ const ChatPage = () => {
                                     }`}
                                 >
                                   Message has been unsent
+                                </div>
+                              ) : msg.messageType === "post_share" ? (
+                                <div
+                                  className={`max-w-sm rounded-2xl p-2 shadow-sm text-sm ${
+                                    isMe
+                                      ? "bg-[#1877f2] text-white rounded-br-none"
+                                      : "bg-white text-gray-800 rounded-bl-none"
+                                  }`}
+                                >
+                                  {msg.content && msg.content !== "Shared a post" ? (
+                                    <p className="px-2 py-1 text-sm">{msg.content}</p>
+                                  ) : null}
+                                  <div className={isMe ? "[&_*]:text-gray-900" : ""}>
+                                    <SharedPostPreview
+                                      post={msg.sharedPost}
+                                      onOpen={(postId) => navigate(`/?postId=${postId}`)}
+                                    />
+                                  </div>
+                                </div>
+                              ) : msg.messageType === "story_reply" ? (
+                                <div
+                                  className={`max-w-sm rounded-2xl p-2 shadow-sm text-sm ${
+                                    isMe
+                                      ? "bg-[#1877f2] text-white rounded-br-none"
+                                      : "bg-white text-gray-800 rounded-bl-none"
+                                  }`}
+                                >
+                                  <p className="px-2 py-1 text-sm">{msg.content}</p>
+                                  <StoryReplyPreview
+                                    story={msg.sharedStory}
+                                    onOpen={(storyId) => navigate(`/?storyId=${storyId}`)}
+                                  />
                                 </div>
                               ) : (
                                 <div

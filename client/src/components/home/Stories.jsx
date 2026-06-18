@@ -549,6 +549,7 @@ const StoryViewer = ({
   const [error, setError] = useState("");
   const [progress, setProgress] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [replyFocused, setReplyFocused] = useState(false);
   const [showInsights, setShowInsights] = useState(false);
 
   const group = groups[viewerState.groupIndex];
@@ -556,6 +557,7 @@ const StoryViewer = ({
   const isOwner = String(group?.authorId) === String(currentUserId);
   const mediaUrl = getStoryMediaUrl(story);
   const authorName = getAuthorName(story);
+  const isReplying = replyFocused || Boolean(reply.trim());
 
   const goNext = useCallback(() => {
     setProgress(0);
@@ -636,7 +638,7 @@ const StoryViewer = ({
   }, [storyId, onStoryUpdated]);
 
   useEffect(() => {
-    if (!storyId || paused || showInsights) return undefined;
+    if (!storyId || paused || showInsights || isReplying) return undefined;
 
     const interval = window.setInterval(() => {
       setProgress((value) => {
@@ -655,7 +657,7 @@ const StoryViewer = ({
     }, 100);
 
     return () => window.clearInterval(interval);
-  }, [storyId, paused, showInsights, goNext]);
+  }, [storyId, paused, showInsights, isReplying, goNext]);
 
   if (!story) return null;
 
@@ -675,7 +677,7 @@ const StoryViewer = ({
     try {
       const response = await storyAPI.reply(story._id, reply);
       setReply("");
-      onStoryUpdated(response.data?.data || story);
+      onStoryUpdated(response.data?.data?.story || story);
     } catch (err) {
       setError(err.response?.data?.message || "Unable to send reply.");
     }
@@ -792,6 +794,8 @@ const StoryViewer = ({
                   <input
                     value={reply}
                     onChange={(event) => setReply(event.target.value)}
+                    onFocus={() => setReplyFocused(true)}
+                    onBlur={() => setReplyFocused(false)}
                     className="min-w-0 flex-1 rounded-full border border-white/30 bg-white/10 px-4 py-2 text-sm text-white outline-none placeholder:text-white/70 focus:border-white"
                     placeholder="Reply to story..."
                   />
@@ -927,24 +931,6 @@ const OwnerStoryInsights = ({ story, onClose }) => (
         })}
         {story.reactions?.length ? null : (
           <p className="text-sm text-[#6b7280]">No reactions yet.</p>
-        )}
-
-        <div className="mb-3 mt-5 flex items-center gap-2 text-sm font-bold">
-          <span className="material-symbols-outlined text-[18px]">reply</span>
-          Replies
-        </div>
-        {(story.replies || []).map((reply) => (
-          <div key={reply._id} className="mb-2 rounded-md bg-[#f8fafc] p-2">
-            <StoryPerson
-              user={reply.user}
-              meta={new Date(reply.createdAt).toLocaleTimeString()}
-              dark={false}
-            />
-            <p className="mt-1 text-xs">{reply.content}</p>
-          </div>
-        ))}
-        {story.replies?.length ? null : (
-          <p className="text-sm text-[#6b7280]">No replies yet.</p>
         )}
       </div>
     </div>
