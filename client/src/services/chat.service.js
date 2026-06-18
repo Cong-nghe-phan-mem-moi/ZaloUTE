@@ -2,8 +2,11 @@ import apiClient from "./apiClient";
 
 export const chatAPI = {
   getConversations: () => apiClient.get("/chats/conversations"),
+  getConversationBadge: () => apiClient.get("/chats/conversations/badge"),
   getOrCreateConversation: (targetUserId) =>
     apiClient.post("/chats/conversations", { targetUserId }),
+  markConversationsAsSeen: () =>
+    apiClient.post("/chats/conversations/seen"),
   getMessages: (conversationId, page = 1, limit = 50) =>
     apiClient.get(`/chats/conversations/${conversationId}/messages`, {
       params: { page, limit },
@@ -29,4 +32,3 @@ export const chatAPI = {
   deleteConversation: (conversationId) =>
     apiClient.delete(`/chats/conversations/${conversationId}`),
 };
-

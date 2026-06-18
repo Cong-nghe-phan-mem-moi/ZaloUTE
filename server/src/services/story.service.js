@@ -251,21 +251,6 @@ class StoryService {
       });
     });
 
-    await NotificationService.createNotification({
-      receiver: authorId,
-      sender: userId,
-      type: 'new_message',
-      content: `${message.senderId.fullName} replied to your story`,
-      preview: trimmedContent,
-      relatedId: conversation._id,
-      relatedType: null,
-      data: {
-        conversationId: conversation._id,
-        messageId: message._id,
-        storyId: story._id,
-      },
-    });
-
     return {
       story: await this.getStory(storyId, userId),
       conversation: updatedConversation,
