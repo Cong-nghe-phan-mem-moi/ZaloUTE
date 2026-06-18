@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
+const Account = require('../models/account.model');
 
-const authMiddleware = (req, res, next) => {
+const authMiddleware = async (req, res, next) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
 
@@ -13,6 +14,42 @@ const authMiddleware = (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (decoded.accountId) {
+      const account = await Account.findById(decoded.accountId).select(
+        'status suspendedUntil suspensionReason',
+      );
+
+      if (!account) {
+        return res.status(401).json({
+          success: false,
+          code: 'INVALID_ACCOUNT',
+          message: 'Account not found',
+        });
+      }
+
+      if (
+        account.status === 'suspended' &&
+        account.suspendedUntil &&
+        new Date(account.suspendedUntil).getTime() <= Date.now()
+      ) {
+        account.status = 'active';
+        account.suspendedUntil = null;
+        account.suspensionReason = '';
+        await account.save();
+      }
+
+      if (account.status !== 'active') {
+        return res.status(403).json({
+          success: false,
+          code: account.status === 'suspended' ? 'ACCOUNT_SUSPENDED' : 'ACCOUNT_NOT_ACTIVE',
+          message:
+            account.status === 'suspended' && account.suspendedUntil
+              ? `Account is suspended until ${new Date(account.suspendedUntil).toLocaleString()}`
+              : 'Account is not active',
+        });
+      }
+    }
+
     req.user = decoded;
     next();
   } catch (error) {

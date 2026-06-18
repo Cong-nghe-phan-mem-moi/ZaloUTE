@@ -202,6 +202,27 @@ const login = async (email, password) => {
     };
   }
 
+  if (
+    account.status === "suspended" &&
+    account.suspendedUntil &&
+    new Date(account.suspendedUntil).getTime() <= Date.now()
+  ) {
+    account.status = "active";
+    account.suspendedUntil = null;
+    account.suspensionReason = "";
+    await account.save();
+  }
+
+  if (account.status === "suspended") {
+    throw {
+      statusCode: 403,
+      code: "ACCOUNT_SUSPENDED",
+      message: account.suspendedUntil
+        ? `Account is suspended until ${new Date(account.suspendedUntil).toLocaleString()}`
+        : "Account is suspended",
+    };
+  }
+
   if (account.status !== "active") {
     throw {
       statusCode: 403,

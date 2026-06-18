@@ -134,6 +134,7 @@ const buildPostsResponse = async (posts, userId = null) => {
   const hiddenPostIds = getSetFrom(user?.hiddenPosts);
   const visiblePosts = posts.filter((post) =>
     !hiddenPostIds.has(String(post._id)) &&
+    !isModerationHidden(post) &&
     !hasBlockedAuthor(post, blockedAuthorIds) &&
     canViewPostWithSharedSource(post, userId, friendIds),
   );
@@ -176,10 +177,13 @@ const hasBlockedAuthor = (post, blockedAuthorIds = new Set()) => {
   );
 };
 
+const isModerationHidden = (post) => Boolean(post?.moderation?.hidden);
+
 const assertCanViewPost = async (post, userId) => {
   const { friendIds, blockedAuthorIds } = await getViewerContext(userId);
 
   if (
+    isModerationHidden(post) ||
     hasBlockedAuthor(post, blockedAuthorIds) ||
     !canViewPostWithSharedSource(post, userId, friendIds)
   ) {
@@ -420,6 +424,7 @@ class PostService {
     const feedFilter = {
       ...privacyFilter,
       _id: { $nin: hiddenPostIds },
+      "moderation.hidden": { $ne: true },
     };
     const posts = await PostRepository.getPostsByAuthors(
       visibleAuthorIds,
@@ -469,6 +474,7 @@ class PostService {
         ...privacyFilter,
         author: { $nin: [...excludedAuthorSet] },
         _id: { $nin: hiddenPostIds },
+        "moderation.hidden": { $ne: true },
       },
       limit,
       candidateLimit: 80,
@@ -476,6 +482,7 @@ class PostService {
 
     const rankedPosts = candidates
       .filter((post) =>
+        !isModerationHidden(post) &&
         !hasBlockedAuthor(post, blockedAuthorIds) &&
         canViewPostWithSharedSource(post, userId, friendIds),
       )
@@ -661,8 +668,12 @@ class PostService {
       };
     }
     const privacyFilter = buildPrivacyMongoFilter(currentUserId, friendIds);
-    const posts = await PostRepository.getPostsByAuthor(authorId, skip, limit, privacyFilter);
-    const total = await PostRepository.getPostsByAuthorCount(authorId, privacyFilter);
+    const visibleFilter = {
+      ...privacyFilter,
+      "moderation.hidden": { $ne: true },
+    };
+    const posts = await PostRepository.getPostsByAuthor(authorId, skip, limit, visibleFilter);
+    const total = await PostRepository.getPostsByAuthorCount(authorId, visibleFilter);
 
     const postsWithLikeStatus = await buildPostsResponse(posts, currentUserId);
 
@@ -696,6 +707,7 @@ class PostService {
     const posts = await Post.find({ content: searchRegex })
       .find(privacyFilter)
       .find({ author: { $nin: [...blockedAuthorIds] } })
+      .find({ "moderation.hidden": { $ne: true } })
       .populate('author', 'fullName avatar email')
       .populate('likes', 'fullName avatar email')
       .populate('reactions.user', 'fullName avatar email')
@@ -715,6 +727,7 @@ class PostService {
       content: searchRegex,
       ...privacyFilter,
       author: { $nin: [...blockedAuthorIds] },
+      "moderation.hidden": { $ne: true },
     });
 
     const postsWithLikeStatus = await buildPostsResponse(posts, userId);

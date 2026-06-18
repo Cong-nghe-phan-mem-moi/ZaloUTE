@@ -26,8 +26,16 @@ const accountSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['active', 'inactive', 'banned', 'pending'],
+        enum: ['active', 'inactive', 'banned', 'pending', 'suspended'],
         default: 'pending'
+    },
+    suspendedUntil: {
+        type: Date,
+        default: null
+    },
+    suspensionReason: {
+        type: String,
+        default: ''
     }
 }, { timestamps: true });
 

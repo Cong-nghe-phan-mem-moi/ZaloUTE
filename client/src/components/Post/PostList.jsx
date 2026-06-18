@@ -20,6 +20,7 @@ import SharePostModal from "./SharePostModal";
 import SharedPostPreview from "./SharedPostPreview";
 import PostEngagement from "./PostEngagement";
 import { getPrivacyOption } from "../../utils/privacy";
+import ReportModal from "../report/ReportModal";
 
 const getUserId = (user) => user?.userId || user?._id || user?.id;
 
@@ -177,6 +178,7 @@ const PostList = ({
   const [selectedPostId, setSelectedPostId] = useState(initialSelectedPostId);
   const [editingPostId, setEditingPostId] = useState(null);
   const [sharingPostId, setSharingPostId] = useState(null);
+  const [reportTarget, setReportTarget] = useState(null);
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState("newest");
   const loadMoreRef = useRef(null);
@@ -404,6 +406,18 @@ const PostList = ({
                 </span>
               </button>
             ) : null}
+            {!isOwnPost ? (
+              <button
+                type="button"
+                onClick={() => setReportTarget({ type: "Post", id: post._id })}
+                className="text-gray-500 hover:text-red-600 p-1 rounded hover:bg-gray-100"
+                title="Report post"
+              >
+                <span className="material-symbols-outlined text-[20px]">
+                  flag
+                </span>
+              </button>
+            ) : null}
             {isOwnPost ? (
               <>
                 <button
@@ -541,6 +555,12 @@ const PostList = ({
         post={posts.find((post) => post._id === sharingPostId)}
         isOpen={!!sharingPostId}
         onClose={() => setSharingPostId(null)}
+      />
+
+      <ReportModal
+        target={reportTarget}
+        onClose={() => setReportTarget(null)}
+        onSubmitted={() => window.alert("Report submitted.")}
       />
     </div>
   );
