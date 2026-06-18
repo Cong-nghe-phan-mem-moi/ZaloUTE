@@ -28,7 +28,7 @@ class PostController {
         });
       }
 
-      const post = await PostService.createPost(userId, content, media);
+      const post = await PostService.createPost(userId, content, media, req.body);
 
       return res.status(201).json({
         success: true,
@@ -56,6 +56,7 @@ class PostController {
         caption,
         target,
         conversationId,
+        req.body,
       );
 
       return res.status(201).json({
@@ -107,7 +108,7 @@ class PostController {
         });
       }
 
-      const post = await PostService.updatePost(postId, userId, content, media);
+      const post = await PostService.updatePost(postId, userId, content, media, req.body);
 
       return res.status(200).json({
         success: true,
@@ -237,11 +238,13 @@ class PostController {
     try {
       const { postId } = req.params;
       const { page = 1, limit = 10 } = req.query;
+      const userId = req.user.userId;
 
       const result = await PostService.getPostLikes(
         postId,
         parseInt(page),
         parseInt(limit),
+        userId,
       );
 
       return res.status(200).json({
@@ -271,11 +274,13 @@ class PostController {
     try {
       const { postId } = req.params;
       const { page = 1, limit = 10 } = req.query;
+      const userId = req.user.userId;
 
       const result = await PostService.getPostComments(
         postId,
         parseInt(page),
         parseInt(limit),
+        userId,
       );
 
       return res.status(200).json({

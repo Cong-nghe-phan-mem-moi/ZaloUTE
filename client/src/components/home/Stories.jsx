@@ -77,6 +77,7 @@ const Stories = ({ profile, initialStoryId = null }) => {
 
       {createOpen ? (
         <CreateStoryModal
+          profile={profile}
           onClose={() => setCreateOpen(false)}
           onCreated={() => {
             setCreateOpen(false);

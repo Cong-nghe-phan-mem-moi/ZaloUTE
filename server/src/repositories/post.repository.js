@@ -43,26 +43,26 @@ class PostRepository {
     return await Post.countDocuments();
   }
 
-  static async getPostsByAuthors(authorIds, skip, limit) {
-    return await populatePostQuery(Post.find({ author: { $in: authorIds } }))
+  static async getPostsByAuthors(authorIds, skip, limit, extraFilter = {}) {
+    return await populatePostQuery(Post.find({ author: { $in: authorIds }, ...extraFilter }))
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
   }
 
-  static async getPostsByAuthorsCount(authorIds) {
-    return await Post.countDocuments({ author: { $in: authorIds } });
+  static async getPostsByAuthorsCount(authorIds, extraFilter = {}) {
+    return await Post.countDocuments({ author: { $in: authorIds }, ...extraFilter });
   }
 
-  static async getPostsByAuthor(authorId, skip, limit) {
-    return await populatePostQuery(Post.find({ author: authorId }))
+  static async getPostsByAuthor(authorId, skip, limit, extraFilter = {}) {
+    return await populatePostQuery(Post.find({ author: authorId, ...extraFilter }))
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
   }
 
-  static async getPostsByAuthorCount(authorId) {
-    return await Post.countDocuments({ author: authorId });
+  static async getPostsByAuthorCount(authorId, extraFilter = {}) {
+    return await Post.countDocuments({ author: authorId, ...extraFilter });
   }
 
   static async addLike(postId, userId) {
@@ -155,9 +155,10 @@ class PostRepository {
   }
 }
 
-async function searchPosts({keyword, limit = 10}){
+async function searchPosts({keyword, limit = 10, filter = {}}){
   return await Post.find({
-    $text: { $search: keyword }
+    $text: { $search: keyword },
+    ...filter,
   })
   .populate('author', '_id fullName avatar')
   .limit(limit)

@@ -5,6 +5,12 @@ const User = require('../models/user.model');
 const Conversation = require('../models/conversation.model');
 const chatRepository = require('../repositories/chat.repository');
 const onlineTracker = require('../utils/onlineTracker');
+const {
+  buildPrivacyMongoFilter,
+  canViewByPrivacy,
+  getFriendIdSet,
+  normalizePrivacyFromPayload,
+} = require('../utils/privacy');
 
 const REACTION_TYPES = ['like', 'love', 'haha', 'wow', 'sad', 'angry'];
 
@@ -71,8 +77,12 @@ const buildReactionState = (postObj, userId = null) => {
   };
 };
 
-const buildPostResponse = async (post, userId = null) => {
+const buildPostResponse = async (post, userId = null, viewerFriendIds = null) => {
   const postObj = post.toObject ? post.toObject() : post;
+  const friendIds =
+    Array.isArray(viewerFriendIds)
+      ? viewerFriendIds
+      : (await getViewerContext(userId)).friendIds;
   const reactionState = buildReactionState(postObj, userId);
 
   postObj.reactionSummary = reactionState.reactionSummary;
@@ -80,14 +90,46 @@ const buildPostResponse = async (post, userId = null) => {
   postObj.currentUserReaction = reactionState.currentUserReaction;
   postObj.isLiked = reactionState.isLiked;
   postObj.commentCount = await Comment.countDocuments({ post: postObj._id });
+
+  if (
+    postObj.sharedFrom &&
+    !canViewByPrivacy(postObj.sharedFrom, userId, friendIds)
+  ) {
+    postObj.sharedFrom = null;
+  }
+
   return postObj;
 };
 
-const buildPostsResponse = async (posts, userId = null) =>
-  await Promise.all(posts.map((post) => buildPostResponse(post, userId)));
+const buildPostsResponse = async (posts, userId = null) => {
+  const { friendIds } = await getViewerContext(userId);
+  return await Promise.all(
+    posts.map((post) => buildPostResponse(post, userId, friendIds)),
+  );
+};
+
+const getViewerContext = async (userId) => {
+  if (!userId) {
+    return { user: null, friendIds: [] };
+  }
+
+  const user = await User.findById(userId).select('friends blockedUsers');
+  return {
+    user,
+    friendIds: [...getFriendIdSet(user)],
+  };
+};
+
+const assertCanViewPost = async (post, userId) => {
+  const { friendIds } = await getViewerContext(userId);
+
+  if (!canViewByPrivacy(post, userId, friendIds)) {
+    throw new Error('Post not found');
+  }
+};
 
 class PostService {
-  static async createPost(userId, content, media = []) {
+  static async createPost(userId, content, media = [], payload = {}) {
     const trimmedContent = content?.trim() || '';
     // Validate content
     if (trimmedContent.length === 0 && (!media || media.length === 0)) {
@@ -105,17 +147,19 @@ class PostService {
       likes: [],
       reactions: [],
       commentCount: 0,
+      privacy: normalizePrivacyFromPayload(payload),
     };
 
     const post = await PostRepository.createPost(postData);
     return await PostRepository.findPostById(post._id);
   }
 
-  static async sharePost(postId, userId, caption = '', target = 'timeline', conversationId = null) {
+  static async sharePost(postId, userId, caption = '', target = 'timeline', conversationId = null, payload = {}) {
     const originalPost = await PostRepository.findPostById(postId);
     if (!originalPost) {
       throw new Error('Operation failed');
     }
+    await assertCanViewPost(originalPost, userId);
 
     const trimmedCaption = caption?.trim() || '';
     if (trimmedCaption.length > 1000) {
@@ -191,6 +235,7 @@ class PostService {
       shareCount: 0,
       sharedFrom: postId,
       shareCaption: trimmedCaption,
+      privacy: normalizePrivacyFromPayload(payload),
     });
 
     await PostRepository.incrementShareCount(postId);
@@ -228,7 +273,7 @@ class PostService {
     };
   }
 
-  static async updatePost(postId, userId, content, media = []) {
+  static async updatePost(postId, userId, content, media = [], payload = {}) {
     const trimmedContent = content?.trim() || '';
     // Find post
     const post = await PostRepository.findPostById(postId);
@@ -261,6 +306,7 @@ class PostService {
     if (media.length > 0 || media.length === 0) {
       updateData.media = media;
     }
+    updateData.privacy = normalizePrivacyFromPayload(payload);
 
     return await PostRepository.updatePost(postId, updateData);
   }
@@ -304,8 +350,7 @@ class PostService {
       };
     }
 
-    const user = await User.findById(userId).select('friends');
-    const friendIds = user?.friends || [];
+    const { friendIds } = await getViewerContext(userId);
 
     if (friendIds.length === 0) {
       return {
@@ -319,8 +364,9 @@ class PostService {
       };
     }
 
-    const posts = await PostRepository.getPostsByAuthors(friendIds, skip, limit);
-    const total = await PostRepository.getPostsByAuthorsCount(friendIds);
+    const privacyFilter = buildPrivacyMongoFilter(userId, friendIds);
+    const posts = await PostRepository.getPostsByAuthors(friendIds, skip, limit, privacyFilter);
+    const total = await PostRepository.getPostsByAuthorsCount(friendIds, privacyFilter);
 
     const postsWithLikeStatus = await buildPostsResponse(posts, userId);
 
@@ -341,6 +387,7 @@ class PostService {
     if (!post) {
       throw new Error('Operation failed');
     }
+    await assertCanViewPost(post, userId);
 
     if (!REACTION_TYPES.includes(reactionType)) {
       throw new Error('Invalid reaction type');
@@ -383,7 +430,7 @@ class PostService {
   }
 
   // 4.5 Xem danh sách like
-  static async getPostLikes(postId, page = 1, limit = 10) {
+  static async getPostLikes(postId, page = 1, limit = 10, userId = null) {
     // Validate pagination
     if (page < 1) page = 1;
     if (limit < 1 || limit > 50) limit = 10;
@@ -394,6 +441,7 @@ class PostService {
     if (!post) {
       throw new Error('Operation failed');
     }
+    await assertCanViewPost(post, userId);
 
     const likes = await PostRepository.getPostLikes(postId, skip, limit);
     const total = await PostRepository.getPostLikeCount(postId);
@@ -410,7 +458,7 @@ class PostService {
   }
 
   // 4.6 Xem danh sách bình luận
-  static async getPostComments(postId, page = 1, limit = 10) {
+  static async getPostComments(postId, page = 1, limit = 10, userId = null) {
     // Validate pagination
     if (page < 1) page = 1;
     if (limit < 1 || limit > 50) limit = 10;
@@ -421,6 +469,7 @@ class PostService {
     if (!post) {
       throw new Error('Operation failed');
     }
+    await assertCanViewPost(post, userId);
 
     const comments = await Comment.find({ post: postId })
       .populate('author', 'fullName avatar email')
@@ -447,6 +496,7 @@ class PostService {
     if (!post) {
       throw new Error('Operation failed');
     }
+    await assertCanViewPost(post, userId);
 
     return await buildPostResponse(post, userId);
   }
@@ -459,8 +509,10 @@ class PostService {
 
     const skip = (page - 1) * limit;
 
-    const posts = await PostRepository.getPostsByAuthor(authorId, skip, limit);
-    const total = await PostRepository.getPostsByAuthorCount(authorId);
+    const { friendIds } = await getViewerContext(currentUserId);
+    const privacyFilter = buildPrivacyMongoFilter(currentUserId, friendIds);
+    const posts = await PostRepository.getPostsByAuthor(authorId, skip, limit, privacyFilter);
+    const total = await PostRepository.getPostsByAuthorCount(authorId, privacyFilter);
 
     const postsWithLikeStatus = await buildPostsResponse(posts, currentUserId);
 
@@ -489,7 +541,10 @@ class PostService {
     const searchRegex = new RegExp(keyword.trim(), 'i');
 
     const Post = require('../models/post.model');
+    const { friendIds } = await getViewerContext(userId);
+    const privacyFilter = buildPrivacyMongoFilter(userId, friendIds);
     const posts = await Post.find({ content: searchRegex })
+      .find(privacyFilter)
       .populate('author', 'fullName avatar email')
       .populate('likes', 'fullName avatar email')
       .populate('reactions.user', 'fullName avatar email')
@@ -505,7 +560,7 @@ class PostService {
       .skip(skip)
       .limit(limit);
 
-    const total = await Post.countDocuments({ content: searchRegex });
+    const total = await Post.countDocuments({ content: searchRegex, ...privacyFilter });
 
     const postsWithLikeStatus = await buildPostsResponse(posts, userId);
 

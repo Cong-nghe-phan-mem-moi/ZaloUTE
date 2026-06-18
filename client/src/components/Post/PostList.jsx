@@ -16,6 +16,7 @@ import EditPost from "./EditPost";
 import SharePostModal from "./SharePostModal";
 import SharedPostPreview from "./SharedPostPreview";
 import PostEngagement from "./PostEngagement";
+import { getPrivacyOption } from "../../utils/privacy";
 
 const getUserId = (user) => user?.userId || user?._id || user?.id;
 
@@ -285,7 +286,9 @@ const PostList = ({
         </div>
       ) : (
         <>
-          {visiblePosts.map((post) => (
+          {visiblePosts.map((post) => {
+            const privacyOption = getPrivacyOption(post.privacy?.type);
+            return (
             <div
               key={post._id}
               className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition overflow-hidden"
@@ -305,15 +308,22 @@ const PostList = ({
                     >
                       {post.author?.fullName}
                     </h3>
-                    <p
-                      className="text-sm text-gray-500 cursor-pointer hover:text-gray-700"
+                    <button
+                      type="button"
+                      className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700"
                       onClick={() => setSelectedPostId(post._id)}
                     >
-                      {formatDistanceToNow(new Date(post.createdAt), {
-                        addSuffix: true,
-                        locale: enUS,
-                      })}
-                    </p>
+                      <span>
+                        {formatDistanceToNow(new Date(post.createdAt), {
+                          addSuffix: true,
+                          locale: enUS,
+                        })}
+                      </span>
+                      <span className="material-symbols-outlined text-[15px]">
+                        {privacyOption.icon}
+                      </span>
+                      <span className="sr-only">{privacyOption.label}</span>
+                    </button>
                   </div>
                 </div>
 
@@ -359,7 +369,8 @@ const PostList = ({
                 onShare={() => setSharingPostId(post._id)}
               />
             </div>
-          ))}
+            );
+          })}
 
           {pagination && pagination.page < pagination.totalPages && (
             <div className="text-center py-4">

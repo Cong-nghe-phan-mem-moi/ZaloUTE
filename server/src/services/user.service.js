@@ -4,6 +4,7 @@ const GroupRepository = require("../repositories/group.repository");
 const PostRepository = require("../repositories/post.repository");
 const FriendRequestService = require("./friendRequest.service");
 const { removeVietnameseTones } = require("../utils/stringUtil");
+const { buildPrivacyMongoFilter, getFriendIdSet } = require("../utils/privacy");
 
 // Hàm Helper tạo lỗi chuẩn Node.js (Giữ được Stack Trace để dễ debug sau này)
 const throwError = (statusCode, code, message) => {
@@ -364,12 +365,14 @@ async function getUsersWithRelationStatus(myId, rawUsers) {
 async function globalSearch({ q, type = "all", limit = 10, myId }) {
     const currentLimit = parseInt(limit, 10) || 10;
     const keyword = removeVietnameseTones(q).toLowerCase();
+    const viewer = myId ? await UserRepository.findById(myId) : null;
+    const privacyFilter = buildPrivacyMongoFilter(myId, [...getFriendIdSet(viewer)]);
 
     if (type === "all") {
         const [rawUsers, groups, posts] = await Promise.all([
             UserRepository.searchUsers({ keyword, limit: currentLimit, myId }),
             GroupRepository.searchGroups({ keyword, limit: currentLimit }),
-            PostRepository.searchPosts({ keyword: q, limit: currentLimit }),
+            PostRepository.searchPosts({ keyword: q, limit: currentLimit, filter: privacyFilter }),
         ])
 
         const mappedUsers = await getUsersWithRelationStatus(myId, rawUsers);
@@ -402,7 +405,7 @@ async function globalSearch({ q, type = "all", limit = 10, myId }) {
         }
 
         case 'post': {
-            const rawPosts = await PostRepository.searchPosts({ keyword: q, limit: currentLimit });
+            const rawPosts = await PostRepository.searchPosts({ keyword: q, limit: currentLimit, filter: privacyFilter });
             resultData = rawPosts;
             break;
         }
