@@ -101,7 +101,7 @@ const CreatePost = ({ onPostCreated }) => {
       {/* Header */}
       <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-100">
         <img
-          src={currentUser?.avatar || '/default-avatar.png'}
+          src={currentUser?.avatar || '/default-avatar.svg'}
           alt={currentUser?.fullName}
           className="w-12 h-12 rounded-full object-cover"
         />

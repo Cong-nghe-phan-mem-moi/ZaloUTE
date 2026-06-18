@@ -12,14 +12,7 @@ const variantClasses = {
   neutral: "bg-[#f2f3f5] text-[#6b7280]",
 };
 
-const getInitials = (name = "User") =>
-  name
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase() || "U";
+const DEFAULT_AVATAR = "/default-avatar.svg";
 
 const UserAvatar = ({
   image,
@@ -33,13 +26,16 @@ const UserAvatar = ({
       variantClasses[variant] || variantClasses.warm
     } flex shrink-0 items-center justify-center overflow-hidden rounded-full font-bold ${className}`}
   >
-    {image ? (
-      <img className="h-full w-full object-cover" src={image} alt={name} />
-    ) : (
-      getInitials(name)
-    )}
+    <img
+      className="h-full w-full object-cover"
+      src={image || DEFAULT_AVATAR}
+      alt={name}
+      onError={(event) => {
+        event.currentTarget.onerror = null;
+        event.currentTarget.src = DEFAULT_AVATAR;
+      }}
+    />
   </div>
 );
 
 export default UserAvatar;
-

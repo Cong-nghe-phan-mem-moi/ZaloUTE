@@ -105,6 +105,14 @@ export const useHeaderNotifications = (navigate) => {
         ) {
           setNewNotificationCount(data.newNotificationCount || 0);
         }
+
+        if (data.type === "notification_deleted" && data.notificationId) {
+          setNotifications((items) =>
+            items.filter((item) => item._id !== data.notificationId),
+          );
+          setUnreadCount(data.unreadCount || 0);
+          setNewNotificationCount(data.newNotificationCount || 0);
+        }
       } catch (error) {
         console.error("Invalid notification message:", error);
       }
@@ -228,6 +236,29 @@ export const useHeaderNotifications = (navigate) => {
     }
   };
 
+  const handleDeleteNotification = async (notification) => {
+    if (!notification?._id) return;
+
+    const previousNotifications = notifications;
+    setNotifications((items) =>
+      items.filter((item) => item._id !== notification._id),
+    );
+    if (!notification.isRead) {
+      setUnreadCount((count) => Math.max(0, count - 1));
+    }
+
+    try {
+      const response = await notificationAPI.deleteNotification(notification._id);
+      const nextData = response.data?.data || {};
+      setUnreadCount(nextData.unreadCount ?? 0);
+      setNewNotificationCount(nextData.newNotificationCount ?? 0);
+    } catch (error) {
+      console.error("Unable to delete notification:", error);
+      setNotifications(previousNotifications);
+      loadNotifications();
+    }
+  };
+
   return {
     notifications,
     unreadCount,
@@ -237,6 +268,7 @@ export const useHeaderNotifications = (navigate) => {
     popupNotification,
     closeNotifications,
     handleMarkAllAsRead,
+    handleDeleteNotification,
     handleNotificationClick,
     handleToggleNotifications,
     setPopupNotification,

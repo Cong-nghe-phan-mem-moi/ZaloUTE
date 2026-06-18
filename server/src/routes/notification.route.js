@@ -8,5 +8,6 @@ router.get("/", NotificationController.getNotifications);
 router.put("/seen", NotificationController.markAsSeen);
 router.put("/read-all", NotificationController.markAllAsRead);
 router.put("/:notificationId/read", NotificationController.markAsRead);
+router.delete("/:notificationId", NotificationController.deleteNotification);
 
 module.exports = router;

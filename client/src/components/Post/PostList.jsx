@@ -293,7 +293,7 @@ const PostList = ({
               <div className="flex items-center justify-between p-4 border-b border-gray-100">
                 <div className="flex items-center gap-3 flex-1">
                   <img
-                    src={post.author?.avatar || "/default-avatar.png"}
+                    src={post.author?.avatar || "/default-avatar.svg"}
                     alt={post.author?.fullName}
                     className="w-12 h-12 rounded-full object-cover cursor-pointer hover:opacity-80"
                     onClick={() => handleOpenAuthorProfile(post)}
