@@ -32,21 +32,27 @@ const HomeHeader = ({ profile, activePage = "home" }) => {
     miniMessages,
     miniLoading,
     miniLoadingOlder,
+    miniActiveStickerPack,
     miniHasMoreMessages,
     miniMessageText,
     miniMinimized,
     miniHasUnread,
+    miniStickerPacks,
+    miniStickersOpen,
     miniMessagesListRef,
     miniMessagesEndRef,
     closeMessages,
     handleMiniMinimize,
     handleMiniRestore,
+    handleMiniSendSticker,
     handleMiniSendMessage,
     handleToggleMessages,
     loadOlderMiniMessages,
     openMiniConversation,
     closeMiniConversation,
     setMiniMessageText,
+    setMiniActiveStickerPack,
+    setMiniStickersOpen,
   } = useHeaderChat(profile);
 
   const {
@@ -175,13 +181,19 @@ const HomeHeader = ({ profile, activePage = "home" }) => {
           messagesEndRef={miniMessagesEndRef}
           messagesListRef={miniMessagesListRef}
           profile={profile}
+          activeStickerPack={miniActiveStickerPack}
           hasMoreMessages={miniHasMoreMessages}
           loadingOlder={miniLoadingOlder}
+          stickerPacks={miniStickerPacks}
+          stickersOpen={miniStickersOpen}
           onChangeMessage={setMiniMessageText}
           onClose={closeMiniConversation}
           onLoadOlder={loadOlderMiniMessages}
           onMinimize={handleMiniMinimize}
           onRestore={handleMiniRestore}
+          onSelectStickerPack={setMiniActiveStickerPack}
+          onSendSticker={handleMiniSendSticker}
+          onToggleStickers={() => setMiniStickersOpen((open) => !open)}
           onOpenFull={() =>
             navigate(`/messages?conversationId=${miniConversation._id}`)
           }

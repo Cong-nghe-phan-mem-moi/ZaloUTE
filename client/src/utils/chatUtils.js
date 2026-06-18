@@ -98,6 +98,10 @@ export const getConversationPreview = (conversation, profile) => {
     return `${prefix}Replied to a story`;
   }
 
+  if (lastMessage.messageType === "sticker") {
+    return `${prefix}Sent a sticker`;
+  }
+
   return `${prefix}${lastMessage.content || "Message"}`;
 };
 
@@ -109,6 +113,7 @@ export const getMiniMessageContent = (message) => {
   if (message.messageType === "story_reply") {
     return message.content || "Replied to a story";
   }
+  if (message.messageType === "sticker") return "Sent a sticker";
   if (message.messageType === "system") return message.content || "System message";
   return message.content || "Message";
 };

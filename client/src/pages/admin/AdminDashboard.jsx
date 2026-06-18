@@ -18,9 +18,9 @@ const defaultPagination = {
 };
 
 const emptyStickerForm = {
-  name: "",
+  packName: "",
   category: "",
-  imageUrl: "",
+  stickers: [{ name: "", imageUrl: "" }],
 };
 
 export default function AdminDashboard() {
@@ -196,16 +196,41 @@ export default function AdminDashboard() {
 
   const handleStickerSubmit = async (event) => {
     event.preventDefault();
+    const validStickers = (stickerForm.stickers || []).filter((sticker) =>
+      sticker.imageUrl?.trim(),
+    );
+
+    const packName = stickerForm.packName?.trim() || stickerForm.category?.trim();
+
+    if (!packName) {
+      setError("Sticker pack name or category is required.");
+      return;
+    }
+
+    if (validStickers.length === 0) {
+      setError("Add at least one sticker image URL.");
+      return;
+    }
+
     setActionId(editingStickerId || "new-sticker");
     setError("");
 
     try {
       if (editingStickerId) {
-        await adminAPI.updateSticker(editingStickerId, stickerForm);
+        await adminAPI.updateSticker(editingStickerId, {
+          name: validStickers[0]?.name || "",
+          imageUrl: validStickers[0]?.imageUrl || "",
+          packName,
+          category: stickerForm.category,
+        });
         showMessage("Sticker updated.");
       } else {
-        await adminAPI.createSticker(stickerForm);
-        showMessage("Sticker added.");
+        await adminAPI.createSticker({
+          ...stickerForm,
+          packName,
+          stickers: validStickers,
+        });
+        showMessage("Sticker pack added.");
       }
 
       setStickerForm(emptyStickerForm);
@@ -221,9 +246,9 @@ export default function AdminDashboard() {
   const handleEditSticker = (sticker) => {
     setEditingStickerId(sticker._id);
     setStickerForm({
-      name: sticker.name || "",
+      packName: sticker.packName || sticker.category || "",
       category: sticker.category || "",
-      imageUrl: sticker.imageUrl || "",
+      stickers: [{ name: sticker.name || "", imageUrl: sticker.imageUrl || "" }],
     });
   };
 
@@ -335,7 +360,10 @@ export default function AdminDashboard() {
             <StickerForm
               form={stickerForm}
               editing={Boolean(editingStickerId)}
-              saving={actionId === "new-sticker" || actionId === editingStickerId}
+              saving={
+                actionId === "new-sticker" ||
+                (Boolean(editingStickerId) && actionId === editingStickerId)
+              }
               onChange={setStickerForm}
               onSubmit={handleStickerSubmit}
               onCancel={() => {
@@ -476,91 +504,208 @@ const PostsTable = ({ posts, loading, actionId, onDelete }) => (
   </table>
 );
 
-const StickersTable = ({ stickers, loading, actionId, onEdit, onDelete }) => (
-  <table className="min-w-full text-left text-sm">
-    <TableHead columns={["Image", "Name", "Category", "Created", ""]} />
-    <tbody>
-      {loading ? <LoadingRow colSpan={5} /> : null}
-      {!loading && stickers.length === 0 ? <EmptyRow colSpan={5} /> : null}
-      {!loading
-        ? stickers.map((sticker) => (
-            <tr key={sticker._id} className="border-b border-[#f0f2f5]">
-              <td className="px-4 py-3">
-                <img
-                  src={sticker.imageUrl}
-                  alt={sticker.name}
-                  className="h-12 w-12 rounded-md border border-[#e5e7eb] object-cover"
-                />
-              </td>
-              <td className="px-4 py-3 font-semibold">{sticker.name}</td>
-              <td className="px-4 py-3 text-[#65676b]">{sticker.category || "-"}</td>
-              <td className="px-4 py-3 text-[#65676b]">{formatDate(sticker.createdAt)}</td>
-              <td className="px-4 py-3 text-right">
-                <button
-                  type="button"
-                  onClick={() => onEdit(sticker)}
-                  className="mr-2 rounded-md bg-[#e7f3ff] px-3 py-1.5 text-sm font-semibold text-[#1877f2] hover:bg-[#dbeafe]"
-                >
-                  Edit
-                </button>
-                <DangerButton
-                  disabled={actionId === sticker._id}
-                  label="Delete"
-                  onClick={() => onDelete(sticker._id)}
-                />
-              </td>
-            </tr>
-          ))
-        : null}
-    </tbody>
-  </table>
-);
+const groupStickersByPack = (stickers) => {
+  const groups = new Map();
 
-const StickerForm = ({ form, editing, saving, onChange, onSubmit, onCancel }) => (
-  <form
-    onSubmit={onSubmit}
-    className="m-4 grid gap-3 rounded-lg border border-[#e5e7eb] bg-[#f8fafc] p-4 lg:grid-cols-[1fr_1fr_2fr_auto]"
-  >
-    <input
-      value={form.name}
-      onChange={(event) => onChange({ ...form, name: event.target.value })}
-      placeholder="Sticker name"
-      className="rounded-md border border-[#d1d5db] px-3 py-2 text-sm outline-none focus:border-[#1877f2]"
-      required
-    />
-    <input
-      value={form.category}
-      onChange={(event) => onChange({ ...form, category: event.target.value })}
-      placeholder="Category"
-      className="rounded-md border border-[#d1d5db] px-3 py-2 text-sm outline-none focus:border-[#1877f2]"
-    />
-    <input
-      value={form.imageUrl}
-      onChange={(event) => onChange({ ...form, imageUrl: event.target.value })}
-      placeholder="Image URL"
-      className="rounded-md border border-[#d1d5db] px-3 py-2 text-sm outline-none focus:border-[#1877f2]"
-      required
-    />
-    <div className="flex gap-2">
-      <button
-        type="submit"
-        disabled={saving}
-        className="rounded-md bg-[#1877f2] px-4 py-2 text-sm font-semibold text-white hover:bg-[#166fe5] disabled:opacity-60"
-      >
-        {editing ? "Save" : "Add"}
-      </button>
-      {editing ? (
+  stickers.forEach((sticker) => {
+    const packName = sticker.packName || sticker.category || "Default pack";
+    if (!groups.has(packName)) {
+      groups.set(packName, {
+        packName,
+        category: sticker.category || "",
+        stickers: [],
+      });
+    }
+
+    groups.get(packName).stickers.push(sticker);
+  });
+
+  return Array.from(groups.values());
+};
+
+const StickersTable = ({ stickers, loading, actionId, onEdit, onDelete }) => {
+  const stickerPacks = groupStickersByPack(stickers);
+
+  return (
+    <table className="min-w-full text-left text-sm">
+      <TableHead columns={["Pack", "Stickers", "Category", "Created", ""]} />
+      <tbody>
+        {loading ? <LoadingRow colSpan={5} /> : null}
+        {!loading && stickers.length === 0 ? <EmptyRow colSpan={5} /> : null}
+        {!loading
+          ? stickerPacks.map((pack) => (
+              <tr key={pack.packName} className="border-b border-[#f0f2f5] align-top">
+                <td className="px-4 py-3">
+                  <p className="font-bold">{pack.packName}</p>
+                  <p className="text-xs text-[#65676b]">
+                    {pack.stickers.length} sticker{pack.stickers.length > 1 ? "s" : ""}
+                  </p>
+                </td>
+                <td className="px-4 py-3">
+                  <div className="grid max-w-[520px] grid-cols-2 gap-2 md:grid-cols-3">
+                    {pack.stickers.map((sticker) => (
+                      <div
+                        key={sticker._id}
+                        className="flex items-center gap-2 rounded-md border border-[#e5e7eb] bg-white p-2"
+                      >
+                        <img
+                          src={sticker.imageUrl}
+                          alt={sticker.name}
+                          className="h-10 w-10 rounded-md object-cover"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-xs font-semibold">
+                            {sticker.name}
+                          </p>
+                          <div className="mt-1 flex gap-1">
+                            <button
+                              type="button"
+                              onClick={() => onEdit(sticker)}
+                              className="text-xs font-semibold text-[#1877f2] hover:underline"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              disabled={actionId === sticker._id}
+                              onClick={() => onDelete(sticker._id)}
+                              className="text-xs font-semibold text-[#b91c1c] hover:underline disabled:opacity-60"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </td>
+                <td className="px-4 py-3 text-[#65676b]">{pack.category || "-"}</td>
+                <td className="px-4 py-3 text-[#65676b]">
+                  {formatDate(pack.stickers[0]?.createdAt)}
+                </td>
+                <td className="px-4 py-3 text-right text-xs font-semibold text-[#65676b]">
+                  Pack
+                </td>
+              </tr>
+            ))
+          : null}
+      </tbody>
+    </table>
+  );
+};
+
+const StickerForm = ({ form, editing, saving, onChange, onSubmit, onCancel }) => {
+  const updateStickerItem = (index, nextItem) => {
+    onChange({
+      ...form,
+      stickers: form.stickers.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, ...nextItem } : item,
+      ),
+    });
+  };
+
+  const addStickerItem = () => {
+    onChange({
+      ...form,
+      stickers: [...form.stickers, { name: "", imageUrl: "" }],
+    });
+  };
+
+  const removeStickerItem = (index) => {
+    onChange({
+      ...form,
+      stickers: form.stickers.filter((_, itemIndex) => itemIndex !== index),
+    });
+  };
+
+  return (
+    <form
+      onSubmit={onSubmit}
+      noValidate
+      className="m-4 space-y-4 rounded-lg border border-[#e5e7eb] bg-[#f8fafc] p-4"
+    >
+      <div className="grid gap-3 md:grid-cols-2">
+        <input
+          value={form.packName}
+          onChange={(event) => onChange({ ...form, packName: event.target.value })}
+          placeholder="Sticker pack name"
+          className="rounded-md border border-[#d1d5db] px-3 py-2 text-sm outline-none focus:border-[#1877f2]"
+        />
+        <input
+          value={form.category}
+          onChange={(event) => onChange({ ...form, category: event.target.value })}
+          placeholder="Category"
+          className="rounded-md border border-[#d1d5db] px-3 py-2 text-sm outline-none focus:border-[#1877f2]"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-bold text-[#111827]">
+            {editing ? "Sticker item" : "Stickers in this pack"}
+          </p>
+          {!editing ? (
+            <button
+              type="button"
+              onClick={addStickerItem}
+              className="rounded-md bg-[#e7f3ff] px-3 py-1.5 text-xs font-bold text-[#1877f2]"
+            >
+              Add sticker
+            </button>
+          ) : null}
+        </div>
+
+        {form.stickers.map((item, index) => (
+          <div
+            key={index}
+            className="grid gap-2 rounded-md border border-[#e5e7eb] bg-white p-3 md:grid-cols-[1fr_2fr_auto]"
+          >
+            <input
+              value={item.name}
+              onChange={(event) => updateStickerItem(index, { name: event.target.value })}
+              placeholder="Sticker name"
+              className="rounded-md border border-[#d1d5db] px-3 py-2 text-sm outline-none focus:border-[#1877f2]"
+            />
+            <input
+              value={item.imageUrl}
+              onChange={(event) => updateStickerItem(index, { imageUrl: event.target.value })}
+              placeholder="Image URL"
+              className="rounded-md border border-[#d1d5db] px-3 py-2 text-sm outline-none focus:border-[#1877f2]"
+            />
+            {!editing && form.stickers.length > 1 ? (
+              <button
+                type="button"
+                onClick={() => removeStickerItem(index)}
+                className="rounded-md bg-[#fee2e2] px-3 py-2 text-xs font-bold text-[#b91c1c]"
+              >
+                Remove
+              </button>
+            ) : null}
+          </div>
+        ))}
+      </div>
+
+      <div className="flex gap-2">
         <button
-          type="button"
-          onClick={onCancel}
-          className="rounded-md bg-[#e5e7eb] px-4 py-2 text-sm font-semibold text-[#374151] hover:bg-[#d1d5db]"
+          type="submit"
+          disabled={saving}
+          className="rounded-md bg-[#1877f2] px-4 py-2 text-sm font-semibold text-white hover:bg-[#166fe5] disabled:opacity-60"
         >
-          Cancel
+          {editing ? "Save sticker" : "Add sticker pack"}
         </button>
-      ) : null}
-    </div>
-  </form>
-);
+        {editing ? (
+          <button
+            type="button"
+            onClick={onCancel}
+            className="rounded-md bg-[#e5e7eb] px-4 py-2 text-sm font-semibold text-[#374151] hover:bg-[#d1d5db]"
+          >
+            Cancel
+          </button>
+        ) : null}
+      </div>
+    </form>
+  );
+};
 
 const Pagination = ({ pagination, loading, onChangePage }) => (
   <div className="flex items-center justify-between gap-3 p-4 text-sm text-[#65676b]">
