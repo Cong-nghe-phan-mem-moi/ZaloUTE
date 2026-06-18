@@ -507,7 +507,6 @@ module.exports = {
   getOtherUserProfile,
   logout,
   handleGlobalSearch,
-}; 
   blockUser,
   unblockUser,
   getBlockedUsers,

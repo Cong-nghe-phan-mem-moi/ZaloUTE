@@ -424,20 +424,14 @@ async function globalSearch({ q, type = "all", limit = 10, myId }) {
 
 
 module.exports = {
-    editProfile,
-    getMyProfile,
-    updateProfileImage,
-    globalSearch,
-    getMyProfileByRole,
-    getOtherUserProfile,
-    logout,
   editProfile,
   getMyProfile,
   updateProfileImage,
-  searchUsers,
+  globalSearch,
   getMyProfileByRole,
   getOtherUserProfile,
   logout,
+  searchUsers,
   blockUser,
   unblockUser,
   getBlockedUsers,
