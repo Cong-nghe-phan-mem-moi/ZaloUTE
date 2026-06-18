@@ -92,6 +92,10 @@ const Stories = ({ profile, initialStoryId = null }) => {
           currentUserId={currentUserId}
           onChange={setViewerState}
           onClose={() => setViewerState(null)}
+          onDeleted={() => {
+            setViewerState(null);
+            loadStories();
+          }}
           onFinished={finishStories}
           onStoryUpdated={updateStoryInList}
         />

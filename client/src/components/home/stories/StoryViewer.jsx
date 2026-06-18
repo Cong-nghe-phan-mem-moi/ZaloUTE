@@ -13,6 +13,7 @@ const StoryViewer = ({
   currentUserId,
   onChange,
   onClose,
+  onDeleted,
   onFinished,
   onStoryUpdated,
 }) => {
@@ -22,6 +23,7 @@ const StoryViewer = ({
     goNext,
     goPrevious,
     group,
+    handleDelete,
     handleReact,
     handleReply,
     isOwner,
@@ -39,6 +41,7 @@ const StoryViewer = ({
     viewerState,
     currentUserId,
     onChange,
+    onDeleted,
     onFinished,
     onStoryUpdated,
   });
@@ -126,10 +129,23 @@ const StoryViewer = ({
             ) : null}
 
             {isOwner ? (
-              <OwnerStorySummary
-                story={story}
-                onOpen={() => setShowInsights(true)}
-              />
+              <div className="flex items-center justify-between gap-3">
+                <OwnerStorySummary
+                  story={story}
+                  onOpen={() => setShowInsights(true)}
+                />
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur hover:bg-red-600"
+                  aria-label="Delete story"
+                  title="Delete story"
+                >
+                  <span className="material-symbols-outlined text-[20px]">
+                    delete
+                  </span>
+                </button>
+              </div>
             ) : (
               <>
                 <div className="mb-3 flex justify-center gap-2">

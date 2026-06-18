@@ -20,5 +20,5 @@ export const storyAPI = {
   reply: (storyId, content) =>
     apiClient.post(`/stories/${storyId}/reply`, { content }),
   getViewers: (storyId) => apiClient.get(`/stories/${storyId}/viewers`),
+  deleteStory: (storyId) => apiClient.delete(`/stories/${storyId}`),
 };
-
