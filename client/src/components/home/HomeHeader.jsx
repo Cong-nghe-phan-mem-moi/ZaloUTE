@@ -77,7 +77,7 @@ const HomeHeader = ({ profile, activePage = "home" }) => {
   useClickOutside(profileMenuRef, closeProfileMenu);
 
   return (
-    <header className="flex h-20 items-center justify-between gap-4 bg-white px-6 lg:px-12">
+    <header className="sticky top-0 z-40 flex h-20 items-center justify-between gap-4 border-b border-[#e5e7eb] bg-white px-6 shadow-sm lg:px-12">
       <div className="flex items-center gap-5">
         <AppLogo />
         <UserSearchBox />

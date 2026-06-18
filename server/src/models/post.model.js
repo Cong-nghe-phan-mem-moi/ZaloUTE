@@ -60,6 +60,26 @@ const postSchema = new mongoose.Schema({
             type: mongoose.Schema.Types.ObjectId,
             ref: 'User'
         }]
+    },
+    moderation: {
+        hidden: {
+            type: Boolean,
+            default: false,
+            index: true
+        },
+        hiddenReason: {
+            type: String,
+            default: ''
+        },
+        hiddenBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            default: null
+        },
+        hiddenAt: {
+            type: Date,
+            default: null
+        }
     }
 }, { timestamps: true });
 

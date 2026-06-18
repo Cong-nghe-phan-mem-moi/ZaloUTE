@@ -10,7 +10,11 @@ const assertCanViewPost = async (postId, userId) => {
     User.findById(userId).select("friends"),
   ]);
 
-  if (!post || !canViewPostWithSharedSource(post, userId, [...getFriendIdSet(user)])) {
+  if (
+    !post ||
+    post.moderation?.hidden ||
+    !canViewPostWithSharedSource(post, userId, [...getFriendIdSet(user)])
+  ) {
     throw new Error("Operation failed");
   }
 

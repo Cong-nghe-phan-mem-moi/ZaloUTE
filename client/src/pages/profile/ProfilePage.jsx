@@ -14,6 +14,7 @@ import ProfileImagePreviewModal from "../../components/profile/ProfileImagePrevi
 import ProfileAboutTab from "../../components/profile/ProfileAboutTab";
 import ProfileMediaTab from "../../components/profile/ProfileMediaTab";
 import { PostList } from "../../components/post";
+import ReportModal from "../../components/report/ReportModal";
 
 const getProfileId = (profile) =>
   profile?.userId || profile?._id || profile?.id;
@@ -63,6 +64,7 @@ const ProfilePage = ({ userId }) => {
     title: "",
   });
   const [profilePosts, setProfilePosts] = useState([]);
+  const [reportTarget, setReportTarget] = useState(null);
 
   const isOwnProfile = !userId;
   const currentProfile = isOwnProfile ? profile : otherProfile;
@@ -424,6 +426,9 @@ const ProfilePage = ({ userId }) => {
               isFollowing={displayProfile.isFollowedByMe}
               onToggleFollow={handleToggleFollow}
               followLoading={followLoading}
+              onReportUser={() =>
+                setReportTarget({ type: "User", id: getProfileId(otherProfile) })
+              }
             />
 
             <ProfileTabs activeTab={activeTab} onChange={setActiveTab} />
@@ -500,6 +505,12 @@ const ProfilePage = ({ userId }) => {
         image={previewState.image}
         title={previewState.title}
         onClose={closePreview}
+      />
+
+      <ReportModal
+        target={reportTarget}
+        onClose={() => setReportTarget(null)}
+        onSubmitted={() => setNotice("Report submitted.")}
       />
     </div>
   );

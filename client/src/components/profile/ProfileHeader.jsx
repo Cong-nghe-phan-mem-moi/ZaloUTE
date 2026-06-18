@@ -35,6 +35,7 @@ const ProfileHeader = ({
   isFollowing = false,
   onToggleFollow,
   followLoading = false,
+  onReportUser,
 }) => {
   const {
     name,
@@ -107,6 +108,7 @@ const ProfileHeader = ({
             isFollowing={isFollowing}
             onToggleFollow={onToggleFollow}
             followLoading={followLoading}
+            onReportUser={onReportUser}
           />
         </div>
 
@@ -232,6 +234,7 @@ const ActionButtons = ({
   isFollowing,
   onToggleFollow,
   followLoading,
+  onReportUser,
 }) => {
   if (!isOwnProfile) {
     const action = relationLabels[relation] || relationLabels.none;
@@ -326,6 +329,15 @@ const ActionButtons = ({
             : isBlocked
               ? "Unblock"
               : "Block"}
+        </button>
+
+        <button
+          type="button"
+          onClick={onReportUser}
+          className="flex items-center gap-2 rounded-md bg-[#fee2e2] px-5 py-2 text-sm font-semibold text-[#b91c1c] transition-colors hover:bg-[#fecaca]"
+        >
+          <span className="material-symbols-outlined text-[18px]">flag</span>
+          Report
         </button>
 
         <button className="flex items-center gap-2 rounded-md bg-[#e5e7eb] px-5 py-2 text-sm font-semibold text-[#111827] transition-colors hover:bg-[#d1d5db]">

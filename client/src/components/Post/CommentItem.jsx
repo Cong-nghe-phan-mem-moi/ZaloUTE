@@ -8,6 +8,7 @@ import {
 import { commentAPI } from "../../services/comment.service";
 import { formatDistanceToNow } from "date-fns";
 import { enUS } from "date-fns/locale";
+import ReportModal from "../report/ReportModal";
 
 const MAX_COMMENT_LENGTH = 1000;
 
@@ -42,6 +43,7 @@ const CommentItem = ({
   const [replyCount, setReplyCount] = useState(comment?.replyCount || 0);
   const [replyContent, setReplyContent] = useState("");
   const [replyOpen, setReplyOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
   const [repliesLoading, setRepliesLoading] = useState(false);
   const [replySubmitting, setReplySubmitting] = useState(false);
 
@@ -281,6 +283,16 @@ const CommentItem = ({
               </button>
             </>
           )}
+
+          {!isAuthor ? (
+            <button
+              type="button"
+              onClick={() => setReportOpen(true)}
+              className="text-gray-500 hover:text-red-500 transition"
+            >
+              Report
+            </button>
+          ) : null}
         </div>
 
         {replyOpen ? (
@@ -362,6 +374,12 @@ const CommentItem = ({
           </div>
         ) : null}
       </div>
+
+      <ReportModal
+        target={reportOpen ? { type: "Comment", id: commentId } : null}
+        onClose={() => setReportOpen(false)}
+        onSubmitted={() => window.alert("Report submitted.")}
+      />
     </div>
   );
 };
