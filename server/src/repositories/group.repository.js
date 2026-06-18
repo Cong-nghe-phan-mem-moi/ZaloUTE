@@ -1,4 +1,18 @@
+const mongoose = require('mongoose');
 const Group = require('../models/group.model');
+
+function toObjectId(id) {
+    if (id && mongoose.Types.ObjectId.isValid(id)) {
+        return new mongoose.Types.ObjectId(id);
+    }
+
+    return id;
+}
+
+function getIdVariants(id) {
+    const objectId = toObjectId(id);
+    return [...new Set([objectId, objectId?.toString?.() || String(id)])];
+}
 
 async function createGroup(groupData) {
     return await Group.create(groupData);
@@ -46,21 +60,31 @@ async function addPendingInvites(groupId, targetUserIds) {
 }
 
 async function removeInviteAndAddMember(groupId, userId) {
-    return await Group.updateOne(
-        { _id: groupId },
+    const memberId = toObjectId(userId);
+    const memberIds = getIdVariants(userId);
+    return await Group.collection.updateOne(
+        { _id: toObjectId(groupId) },
         {
-            $pull: { pendingInvites: userId },
-            $addToSet: { members: userId }
+            $pull: {
+                pendingInvites: { $in: memberIds },
+                pendingRequests: { $in: memberIds }
+            },
+            $addToSet: { members: memberId }
         }
     );
 } 
 
 async function removeRequestAndAddMember(groupId, userId) {
-    return await Group.updateOne(
-        { _id: groupId },
+    const memberId = toObjectId(userId);
+    const memberIds = getIdVariants(userId);
+    return await Group.collection.updateOne(
+        { _id: toObjectId(groupId) },
         {
-            $pull: { pendingRequests: userId },
-            $addToSet: { members: userId }
+            $pull: {
+                pendingRequests: { $in: memberIds },
+                pendingInvites: { $in: memberIds }
+            },
+            $addToSet: { members: memberId }
         }
     );
 }
