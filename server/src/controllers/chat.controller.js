@@ -64,6 +64,36 @@ async function getMessages(req, res) {
   }
 }
 
+async function getConversationBadge(req, res) {
+  try {
+    const userId = req.user.userId;
+    const result = await ChatService.getConversationBadge(userId);
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error("Get Conversation Badge Error:", error);
+    return res.status(error.statusCode || 500).json({
+      success: false,
+      code: error.code || "INTERNAL_SERVER_ERROR",
+      message: error.message || "Internal server error",
+    });
+  }
+}
+
+async function markConversationsAsSeen(req, res) {
+  try {
+    const userId = req.user.userId;
+    const result = await ChatService.markConversationsAsSeen(userId);
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error("Mark Conversations Seen Error:", error);
+    return res.status(error.statusCode || 500).json({
+      success: false,
+      code: error.code || "INTERNAL_SERVER_ERROR",
+      message: error.message || "Internal server error",
+    });
+  }
+}
+
 async function createGroup(req, res) {
   try {
     const userId = req.user.userId;
@@ -225,8 +255,10 @@ async function deleteConversation(req, res) {
 
 module.exports = {
   getConversations,
+  getConversationBadge,
   getOrCreateConversation,
   getMessages,
+  markConversationsAsSeen,
   createGroup,
   removeMember,
   leaveGroup,

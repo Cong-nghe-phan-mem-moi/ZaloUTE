@@ -63,7 +63,11 @@ const RightSidebar = ({
       ) : (
         <div className="space-y-4">
           {contacts.map((contact) => (
-            <Contact key={contact.id || contact.name} contact={contact} onClick={onContactClick} />
+            <Contact
+              key={contact.id || contact.name}
+              contact={contact}
+              onClick={onContactClick}
+            />
           ))}
         </div>
       )}
@@ -131,10 +135,11 @@ const FriendRequestCard = ({
   );
 };
 
-const Contact = ({ contact }) => (
-  <Link
-    to={contact.id ? `/users/profile/${contact.id}` : "/friends"}
-    className="flex items-center gap-3 rounded-md hover:bg-[#f2f3f5]"
+const Contact = ({ contact, onClick }) => (
+  <button
+    type="button"
+    onClick={() => onClick?.(contact)}
+    className="flex w-full items-center gap-3 rounded-md text-left hover:bg-[#f2f3f5]"
   >
     <UserAvatar image={contact.avatar} name={contact.name} />
     <div>
@@ -147,7 +152,7 @@ const Contact = ({ contact }) => (
         {contact.status}
       </p>
     </div>
-  </Link>
+  </button>
 );
 
 const EmptyState = ({ icon, text, loading = false }) => (

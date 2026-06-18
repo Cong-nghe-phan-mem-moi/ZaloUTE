@@ -2,6 +2,7 @@ const chatRepository = require("../repositories/chat.repository");
 const UserRepository = require("../repositories/user.repository");
 const Message = require("../models/message.model");
 const Conversation = require("../models/conversation.model");
+const User = require("../models/user.model");
 const jwt = require("jsonwebtoken");
 const { WebSocketServer, WebSocket } = require("ws");
 
@@ -119,6 +120,61 @@ class ChatService {
     return {
       success: true,
       data: chronologicalMessages,
+    };
+  }
+
+  static async markConversationsAsSeen(userId) {
+    const chatSeenAt = new Date();
+    await User.findByIdAndUpdate(userId, { chatSeenAt });
+    const conversations = await chatRepository.getConversationsByUserId(userId);
+    sendToUser(userId, {
+      type: "message_badge_seen",
+      unreadConversationCount: 0,
+      chatSeenAt,
+    });
+
+    return {
+      success: true,
+      data: {
+        conversations,
+        unreadConversationCount: 0,
+        chatSeenAt,
+      },
+    };
+  }
+
+  static countNewConversations(conversations, userId, chatSeenAt) {
+    const seenAt = chatSeenAt ? new Date(chatSeenAt).getTime() : 0;
+    const currentUserId = userId.toString();
+
+    return (conversations || []).filter((conversation) => {
+      const lastMessage = conversation?.lastMessage;
+      if (!lastMessage) return false;
+
+      const senderId = (lastMessage.senderId?._id || lastMessage.senderId)?.toString();
+      if (senderId === currentUserId) return false;
+
+      const hasRead = (lastMessage.readBy || []).some(
+        (reader) => (reader?._id || reader)?.toString() === currentUserId,
+      );
+      if (hasRead) return false;
+
+      return new Date(lastMessage.createdAt).getTime() > seenAt;
+    }).length;
+  }
+
+  static async getConversationBadge(userId) {
+    const [user, conversations] = await Promise.all([
+      User.findById(userId).select("chatSeenAt"),
+      chatRepository.getConversationsByUserId(userId),
+    ]);
+
+    return {
+      success: true,
+      data: {
+        count: this.countNewConversations(conversations, userId, user?.chatSeenAt),
+        chatSeenAt: user?.chatSeenAt || null,
+      },
     };
   }
 
@@ -639,43 +695,6 @@ class ChatService {
                   }
                 });
               }
-
-              // Send new_message notification for direct chats (subject to mute filter)
-              if (!conversation.isGroup) {
-                const partner = conversation.participants.find(
-                  (p) => p._id.toString() !== ws.userId.toString()
-                );
-                if (partner) {
-                  const isMuted = conversation.mutedUntil?.some((m) => {
-                    return (
-                      m.user.toString() === partner._id.toString() &&
-                      m.until &&
-                      new Date(m.until) > new Date()
-                    );
-                  });
-
-                  if (!isMuted) {
-                    const NotificationService = require("./notification.service");
-                    try {
-                      await NotificationService.createNotification({
-                        receiver: partner._id,
-                        sender: ws.userId,
-                        type: "new_message",
-                        content: `${savedMessage.senderId.fullName} sent you a message`,
-                        preview: content.trim(),
-                        relatedId: conversationId,
-                        relatedType: null,
-                        data: {
-                          conversationId,
-                          messageId: savedMessage._id,
-                        },
-                      });
-                    } catch (err) {
-                      console.error("Error creating new_message notification:", err);
-                    }
-                  }
-                }
-            }
 
               // 2. Cập nhật tin nhắn cuối trong cuộc hội thoại
               await chatRepository.updateConversationLastMessage(conversationId, savedMessage._id);

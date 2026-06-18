@@ -173,38 +173,6 @@ class PostService {
         });
       });
 
-      if (!conversation.isGroup) {
-        const partner = conversation.participants.find(
-          (participant) => participant.toString() !== userId.toString(),
-        );
-
-        if (partner) {
-          const isMuted = conversation.mutedUntil?.some(
-            (mute) =>
-              mute.user.toString() === partner.toString() &&
-              mute.until &&
-              new Date(mute.until) > new Date(),
-          );
-
-          if (!isMuted) {
-            await NotificationService.createNotification({
-              receiver: partner,
-              sender: userId,
-              type: 'new_message',
-              content: `${message.senderId.fullName} shared a post with you`,
-              preview: trimmedCaption || originalPost.content || 'Shared a post',
-              relatedId: conversationId,
-              relatedType: null,
-              data: {
-                conversationId,
-                messageId: message._id,
-                postId,
-              },
-            });
-          }
-        }
-      }
-
       return {
         target: 'message',
         postId,
