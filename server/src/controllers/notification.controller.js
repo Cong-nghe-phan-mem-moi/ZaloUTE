@@ -81,6 +81,33 @@ class NotificationController {
       });
     }
   }
+
+  static async deleteNotification(req, res) {
+    try {
+      const result = await NotificationService.deleteNotification(
+        req.params.notificationId,
+        req.user.userId,
+      );
+
+      if (!result) {
+        return res.status(404).json({
+          success: false,
+          message: "Notification not found",
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      console.error("Error deleting notification:", error);
+      return res.status(400).json({
+        success: false,
+        message: "Unable to delete notification",
+      });
+    }
+  }
 }
 
 module.exports = NotificationController;

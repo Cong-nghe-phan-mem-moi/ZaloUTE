@@ -4,7 +4,7 @@
  * So we need to add the full origin path
  */
 export const getImageUrl = (url) => {
-  if (!url) return "/default-avatar.png";
+  if (!url) return "/default-avatar.svg";
 
   // If it's already absolute URL, return as is
   if (url.startsWith("http://") || url.startsWith("https://")) {
