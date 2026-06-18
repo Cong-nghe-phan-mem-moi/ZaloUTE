@@ -451,10 +451,12 @@ async function logout(req, res) {
 
 async function handleGlobalSearch(req, res) {
   try {
-    const { q, type, limit } = req.query;
+    const { q, keyword, type, limit } = req.query;
     const myId = req.user.userId;
+    const searchText = (q || keyword || '').trim();
+    const searchType = type || (keyword ? 'user' : 'all');
 
-    if (!q || !q.trim()) {
+    if (!searchText) {
       return res.status(400).json({
         success: false,
         message: 'Vui lòng nh?p t? khóa d? tìm ki?m!'
@@ -462,8 +464,8 @@ async function handleGlobalSearch(req, res) {
     }
 
     const result = await UserService.globalSearch({
-      q: q.trim(),
-      type: type || 'all',
+      q: searchText,
+      type: searchType,
       limit: limit,
       myId
     });
