@@ -1,0 +1,16 @@
+node_modules/
+dist/
+build/
+
+# Runtime uploads
+server/storage/uploads/
+server/uploads/
+uploads/
+
+# Test output
+tests/api/**/Result.json
+tests/api/**/*test_run.json
+
+# Environment files
+.env
+.env.*

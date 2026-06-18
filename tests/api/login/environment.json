@@ -1,0 +1,31 @@
+{
+    "id": "zaloute-login-test-env",
+    "name": "ZaloUTE Login Test Environment",
+    "values": [
+        {
+            "key": "base_url",
+            "value": "http://localhost:5000/api",
+            "enabled": true
+        },
+        {
+            "key": "verified_email",
+            "value": "test@example.com",
+            "enabled": true
+        },
+        {
+            "key": "verified_password",
+            "value": "Password@123",
+            "enabled": true
+        },
+        {
+            "key": "unverified_email",
+            "value": "john@test.com",
+            "enabled": true
+        },
+        {
+            "key": "jwt_token",
+            "value": "",
+            "enabled": true
+        }
+    ]
+}
