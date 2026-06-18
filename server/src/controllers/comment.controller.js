@@ -142,11 +142,13 @@ class CommentController {
     try {
       const { postId } = req.params;
       const { page = 1, limit = 20 } = req.query;
+      const userId = req.user.userId;
 
       const result = await CommentService.getPostComments(
         postId,
         parseInt(page),
         parseInt(limit),
+        userId,
       );
 
       return res.status(200).json({
@@ -167,11 +169,13 @@ class CommentController {
     try {
       const { commentId } = req.params;
       const { page = 1, limit = 10 } = req.query;
+      const userId = req.user.userId;
 
       const result = await CommentService.getCommentReplies(
         commentId,
         parseInt(page),
         parseInt(limit),
+        userId,
       );
 
       return res.status(200).json({

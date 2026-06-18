@@ -1,6 +1,21 @@
 const CommentRepository = require("../repositories/comment.repository");
 const Post = require("../models/post.model");
+const User = require("../models/user.model");
 const NotificationService = require("./notification.service");
+const { canViewPostWithSharedSource, getFriendIdSet } = require("../utils/privacy");
+
+const assertCanViewPost = async (postId, userId) => {
+  const [post, user] = await Promise.all([
+    Post.findById(postId).populate("sharedFrom"),
+    User.findById(userId).select("friends"),
+  ]);
+
+  if (!post || !canViewPostWithSharedSource(post, userId, [...getFriendIdSet(user)])) {
+    throw new Error("Operation failed");
+  }
+
+  return post;
+};
 
 class CommentService {
   // Thêm bình luận
@@ -12,6 +27,8 @@ class CommentService {
     if (content.trim().length > 1000) {
       throw new Error("Operation failed");
     }
+
+    await assertCanViewPost(postId, userId);
 
     const commentData = {
       post: postId,
@@ -112,6 +129,7 @@ class CommentService {
     if (!comment) {
       throw new Error("Operation failed");
     }
+    await assertCanViewPost(comment.post, userId);
 
     const likeIndex = comment.likes.findIndex(
       (like) => like._id.toString() === userId,
@@ -147,9 +165,11 @@ class CommentService {
   }
 
   // Lấy các bình luận của một bài viết
-  static async getPostComments(postId, page = 1, limit = 20) {
+  static async getPostComments(postId, page = 1, limit = 20, userId = null) {
     if (page < 1) page = 1;
     if (limit < 1 || limit > 100) limit = 20;
+
+    await assertCanViewPost(postId, userId);
 
     const skip = (page - 1) * limit;
 
@@ -181,9 +201,15 @@ class CommentService {
   }
 
   // Lấy các reply của một bình luận
-  static async getCommentReplies(commentId, page = 1, limit = 10) {
+  static async getCommentReplies(commentId, page = 1, limit = 10, userId = null) {
     if (page < 1) page = 1;
     if (limit < 1 || limit > 50) limit = 10;
+
+    const parentComment = await CommentRepository.findCommentById(commentId);
+    if (!parentComment) {
+      throw new Error("Operation failed");
+    }
+    await assertCanViewPost(parentComment.post, userId);
 
     const skip = (page - 1) * limit;
 

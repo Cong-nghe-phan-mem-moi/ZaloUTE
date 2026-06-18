@@ -2,7 +2,9 @@ import { useRef, useState } from "react";
 import { useObjectUrls } from "../../hooks";
 import { useAppDispatch, useAppSelector } from "../../redux/hooks";
 import { createPost } from "../../redux/slices/postSlice";
+import { DEFAULT_POST_PRIVACY, getPrivacyOption } from "../../utils/privacy";
 import UserAvatar from "../common/UserAvatar";
+import AudienceSelector from "../privacy/AudienceSelector";
 
 const Composer = ({ profile }) => {
   const dispatch = useAppDispatch();
@@ -10,8 +12,10 @@ const Composer = ({ profile }) => {
   const fileInputRef = useRef(null);
   const [content, setContent] = useState("");
   const [files, setFiles] = useState([]);
+  const [privacy, setPrivacy] = useState(DEFAULT_POST_PRIVACY);
 
   const canSubmit = content.trim().length > 0 || files.length > 0;
+  const privacyOption = getPrivacyOption(privacy.type);
 
   const handleFileChange = (event) => {
     const selectedFiles = Array.from(event.target.files || []);
@@ -42,12 +46,14 @@ const Composer = ({ profile }) => {
 
     const formData = new FormData();
     formData.append("content", content.trim());
+    formData.append("privacy", JSON.stringify(privacy));
     files.forEach((file) => formData.append("media", file));
 
     try {
       await dispatch(createPost(formData)).unwrap();
       setContent("");
       setFiles([]);
+      setPrivacy(DEFAULT_POST_PRIVACY);
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
@@ -67,12 +73,19 @@ const Composer = ({ profile }) => {
             </p>
             <p className="flex items-center gap-1 text-xs text-[#6b7280]">
               <span className="material-symbols-outlined text-[14px]">
-                public
+                {privacyOption.icon}
               </span>
-              Public
+              {privacyOption.label}
             </p>
           </div>
         </div>
+
+        <AudienceSelector
+          friends={profile?.friends || []}
+          privacy={privacy}
+          onChange={setPrivacy}
+          className="mt-4 max-w-sm"
+        />
 
         <textarea
           className="mt-7 min-h-20 w-full resize-none border-0 border-b border-[#d1d5db] bg-transparent pb-7 text-xl text-[#111827] outline-none placeholder:text-[#b0b4ba]"

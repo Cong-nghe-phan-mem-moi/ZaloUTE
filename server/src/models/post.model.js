@@ -44,6 +44,22 @@ const postSchema = new mongoose.Schema({
     shareCaption: {
         type: String,
         default: ''
+    },
+    privacy: {
+        type: {
+            type: String,
+            enum: ['public', 'friends', 'only_me', 'custom', 'hide_some'],
+            default: 'public',
+            index: true
+        },
+        allowedViewers: [{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User'
+        }],
+        hiddenViewers: [{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User'
+        }]
     }
 }, { timestamps: true });
 

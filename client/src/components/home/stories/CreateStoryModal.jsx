@@ -1,7 +1,8 @@
 import { useCreateStoryForm } from "../../../hooks";
 import { storyBackgrounds } from "../../../utils/storyUtils";
+import AudienceSelector from "../../privacy/AudienceSelector";
 
-const CreateStoryModal = ({ onClose, onCreated }) => {
+const CreateStoryModal = ({ profile, onClose, onCreated }) => {
   const {
     background,
     error,
@@ -9,10 +10,12 @@ const CreateStoryModal = ({ onClose, onCreated }) => {
     media,
     mediaPreview,
     mode,
+    privacy,
     selectMediaMode,
     selectTextMode,
     setBackground,
     setMedia,
+    setPrivacy,
     setText,
     submitting,
     text,
@@ -46,6 +49,13 @@ const CreateStoryModal = ({ onClose, onCreated }) => {
               onClick={selectMediaMode}
             />
           </div>
+
+          <AudienceSelector
+            friends={profile?.friends || []}
+            privacy={privacy}
+            onChange={setPrivacy}
+            className="mt-5"
+          />
 
           {error ? (
             <p className="mt-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">

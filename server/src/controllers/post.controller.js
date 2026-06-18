@@ -28,7 +28,7 @@ class PostController {
         });
       }
 
-      const post = await PostService.createPost(userId, content, media);
+      const post = await PostService.createPost(userId, content, media, req.body);
 
       return res.status(201).json({
         success: true,
@@ -56,6 +56,7 @@ class PostController {
         caption,
         target,
         conversationId,
+        req.body,
       );
 
       return res.status(201).json({
@@ -107,7 +108,7 @@ class PostController {
         });
       }
 
-      const post = await PostService.updatePost(postId, userId, content, media);
+      const post = await PostService.updatePost(postId, userId, content, media, req.body);
 
       return res.status(200).json({
         success: true,
@@ -177,13 +178,14 @@ class PostController {
   // 4.4 Xem news feed
   static async getNewsFeed(req, res) {
     try {
-      const { page = 1, limit = 10 } = req.query;
+      const { page = 1, limit = 10, sortBy = 'newest' } = req.query;
       const userId = req.user.userId;
 
       const result = await PostService.getNewsFeed(
         parseInt(page),
         parseInt(limit),
         userId,
+        sortBy,
       );
 
       return res.status(200).json({
@@ -197,6 +199,59 @@ class PostController {
         success: false,
         message: 'Operation failed',
         error: error.message,
+      });
+    }
+  }
+
+  static async getSuggestedPosts(req, res) {
+    try {
+      const { limit = 3 } = req.query;
+      const userId = req.user.userId;
+      const posts = await PostService.getSuggestedPosts(userId, parseInt(limit));
+
+      return res.status(200).json({
+        success: true,
+        data: posts,
+      });
+    } catch (error) {
+      console.error('Error fetching suggested posts:', error);
+      return res.status(400).json({
+        success: false,
+        message: error.message || 'Operation failed',
+      });
+    }
+  }
+
+  static async hidePost(req, res) {
+    try {
+      const result = await PostService.hidePost(req.params.postId, req.user.userId);
+
+      return res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      console.error('Error hiding post:', error);
+      return res.status(400).json({
+        success: false,
+        message: error.message || 'Operation failed',
+      });
+    }
+  }
+
+  static async toggleSavePost(req, res) {
+    try {
+      const result = await PostService.toggleSavePost(req.params.postId, req.user.userId);
+
+      return res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      console.error('Error saving post:', error);
+      return res.status(400).json({
+        success: false,
+        message: error.message || 'Operation failed',
       });
     }
   }
@@ -237,11 +292,13 @@ class PostController {
     try {
       const { postId } = req.params;
       const { page = 1, limit = 10 } = req.query;
+      const userId = req.user.userId;
 
       const result = await PostService.getPostLikes(
         postId,
         parseInt(page),
         parseInt(limit),
+        userId,
       );
 
       return res.status(200).json({
@@ -271,11 +328,13 @@ class PostController {
     try {
       const { postId } = req.params;
       const { page = 1, limit = 10 } = req.query;
+      const userId = req.user.userId;
 
       const result = await PostService.getPostComments(
         postId,
         parseInt(page),
         parseInt(limit),
+        userId,
       );
 
       return res.status(200).json({

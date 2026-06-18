@@ -43,26 +43,26 @@ class PostRepository {
     return await Post.countDocuments();
   }
 
-  static async getPostsByAuthors(authorIds, skip, limit) {
-    return await populatePostQuery(Post.find({ author: { $in: authorIds } }))
+  static async getPostsByAuthors(authorIds, skip, limit, extraFilter = {}, sort = { createdAt: -1 }) {
+    return await populatePostQuery(Post.find({ author: { $in: authorIds }, ...extraFilter }))
+      .sort(sort)
+      .skip(skip)
+      .limit(limit);
+  }
+
+  static async getPostsByAuthorsCount(authorIds, extraFilter = {}) {
+    return await Post.countDocuments({ author: { $in: authorIds }, ...extraFilter });
+  }
+
+  static async getPostsByAuthor(authorId, skip, limit, extraFilter = {}) {
+    return await populatePostQuery(Post.find({ author: authorId, ...extraFilter }))
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
   }
 
-  static async getPostsByAuthorsCount(authorIds) {
-    return await Post.countDocuments({ author: { $in: authorIds } });
-  }
-
-  static async getPostsByAuthor(authorId, skip, limit) {
-    return await populatePostQuery(Post.find({ author: authorId }))
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
-  }
-
-  static async getPostsByAuthorCount(authorId) {
-    return await Post.countDocuments({ author: authorId });
+  static async getPostsByAuthorCount(authorId, extraFilter = {}) {
+    return await Post.countDocuments({ author: authorId, ...extraFilter });
   }
 
   static async addLike(postId, userId) {
@@ -153,13 +153,28 @@ class PostRepository {
       { new: true },
     );
   }
+
+  static async getSuggestedPosts({ filter = {}, limit = 3, candidateLimit = 80 }) {
+    return await populatePostQuery(Post.find(filter))
+      .sort({ createdAt: -1 })
+      .limit(Math.max(limit, candidateLimit));
+  }
 }
 
-async function searchPosts({keyword, limit = 10}){
+async function searchPosts({keyword, limit = 10, filter = {}}){
   return await Post.find({
-    $text: { $search: keyword }
+    $text: { $search: keyword },
+    ...filter,
   })
   .populate('author', '_id fullName avatar')
+  .populate({
+    path: 'sharedFrom',
+    populate: [
+      { path: 'author', select: '_id fullName avatar email' },
+      { path: 'likes', select: 'fullName avatar email' },
+      { path: 'reactions.user', select: 'fullName avatar email' },
+    ],
+  })
   .limit(limit)
   .lean()
 }

@@ -16,7 +16,6 @@ export default function Home() {
   const {
     contacts,
     feedRefreshKey,
-    friendIds,
     friendRequests,
     groupConversations,
     groupsLoading,
@@ -50,7 +49,6 @@ export default function Home() {
             <Stories profile={profile} initialStoryId={postTarget.storyId} />
             <Composer profile={profile} />
             <PostList
-              allowedAuthorIds={friendIds}
               refreshKey={feedRefreshKey}
               initialSelectedPostId={postTarget.postId}
               focusedCommentId={postTarget.commentId}
