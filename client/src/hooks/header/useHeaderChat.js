@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { chatAPI } from "../../services/chat.service";
+import { stickerAPI } from "../../services/sticker.service";
 import {
   countNewConversations,
   getChatWsUrl,
@@ -24,6 +25,9 @@ export const useHeaderChat = (profile) => {
   const [miniMessageText, setMiniMessageText] = useState("");
   const [miniMinimized, setMiniMinimized] = useState(false);
   const [miniHasUnread, setMiniHasUnread] = useState(false);
+  const [miniStickerPacks, setMiniStickerPacks] = useState([]);
+  const [miniStickersOpen, setMiniStickersOpen] = useState(false);
+  const [miniActiveStickerPack, setMiniActiveStickerPack] = useState(0);
   const chatSocketRef = useRef(null);
   const miniConversationIdRef = useRef(null);
   const miniMinimizedRef = useRef(false);
@@ -117,6 +121,26 @@ export const useHeaderChat = (profile) => {
 
     return () => window.clearTimeout(timer);
   }, [loadUnreadConversations]);
+
+  useEffect(() => {
+    let isCurrent = true;
+
+    stickerAPI
+      .getStickerPacks()
+      .then((response) => {
+        if (isCurrent) {
+          setMiniStickerPacks(response.data?.data || []);
+        }
+      })
+      .catch((error) => {
+        console.error("Unable to load mini chat sticker packs:", error);
+        if (isCurrent) setMiniStickerPacks([]);
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, []);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -356,6 +380,7 @@ export const useHeaderChat = (profile) => {
     setMiniMinimized(false);
     miniMinimizedRef.current = false;
     setMiniHasUnread(false);
+    setMiniStickersOpen(false);
     setMiniMessages([]);
     setMiniLoading(true);
     setMiniLoadingOlder(false);
@@ -463,6 +488,7 @@ export const useHeaderChat = (profile) => {
     setMiniConversation(null);
     setMiniMessages([]);
     setMiniMessageText("");
+    setMiniStickersOpen(false);
     setMiniLoadingOlder(false);
     setMiniMessagePage(1);
     setMiniHasMoreMessages(false);
@@ -511,6 +537,27 @@ export const useHeaderChat = (profile) => {
     setMiniMessageText("");
   };
 
+  const handleMiniSendSticker = (sticker) => {
+    const socket = chatSocketRef.current;
+    if (
+      !sticker?.imageUrl ||
+      !miniConversation?._id ||
+      socket?.readyState !== WebSocket.OPEN
+    ) {
+      return;
+    }
+
+    socket.send(
+      JSON.stringify({
+        type: "send_message",
+        conversationId: miniConversation._id,
+        content: sticker.imageUrl,
+        messageType: "sticker",
+      }),
+    );
+    setMiniStickersOpen(false);
+  };
+
   useEffect(() => {
     if (!miniMinimized && miniShouldStickBottomRef.current) {
       miniMessagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -526,20 +573,26 @@ export const useHeaderChat = (profile) => {
     miniMessages,
     miniLoading,
     miniLoadingOlder,
+    miniActiveStickerPack,
     miniHasMoreMessages,
     miniMessageText,
     miniMinimized,
     miniHasUnread,
+    miniStickerPacks,
+    miniStickersOpen,
     miniMessagesListRef,
     miniMessagesEndRef,
     closeMessages,
     handleMiniMinimize,
     handleMiniRestore,
+    handleMiniSendSticker,
     handleMiniSendMessage,
     handleToggleMessages,
     loadOlderMiniMessages,
     openMiniConversation,
     closeMiniConversation,
     setMiniMessageText,
+    setMiniActiveStickerPack,
+    setMiniStickersOpen,
   };
 };

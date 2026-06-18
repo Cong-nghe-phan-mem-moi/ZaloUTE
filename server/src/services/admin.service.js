@@ -140,6 +140,7 @@ class AdminService {
     if (keyword.trim()) {
       condition.$or = [
         { name: { $regex: keyword.trim(), $options: "i" } },
+        { packName: { $regex: keyword.trim(), $options: "i" } },
         { category: { $regex: keyword.trim(), $options: "i" } },
       ];
     }
@@ -156,20 +157,36 @@ class AdminService {
   }
 
   static async createSticker(data) {
-    if (!data.name?.trim() || !data.imageUrl?.trim()) {
-      throw new Error("Sticker name and image URL are required");
+    const packName = data.packName?.trim() || data.category?.trim() || "";
+    const category = data.category?.trim() || packName;
+    const stickerItems = Array.isArray(data.stickers)
+      ? data.stickers
+      : [{ name: data.name, imageUrl: data.imageUrl }];
+    const validItems = stickerItems
+      .map((item, index) => ({
+        name: item.name?.trim() || `${packName || "Sticker"} ${index + 1}`,
+        imageUrl: item.imageUrl?.trim() || "",
+      }))
+      .filter((item) => item.imageUrl);
+
+    if (!packName || validItems.length === 0) {
+      throw new Error("Sticker pack name and at least one image URL are required");
     }
 
-    return await Sticker.create({
-      name: data.name.trim(),
-      category: data.category?.trim() || "",
-      imageUrl: data.imageUrl.trim(),
-    });
+    return await Sticker.insertMany(
+      validItems.map((item) => ({
+        name: item.name,
+        packName,
+        category,
+        imageUrl: item.imageUrl,
+      })),
+    );
   }
 
   static async updateSticker(stickerId, data) {
     const updateData = {};
     if (data.name !== undefined) updateData.name = data.name.trim();
+    if (data.packName !== undefined) updateData.packName = data.packName.trim();
     if (data.category !== undefined) updateData.category = data.category.trim();
     if (data.imageUrl !== undefined) updateData.imageUrl = data.imageUrl.trim();
 
