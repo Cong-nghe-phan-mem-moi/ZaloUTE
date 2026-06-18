@@ -3,7 +3,8 @@ const Comment = require('../models/comment.model');
 const NotificationService = require('./notification.service');
 const User = require('../models/user.model');
 const Conversation = require('../models/conversation.model');
-const Message = require('../models/message.model');
+const chatRepository = require('../repositories/chat.repository');
+const onlineTracker = require('../utils/onlineTracker');
 
 const REACTION_TYPES = ['like', 'love', 'haha', 'wow', 'sad', 'angry'];
 
@@ -139,7 +140,11 @@ class PostService {
         throw new Error('Conversation not found');
       }
 
-      const message = await Message.create({
+      if (conversation.blockedBy && conversation.blockedBy.length > 0) {
+        throw new Error('The conversation is blocked');
+      }
+
+      const message = await chatRepository.saveMessage({
         conversationId,
         senderId: userId,
         messageType: 'post_share',
@@ -148,9 +153,25 @@ class PostService {
         readBy: [userId],
       });
 
-      conversation.lastMessage = message._id;
-      await conversation.save();
+      await chatRepository.updateConversationLastMessage(conversationId, message._id);
       await PostRepository.incrementShareCount(postId);
+
+      const updatedConversations = await chatRepository.getConversationsByUserId(userId);
+      const updatedConversation =
+        updatedConversations.find((item) => item._id.toString() === conversationId.toString()) ||
+        conversation;
+
+      conversation.participants.forEach((participant) => {
+        const participantId = (participant._id || participant).toString();
+        onlineTracker.sendChatToUser(participantId, {
+          type: 'message',
+          data: message,
+        });
+        onlineTracker.sendChatToUser(participantId, {
+          type: 'conversation_update',
+          data: updatedConversation,
+        });
+      });
 
       return {
         target: 'message',

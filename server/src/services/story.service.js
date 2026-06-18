@@ -1,6 +1,8 @@
 const User = require('../models/user.model');
 const { Story, STORY_REACTIONS } = require('../models/story.model');
 const NotificationService = require('./notification.service');
+const chatRepository = require('../repositories/chat.repository');
+const onlineTracker = require('../utils/onlineTracker');
 
 const STORY_LIFETIME_MS = 24 * 60 * 60 * 1000;
 
@@ -206,10 +208,54 @@ class StoryService {
       throw new Error('Story not found');
     }
 
-    story.replies.push({ user: userId, content: trimmedContent });
-    await story.save();
+    const authorId = normalizeUserId(story.author);
+    if (authorId === String(userId)) {
+      throw new Error('You cannot reply to your own story');
+    }
 
-    return await this.getStory(storyId, userId);
+    let conversation = await chatRepository.findDirectConversation(userId, authorId);
+    if (!conversation) {
+      conversation = await chatRepository.createConversation({
+        isGroup: false,
+        participants: [userId, authorId],
+      });
+    }
+
+    const message = await chatRepository.saveMessage({
+      conversationId: conversation._id,
+      senderId: userId,
+      messageType: 'story_reply',
+      content: trimmedContent,
+      sharedStory: story._id,
+      readBy: [userId],
+    });
+
+    await chatRepository.updateConversationLastMessage(conversation._id, message._id);
+
+    const updatedConversations = await chatRepository.getConversationsByUserId(userId);
+    const updatedConversation =
+      updatedConversations.find(
+        (item) => item._id.toString() === conversation._id.toString(),
+      ) || conversation;
+
+    const participants = conversation.participants || [userId, authorId];
+    participants.forEach((participant) => {
+      const participantId = normalizeUserId(participant);
+      onlineTracker.sendChatToUser(participantId, {
+        type: 'message',
+        data: message,
+      });
+      onlineTracker.sendChatToUser(participantId, {
+        type: 'conversation_update',
+        data: updatedConversation,
+      });
+    });
+
+    return {
+      story: await this.getStory(storyId, userId),
+      conversation: updatedConversation,
+      message,
+    };
   }
 
   static async getViewers(storyId, userId) {

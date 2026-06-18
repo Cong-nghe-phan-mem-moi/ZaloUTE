@@ -1,267 +1,73 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useClickOutside, useLogout } from "../../hooks";
-import { notificationAPI } from "../../services/notification.service";
+import {
+  useClickOutside,
+  useHeaderChat,
+  useHeaderNotifications,
+  useLogout,
+} from "../../hooks";
 import { AppLogo, IconButton, UserAvatar, UserSearchBox } from "../common";
+import MessagesDropdown from "./header/MessagesDropdown";
+import MiniChatWindow from "./header/MiniChatWindow";
 import {
   NotificationPopup,
   NotificationsDropdown,
 } from "./header/Notifications";
 import ProfileMenu from "./header/ProfileMenu";
 
-const getNotificationWsUrl = (token) => {
-  const encodedToken = encodeURIComponent(token);
-  const isSecure = window.location.protocol === "https:";
-
-  if (import.meta.env.DEV) {
-    const apiOrigin =
-      import.meta.env.VITE_API_ORIGIN ||
-      `${window.location.protocol}//${window.location.hostname}:5000`;
-    const wsOrigin = apiOrigin.replace(/^http/, isSecure ? "wss" : "ws");
-
-    return `${wsOrigin}/api/notifications/ws?token=${encodedToken}`;
-  }
-
-  const protocol = isSecure ? "wss" : "ws";
-  return `${protocol}://${window.location.host}/api/notifications/ws?token=${encodedToken}`;
-};
-
-const LAST_SEEN_NOTIFICATION_KEY = "lastSeenNotificationAt";
-
-const getLastSeenNotificationAt = () => {
-  const value = localStorage.getItem(LAST_SEEN_NOTIFICATION_KEY);
-  const timestamp = value ? Number(value) : 0;
-
-  return Number.isFinite(timestamp) ? timestamp : 0;
-};
-
-const getNotificationTime = (notification) =>
-  new Date(notification?.createdAt || 0).getTime();
-
-const getNewNotificationCount = (notifications) => {
-  const lastSeenAt = getLastSeenNotificationAt();
-
-  return notifications.filter(
-    (notification) => getNotificationTime(notification) > lastSeenAt,
-  ).length;
-};
-
-const rememberNotificationsSeen = (notifications) => {
-  const latestTimestamp = notifications.reduce(
-    (latest, notification) =>
-      Math.max(latest, getNotificationTime(notification)),
-    Date.now(),
-  );
-
-  localStorage.setItem(
-    LAST_SEEN_NOTIFICATION_KEY,
-    String(latestTimestamp || Date.now()),
-  );
-};
-
 const HomeHeader = ({ profile, activePage = "home" }) => {
   const navigate = useNavigate();
   const { isLoggingOut, logout: handleLogout } = useLogout();
-  const [notifications, setNotifications] = useState([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [newNotificationCount, setNewNotificationCount] = useState(0);
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const [notificationsLoading, setNotificationsLoading] = useState(false);
-  const [popupNotification, setPopupNotification] = useState(null);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const messagesRef = useRef(null);
   const notificationsRef = useRef(null);
   const profileMenuRef = useRef(null);
-  const notificationsOpenRef = useRef(false);
 
-  const closeNotifications = useCallback(() => setNotificationsOpen(false), []);
+  const {
+    messagesOpen,
+    messageConversations,
+    messagesLoading,
+    unreadConversationCount,
+    miniConversation,
+    miniMessages,
+    miniLoading,
+    miniLoadingOlder,
+    miniHasMoreMessages,
+    miniMessageText,
+    miniMinimized,
+    miniHasUnread,
+    miniMessagesListRef,
+    miniMessagesEndRef,
+    closeMessages,
+    handleMiniMinimize,
+    handleMiniRestore,
+    handleMiniSendMessage,
+    handleToggleMessages,
+    loadOlderMiniMessages,
+    openMiniConversation,
+    closeMiniConversation,
+    setMiniMessageText,
+  } = useHeaderChat(profile);
+
+  const {
+    notifications,
+    unreadCount,
+    newNotificationCount,
+    notificationsOpen,
+    notificationsLoading,
+    popupNotification,
+    closeNotifications,
+    handleMarkAllAsRead,
+    handleNotificationClick,
+    handleToggleNotifications,
+    setPopupNotification,
+  } = useHeaderNotifications(navigate);
+
   const closeProfileMenu = useCallback(() => setProfileMenuOpen(false), []);
 
+  useClickOutside(messagesRef, closeMessages);
   useClickOutside(notificationsRef, closeNotifications);
   useClickOutside(profileMenuRef, closeProfileMenu);
-
-  const loadNotifications = useCallback(async () => {
-    setNotificationsLoading(true);
-
-    try {
-      const response = await notificationAPI.getNotifications(1, 10);
-      const nextNotifications = response.data?.data?.notifications || [];
-      setNotifications(nextNotifications);
-      setNewNotificationCount(getNewNotificationCount(nextNotifications));
-      setUnreadCount(response.data?.data?.unreadCount || 0);
-      return nextNotifications;
-    } catch (error) {
-      console.error("Unable to load notifications:", error);
-      setNotifications([]);
-      setNewNotificationCount(0);
-      setUnreadCount(0);
-      return [];
-    } finally {
-      setNotificationsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      loadNotifications();
-    }, 0);
-
-    return () => window.clearTimeout(timer);
-  }, [loadNotifications]);
-
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) return undefined;
-
-    const wsUrl = getNotificationWsUrl(token);
-    let socket = null;
-    let reconnectTimer = null;
-    let shouldReconnect = true;
-    let hasConnected = false;
-
-    const handleMessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-
-        if (data.type === "notification" && data.notification) {
-          setNotifications((items) => {
-            const exists = items.some(
-              (item) => item._id === data.notification._id,
-            );
-
-            if (exists) return items;
-            const nextItems = [data.notification, ...items].slice(0, 10);
-            if (notificationsOpenRef.current) {
-              rememberNotificationsSeen(nextItems);
-              setNewNotificationCount(0);
-            } else {
-              setNewNotificationCount(getNewNotificationCount(nextItems));
-            }
-            return nextItems;
-          });
-          setUnreadCount(data.unreadCount || 0);
-          setPopupNotification(data.notification);
-        }
-
-        if (data.type === "unread_count") {
-          setUnreadCount(data.unreadCount || 0);
-        }
-      } catch (error) {
-        console.error("Invalid notification message:", error);
-      }
-    };
-
-    const connect = () => {
-      socket = new WebSocket(wsUrl);
-      socket.onopen = () => {
-        hasConnected = true;
-        loadNotifications();
-      };
-      socket.onmessage = handleMessage;
-      socket.onerror = (error) => {
-        if (hasConnected) {
-          console.error("Notification websocket error:", error);
-        }
-      };
-      socket.onclose = (event) => {
-        if (event.code === 1008 || !hasConnected) {
-          shouldReconnect = false;
-          return;
-        }
-
-        if (!shouldReconnect) return;
-
-        reconnectTimer = window.setTimeout(connect, 3000);
-      };
-    };
-
-    notificationAPI
-      .getNotifications(1, 1)
-      .then(() => {
-        if (shouldReconnect) {
-          connect();
-        }
-      })
-      .catch((error) => {
-        shouldReconnect = false;
-        console.error("Unable to start notification websocket:", error);
-      });
-
-    return () => {
-      shouldReconnect = false;
-      if (reconnectTimer) {
-        window.clearTimeout(reconnectTimer);
-      }
-      socket?.close();
-    };
-  }, [loadNotifications]);
-
-  useEffect(() => {
-    const interval = window.setInterval(() => {
-      if (document.visibilityState === "visible") {
-        loadNotifications();
-      }
-    }, 15000);
-
-    return () => window.clearInterval(interval);
-  }, [loadNotifications]);
-
-  useEffect(() => {
-    if (!popupNotification) return undefined;
-
-    const timer = window.setTimeout(() => {
-      setPopupNotification(null);
-    }, 6000);
-
-    return () => window.clearTimeout(timer);
-  }, [popupNotification]);
-
-  useEffect(() => {
-    notificationsOpenRef.current = notificationsOpen;
-  }, [notificationsOpen]);
-
-  const handleToggleNotifications = async () => {
-    const nextOpen = !notificationsOpen;
-    setNotificationsOpen(nextOpen);
-
-    if (nextOpen) {
-      const nextNotifications = await loadNotifications();
-      rememberNotificationsSeen(nextNotifications);
-      setNewNotificationCount(0);
-    }
-  };
-
-  const handleMarkAllAsRead = async () => {
-    try {
-      await notificationAPI.markAllAsRead();
-      setNotifications((items) =>
-        items.map((item) => ({ ...item, isRead: true })),
-      );
-      setUnreadCount(0);
-    } catch (error) {
-      console.error("Unable to mark notifications as read:", error);
-    }
-  };
-
-  const handleNotificationClick = async (notification, href) => {
-    if (notification.isRead) {
-      navigate(href);
-      return;
-    }
-
-    try {
-      await notificationAPI.markAsRead(notification._id);
-      setNotifications((items) =>
-        items.map((item) =>
-          item._id === notification._id ? { ...item, isRead: true } : item,
-        ),
-      );
-      setUnreadCount((count) => Math.max(0, count - 1));
-    } catch (error) {
-      console.error("Unable to mark notification as read:", error);
-    } finally {
-      navigate(href);
-    }
-  };
 
   return (
     <header className="flex h-20 items-center justify-between gap-4 bg-white px-6 lg:px-12">
@@ -282,11 +88,24 @@ const HomeHeader = ({ profile, activePage = "home" }) => {
       </nav>
 
       <div className="flex items-center gap-3">
-        <IconButton
-          icon="forum"
-          label="Messages"
-          onClick={() => window.location.assign("/messages")}
-        />
+        <div className="relative" ref={messagesRef}>
+          <IconButton
+            icon="forum"
+            label="Messages"
+            onClick={handleToggleMessages}
+            badge={unreadConversationCount}
+          />
+          {messagesOpen ? (
+            <MessagesDropdown
+              conversations={messageConversations}
+              loading={messagesLoading}
+              profile={profile}
+              onOpenMessages={() => navigate("/messages")}
+              onOpenConversation={openMiniConversation}
+            />
+          ) : null}
+        </div>
+
         <div className="relative" ref={notificationsRef}>
           <IconButton
             icon="notifications"
@@ -304,6 +123,7 @@ const HomeHeader = ({ profile, activePage = "home" }) => {
             />
           ) : null}
         </div>
+
         <div className="relative" ref={profileMenuRef}>
           <button
             type="button"
@@ -334,10 +154,36 @@ const HomeHeader = ({ profile, activePage = "home" }) => {
           ) : null}
         </div>
       </div>
+
       {popupNotification ? (
         <NotificationPopup
           notification={popupNotification}
           onClose={() => setPopupNotification(null)}
+        />
+      ) : null}
+
+      {miniConversation ? (
+        <MiniChatWindow
+          conversation={miniConversation}
+          messages={miniMessages}
+          loading={miniLoading}
+          minimized={miniMinimized}
+          hasUnread={miniHasUnread}
+          messageText={miniMessageText}
+          messagesEndRef={miniMessagesEndRef}
+          messagesListRef={miniMessagesListRef}
+          profile={profile}
+          hasMoreMessages={miniHasMoreMessages}
+          loadingOlder={miniLoadingOlder}
+          onChangeMessage={setMiniMessageText}
+          onClose={closeMiniConversation}
+          onLoadOlder={loadOlderMiniMessages}
+          onMinimize={handleMiniMinimize}
+          onRestore={handleMiniRestore}
+          onOpenFull={() =>
+            navigate(`/messages?conversationId=${miniConversation._id}`)
+          }
+          onSendMessage={handleMiniSendMessage}
         />
       ) : null}
     </header>
@@ -358,4 +204,3 @@ const HeaderTab = ({ icon, active = false, href = "/" }) => (
 );
 
 export default HomeHeader;
-

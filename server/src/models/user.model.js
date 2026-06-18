@@ -87,6 +87,14 @@ const userSchema = new mongoose.Schema({
   lastActive: {
     type: Date,
     default: Date.now
+  },
+  notificationSeenAt: {
+    type: Date,
+    default: Date.now
+  },
+  chatSeenAt: {
+    type: Date,
+    default: Date.now
   }
 }, { timestamps: true });
 

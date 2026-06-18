@@ -65,6 +65,22 @@ class NotificationController {
       });
     }
   }
+
+  static async markAsSeen(req, res) {
+    try {
+      const result = await NotificationService.markAsSeen(req.user.userId);
+      return res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      console.error("Error marking notifications as seen:", error);
+      return res.status(400).json({
+        success: false,
+        message: "Unable to mark notifications as seen",
+      });
+    }
+  }
 }
 
 module.exports = NotificationController;

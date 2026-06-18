@@ -1,6 +1,27 @@
 const Conversation = require("../models/conversation.model");
 const Message = require("../models/message.model");
 
+const populateSharedPost = {
+  path: "sharedPost",
+  populate: [
+    { path: "author", select: "_id fullName avatar" },
+    { path: "likes", select: "fullName avatar email" },
+    { path: "reactions.user", select: "fullName avatar email" },
+    {
+      path: "sharedFrom",
+      populate: { path: "author", select: "_id fullName avatar" },
+    },
+  ],
+};
+
+const populateSharedStory = {
+  path: "sharedStory",
+  populate: {
+    path: "author",
+    select: "_id fullName avatar",
+  },
+};
+
 /**
  * Lấy tất cả các cuộc trò chuyện của một người dùng
  * @param {string} userId - ID người dùng
@@ -11,10 +32,14 @@ async function getConversationsByUserId(userId) {
     .populate("participants", "fullName avatar isOnline lastActive")
     .populate({
       path: "lastMessage",
-      populate: {
-        path: "senderId",
-        select: "fullName avatar",
-      },
+      populate: [
+        {
+          path: "senderId",
+          select: "fullName avatar",
+        },
+        populateSharedPost,
+        populateSharedStory,
+      ],
     })
     .sort({ updatedAt: -1 });
 }
@@ -64,6 +89,8 @@ async function saveMessage(messageData) {
   return await Message.findById(savedMessage._id)
     .populate("senderId", "fullName avatar")
     .populate("mentions", "fullName avatar")
+    .populate(populateSharedPost)
+    .populate(populateSharedStory)
     .populate({
       path: "replyTo",
       populate: {
@@ -84,6 +111,8 @@ async function getMessagesByConversationId(conversationId, skip = 0, limit = 50)
   return await Message.find({ conversationId })
     .populate("senderId", "fullName avatar")
     .populate("mentions", "fullName avatar")
+    .populate(populateSharedPost)
+    .populate(populateSharedStory)
     .populate({
       path: "replyTo",
       populate: {

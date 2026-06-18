@@ -91,9 +91,9 @@ async function handleInviteToGroup(req, res) {
   try {
     const userId = getAuthUserId(req);
     const { groupId } = req.params;
-    const { targetUserIds } = req.body;
+    const { targetUserIds, invitedUserIds } = req.body;
 
-    await GroupService.inviteToGroup(userId, groupId, targetUserIds);
+    await GroupService.inviteToGroup(userId, groupId, targetUserIds || invitedUserIds);
 
     return res.status(200).json({
       success: true,
@@ -128,9 +128,13 @@ async function handleApproveJoinRequest(req, res) {
   try {
     const adminId = getAuthUserId(req);
     const { groupId } = req.params;
-    const { targetUserId } = req.body;
+    const { targetUserId, userId, memberId, requestUserId } = req.body;
 
-    await GroupService.approveJoinRequest(adminId, groupId, targetUserId);
+    await GroupService.approveJoinRequest(
+      adminId,
+      groupId,
+      targetUserId || userId || memberId || requestUserId,
+    );
 
     return res.status(200).json({
       success: true,
