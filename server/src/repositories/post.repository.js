@@ -43,9 +43,9 @@ class PostRepository {
     return await Post.countDocuments();
   }
 
-  static async getPostsByAuthors(authorIds, skip, limit, extraFilter = {}) {
+  static async getPostsByAuthors(authorIds, skip, limit, extraFilter = {}, sort = { createdAt: -1 }) {
     return await populatePostQuery(Post.find({ author: { $in: authorIds }, ...extraFilter }))
-      .sort({ createdAt: -1 })
+      .sort(sort)
       .skip(skip)
       .limit(limit);
   }
@@ -152,6 +152,12 @@ class PostRepository {
       { $inc: { shareCount: 1 } },
       { new: true },
     );
+  }
+
+  static async getSuggestedPosts({ filter = {}, limit = 3, candidateLimit = 80 }) {
+    return await populatePostQuery(Post.find(filter))
+      .sort({ createdAt: -1 })
+      .limit(Math.max(limit, candidateLimit));
   }
 }
 

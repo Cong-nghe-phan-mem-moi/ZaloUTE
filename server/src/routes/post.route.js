@@ -18,6 +18,9 @@ router.post(
 // 4.4 Xem news feed
 router.get('/feed', PostController.getNewsFeed);
 
+// Suggested highlighted posts
+router.get('/suggested', PostController.getSuggestedPosts);
+
 // Search posts
 router.get('/search', PostController.searchPosts);
 
@@ -26,6 +29,10 @@ router.get('/author/:authorId', PostController.getPostsByAuthor);
 
 // Share post to timeline or message
 router.post('/:postId/share', PostController.sharePost);
+
+// Hide or save a post for current user
+router.post('/:postId/hide', PostController.hidePost);
+router.post('/:postId/save', PostController.toggleSavePost);
 
 // Get single post (must be after /feed, /search, /author)
 router.get('/:postId', PostController.getPost);

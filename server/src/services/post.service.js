@@ -2,6 +2,7 @@ const PostRepository = require('../repositories/post.repository');
 const Comment = require('../models/comment.model');
 const NotificationService = require('./notification.service');
 const User = require('../models/user.model');
+const Post = require('../models/post.model');
 const Conversation = require('../models/conversation.model');
 const chatRepository = require('../repositories/chat.repository');
 const onlineTracker = require('../utils/onlineTracker');
@@ -77,27 +78,68 @@ const buildReactionState = (postObj, userId = null) => {
   };
 };
 
-const buildPostResponse = async (post, userId = null) => {
+const getSetFrom = (values = []) =>
+  new Set((values || []).map((value) => String(value?._id || value)).filter(Boolean));
+
+const getFeedSort = (sortBy = 'newest') => {
+  if (sortBy === 'engagement') {
+    return {
+      shareCount: -1,
+      commentCount: -1,
+      createdAt: -1,
+    };
+  }
+
+  return { createdAt: -1 };
+};
+
+const calculateEngagementScore = (post) => {
+  const postObj = post.toObject ? post.toObject() : post;
+  const reactionCount = buildReactionState(postObj).reactionCount;
+  const commentCount = postObj.commentCount || 0;
+  const shareCount = postObj.shareCount || 0;
+  const createdAt = postObj.createdAt ? new Date(postObj.createdAt).getTime() : Date.now();
+  const ageHours = Math.max(0, (Date.now() - createdAt) / (1000 * 60 * 60));
+  const decay = ageHours * 0.08;
+
+  return Math.max(
+    0,
+    Number((reactionCount + commentCount * 2 + shareCount * 3 - decay).toFixed(2)),
+  );
+};
+
+const buildPostResponse = async (post, userId = null, viewer = null) => {
   const postObj = post.toObject ? post.toObject() : post;
   const reactionState = buildReactionState(postObj, userId);
+  const savedPostIds = getSetFrom(viewer?.savedPosts);
+  const hiddenPostIds = getSetFrom(viewer?.hiddenPosts);
+  const followingIds = getSetFrom(viewer?.following);
+  const authorId = String(postObj.author?._id || postObj.author || '');
 
   postObj.reactionSummary = reactionState.reactionSummary;
   postObj.reactionCount = reactionState.reactionCount;
   postObj.currentUserReaction = reactionState.currentUserReaction;
+  postObj.engagementScore = calculateEngagementScore(postObj);
   postObj.isLiked = reactionState.isLiked;
+  postObj.isSaved = savedPostIds.has(String(postObj._id));
+  postObj.isHidden = hiddenPostIds.has(String(postObj._id));
+  postObj.isFollowingAuthor = followingIds.has(authorId);
   postObj.commentCount = await Comment.countDocuments({ post: postObj._id });
 
   return postObj;
 };
 
 const buildPostsResponse = async (posts, userId = null) => {
-  const { friendIds } = await getViewerContext(userId);
+  const { user, friendIds, blockedAuthorIds } = await getViewerContext(userId);
+  const hiddenPostIds = getSetFrom(user?.hiddenPosts);
   const visiblePosts = posts.filter((post) =>
+    !hiddenPostIds.has(String(post._id)) &&
+    !hasBlockedAuthor(post, blockedAuthorIds) &&
     canViewPostWithSharedSource(post, userId, friendIds),
   );
 
   return await Promise.all(
-    visiblePosts.map((post) => buildPostResponse(post, userId)),
+    visiblePosts.map((post) => buildPostResponse(post, userId, user)),
   );
 };
 
@@ -106,17 +148,41 @@ const getViewerContext = async (userId) => {
     return { user: null, friendIds: [] };
   }
 
-  const user = await User.findById(userId).select('friends blockedUsers');
+  const [user, usersBlockingViewer] = await Promise.all([
+    User.findById(userId).select(
+      'friends following followers hiddenPosts savedPosts blockedUsers',
+    ),
+    User.find({ blockedUsers: userId }).select('_id'),
+  ]);
+  const blockedAuthorIds = new Set([
+    ...getSetFrom(user?.blockedUsers),
+    ...getSetFrom(usersBlockingViewer),
+  ]);
+
   return {
     user,
     friendIds: [...getFriendIdSet(user)],
+    blockedAuthorIds,
   };
 };
 
-const assertCanViewPost = async (post, userId) => {
-  const { friendIds } = await getViewerContext(userId);
+const hasBlockedAuthor = (post, blockedAuthorIds = new Set()) => {
+  const authorId = String(post?.author?._id || post?.author || '');
+  const sharedAuthorId = String(post?.sharedFrom?.author?._id || post?.sharedFrom?.author || '');
 
-  if (!canViewPostWithSharedSource(post, userId, friendIds)) {
+  return (
+    (authorId && blockedAuthorIds.has(authorId)) ||
+    (sharedAuthorId && blockedAuthorIds.has(sharedAuthorId))
+  );
+};
+
+const assertCanViewPost = async (post, userId) => {
+  const { friendIds, blockedAuthorIds } = await getViewerContext(userId);
+
+  if (
+    hasBlockedAuthor(post, blockedAuthorIds) ||
+    !canViewPostWithSharedSource(post, userId, friendIds)
+  ) {
     throw new Error('Post not found');
   }
 };
@@ -324,7 +390,7 @@ class PostService {
   }
 
   // 4.4 Xem news feed
-  static async getNewsFeed(page = 1, limit = 10, userId = null) {
+  static async getNewsFeed(page = 1, limit = 10, userId = null, sortBy = 'newest') {
     // Validate pagination
     if (page < 1) page = 1;
     if (limit < 1 || limit > 50) limit = 10;
@@ -343,28 +409,36 @@ class PostService {
       };
     }
 
-    const { friendIds } = await getViewerContext(userId);
-
-    if (friendIds.length === 0) {
-      return {
-        posts: [],
-        pagination: {
-          page,
-          limit,
-          total: 0,
-          totalPages: 0,
-        },
-      };
-    }
-
+    const { user, friendIds, blockedAuthorIds } = await getViewerContext(userId);
+    const followingIds = [...getSetFrom(user?.following)];
+    const hiddenPostIds = [...getSetFrom(user?.hiddenPosts)];
+    const authorIds = [...new Set([String(userId), ...friendIds, ...followingIds])];
+    const visibleAuthorIds = authorIds.filter(
+      (authorId) => !blockedAuthorIds.has(String(authorId)),
+    );
     const privacyFilter = buildPrivacyMongoFilter(userId, friendIds);
-    const posts = await PostRepository.getPostsByAuthors(friendIds, skip, limit, privacyFilter);
-    const total = await PostRepository.getPostsByAuthorsCount(friendIds, privacyFilter);
+    const feedFilter = {
+      ...privacyFilter,
+      _id: { $nin: hiddenPostIds },
+    };
+    const posts = await PostRepository.getPostsByAuthors(
+      visibleAuthorIds,
+      skip,
+      limit,
+      feedFilter,
+      getFeedSort(sortBy),
+    );
+    const total = await PostRepository.getPostsByAuthorsCount(authorIds, feedFilter);
 
     const postsWithLikeStatus = await buildPostsResponse(posts, userId);
+    const suggestedPosts =
+      page === 1
+        ? await this.getSuggestedPosts(userId, 3, { excludedAuthorIds: authorIds })
+        : [];
 
     return {
       posts: postsWithLikeStatus,
+      suggestedPosts,
       pagination: {
         page,
         limit,
@@ -372,6 +446,78 @@ class PostService {
         totalPages: Math.ceil(total / limit),
       },
     };
+  }
+
+  static async getSuggestedPosts(userId, limit = 3, options = {}) {
+    if (!userId) return [];
+
+    const { user, friendIds, blockedAuthorIds } = await getViewerContext(userId);
+    const hiddenPostIds = [...getSetFrom(user?.hiddenPosts)];
+    const excludedAuthorIds = options.excludedAuthorIds || [
+      String(userId),
+      ...friendIds,
+      ...getSetFrom(user?.following),
+    ];
+    const excludedAuthorSet = new Set([
+      ...excludedAuthorIds.map(String),
+      ...blockedAuthorIds,
+    ]);
+    const privacyFilter = buildPrivacyMongoFilter(userId, friendIds);
+
+    const candidates = await PostRepository.getSuggestedPosts({
+      filter: {
+        ...privacyFilter,
+        author: { $nin: [...excludedAuthorSet] },
+        _id: { $nin: hiddenPostIds },
+      },
+      limit,
+      candidateLimit: 80,
+    });
+
+    const rankedPosts = candidates
+      .filter((post) =>
+        !hasBlockedAuthor(post, blockedAuthorIds) &&
+        canViewPostWithSharedSource(post, userId, friendIds),
+      )
+      .sort((a, b) => {
+        const scoreDiff = calculateEngagementScore(b) - calculateEngagementScore(a);
+        if (scoreDiff !== 0) return scoreDiff;
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      })
+      .slice(0, limit);
+
+    return await buildPostsResponse(rankedPosts, userId);
+  }
+
+  static async hidePost(postId, userId) {
+    const post = await PostRepository.findPostById(postId);
+    if (!post) {
+      throw new Error('Operation failed');
+    }
+    await assertCanViewPost(post, userId);
+
+    await User.updateOne({ _id: userId }, { $addToSet: { hiddenPosts: postId } });
+    return { postId, hidden: true };
+  }
+
+  static async toggleSavePost(postId, userId) {
+    const post = await PostRepository.findPostById(postId);
+    if (!post) {
+      throw new Error('Operation failed');
+    }
+    await assertCanViewPost(post, userId);
+
+    const user = await User.findById(userId).select('savedPosts');
+    const isSaved = getSetFrom(user?.savedPosts).has(String(postId));
+
+    await User.updateOne(
+      { _id: userId },
+      isSaved
+        ? { $pull: { savedPosts: postId } }
+        : { $addToSet: { savedPosts: postId } },
+    );
+
+    return { postId, isSaved: !isSaved };
   }
 
   // Like/Unlike post
@@ -502,7 +648,18 @@ class PostService {
 
     const skip = (page - 1) * limit;
 
-    const { friendIds } = await getViewerContext(currentUserId);
+    const { friendIds, blockedAuthorIds } = await getViewerContext(currentUserId);
+    if (blockedAuthorIds.has(String(authorId))) {
+      return {
+        posts: [],
+        pagination: {
+          page,
+          limit,
+          total: 0,
+          totalPages: 0,
+        },
+      };
+    }
     const privacyFilter = buildPrivacyMongoFilter(currentUserId, friendIds);
     const posts = await PostRepository.getPostsByAuthor(authorId, skip, limit, privacyFilter);
     const total = await PostRepository.getPostsByAuthorCount(authorId, privacyFilter);
@@ -534,10 +691,11 @@ class PostService {
     const searchRegex = new RegExp(keyword.trim(), 'i');
 
     const Post = require('../models/post.model');
-    const { friendIds } = await getViewerContext(userId);
+    const { friendIds, blockedAuthorIds } = await getViewerContext(userId);
     const privacyFilter = buildPrivacyMongoFilter(userId, friendIds);
     const posts = await Post.find({ content: searchRegex })
       .find(privacyFilter)
+      .find({ author: { $nin: [...blockedAuthorIds] } })
       .populate('author', 'fullName avatar email')
       .populate('likes', 'fullName avatar email')
       .populate('reactions.user', 'fullName avatar email')
@@ -553,7 +711,11 @@ class PostService {
       .skip(skip)
       .limit(limit);
 
-    const total = await Post.countDocuments({ content: searchRegex, ...privacyFilter });
+    const total = await Post.countDocuments({
+      content: searchRegex,
+      ...privacyFilter,
+      author: { $nin: [...blockedAuthorIds] },
+    });
 
     const postsWithLikeStatus = await buildPostsResponse(posts, userId);
 

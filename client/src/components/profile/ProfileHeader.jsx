@@ -32,6 +32,9 @@ const ProfileHeader = ({
   blockingUser = false,
   unblockingUser = false,
   isBlocked = false,
+  isFollowing = false,
+  onToggleFollow,
+  followLoading = false,
 }) => {
   const {
     name,
@@ -101,6 +104,9 @@ const ProfileHeader = ({
             blockingUser={blockingUser}
             unblockingUser={unblockingUser}
             isBlocked={isBlocked}
+            isFollowing={isFollowing}
+            onToggleFollow={onToggleFollow}
+            followLoading={followLoading}
           />
         </div>
 
@@ -223,6 +229,9 @@ const ActionButtons = ({
   blockingUser,
   unblockingUser,
   isBlocked,
+  isFollowing,
+  onToggleFollow,
+  followLoading,
 }) => {
   if (!isOwnProfile) {
     const action = relationLabels[relation] || relationLabels.none;
@@ -284,6 +293,22 @@ const ActionButtons = ({
             {rejectingFriendRequest ? "Rejecting..." : "Reject"}
           </button>
         ) : null}
+
+        <button
+          type="button"
+          onClick={onToggleFollow}
+          disabled={followLoading}
+          className={`flex items-center gap-2 rounded-md px-5 py-2 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+            isFollowing
+              ? "bg-[#e7f3ff] text-[#1877f2] hover:bg-[#dbeafe]"
+              : "bg-[#e5e7eb] text-[#111827] hover:bg-[#d1d5db]"
+          }`}
+        >
+          <span className="material-symbols-outlined text-[18px]">
+            {followLoading ? "sync" : isFollowing ? "done" : "rss_feed"}
+          </span>
+          {followLoading ? "Saving..." : isFollowing ? "Following" : "Follow"}
+        </button>
 
         <button
           type="button"

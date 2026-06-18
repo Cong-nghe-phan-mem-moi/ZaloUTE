@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { menuItems, shortcuts } from "./homeData";
 
 const LeftSidebar = () => (
-  <aside className="hidden bg-white px-8 py-5 lg:block">
+  <aside className="sticky top-20 hidden h-[calc(100vh-80px)] overflow-y-auto bg-white px-8 py-5 lg:block">
     <button className="mb-7 h-11 w-full rounded-md bg-[#1877f2] text-sm font-semibold text-white shadow-md hover:bg-[#166fe5]">
       Create New Post
     </button>
