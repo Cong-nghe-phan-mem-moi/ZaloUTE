@@ -25,6 +25,13 @@ const ProfileHeader = ({
   cancellingFriendRequest = false,
   onUnfriend,
   unfriending = false,
+  onPreviewAvatar,
+  onPreviewCover,
+  onBlockUser,
+  onUnblockUser,
+  blockingUser = false,
+  unblockingUser = false,
+  isBlocked = false,
 }) => {
   const {
     name,
@@ -44,6 +51,7 @@ const ProfileHeader = ({
         isOwnProfile={isOwnProfile}
         onUploadCoverImage={onUploadCoverImage}
         coverUploading={coverUploading}
+        onPreviewCover={onPreviewCover}
       />
 
       <div className="px-5 pb-7 sm:px-8">
@@ -55,6 +63,7 @@ const ProfileHeader = ({
               isOwnProfile={isOwnProfile}
               onUploadAvatar={onUploadAvatar}
               avatarUploading={avatarUploading}
+              onPreviewAvatar={onPreviewAvatar}
             />
             <div className="mb-3 min-w-0">
               <h1 className="truncate text-3xl font-bold text-[#111827]">
@@ -87,6 +96,11 @@ const ProfileHeader = ({
             cancellingFriendRequest={cancellingFriendRequest}
             onUnfriend={onUnfriend}
             unfriending={unfriending}
+            onBlockUser={onBlockUser}
+            onUnblockUser={onUnblockUser}
+            blockingUser={blockingUser}
+            unblockingUser={unblockingUser}
+            isBlocked={isBlocked}
           />
         </div>
 
@@ -107,9 +121,10 @@ const CoverImage = ({
   isOwnProfile,
   onUploadCoverImage,
   coverUploading,
+  onPreviewCover,
 }) => {
   return (
-    <div className="relative h-56 w-full bg-gradient-to-br from-[#dbeafe] via-[#bfdbfe] to-[#93c5fd] sm:h-60">
+    <div className="relative h-56 w-full cursor-pointer bg-gradient-to-br from-[#dbeafe] via-[#bfdbfe] to-[#93c5fd] sm:h-60" onClick={onPreviewCover}>
       {coverImage && (
         <img
           className="h-full w-full object-cover"
@@ -147,10 +162,11 @@ const ProfileAvatar = ({
   isOwnProfile,
   onUploadAvatar,
   avatarUploading,
+  onPreviewAvatar,
 }) => {
   return (
     <div className="relative group">
-      <div className="h-32 w-32 overflow-hidden rounded-full border-4 border-white bg-[#facc15] text-[#7c2d12] shadow-md transition-transform duration-300 group-hover:scale-[1.02] sm:h-36 sm:w-36">
+      <div onClick={onPreviewAvatar} className="h-32 w-32 cursor-pointer overflow-hidden rounded-full border-4 border-white bg-[#facc15] text-[#7c2d12] shadow-md transition-transform duration-300 group-hover:scale-[1.02] sm:h-36 sm:w-36">
         {profileImage ? (
           <img
             className="h-full w-full object-cover"
@@ -202,6 +218,11 @@ const ActionButtons = ({
   cancellingFriendRequest,
   onUnfriend,
   unfriending,
+  onBlockUser,
+  onUnblockUser,
+  blockingUser,
+  unblockingUser,
+  isBlocked,
 }) => {
   if (!isOwnProfile) {
     const action = relationLabels[relation] || relationLabels.none;
@@ -263,6 +284,24 @@ const ActionButtons = ({
             {rejectingFriendRequest ? "Rejecting..." : "Reject"}
           </button>
         ) : null}
+
+        <button
+          type="button"
+          onClick={isBlocked ? onUnblockUser : onBlockUser}
+          disabled={blockingUser || unblockingUser}
+          className="flex items-center gap-2 rounded-md bg-[#111827] px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <span className="material-symbols-outlined text-[18px]">
+            {blockingUser || unblockingUser ? "sync" : "block"}
+          </span>
+          {blockingUser || unblockingUser
+            ? isBlocked
+              ? "Unblocking..."
+              : "Blocking..."
+            : isBlocked
+              ? "Unblock"
+              : "Block"}
+        </button>
 
         <button className="flex items-center gap-2 rounded-md bg-[#e5e7eb] px-5 py-2 text-sm font-semibold text-[#111827] transition-colors hover:bg-[#d1d5db]">
           <span className="material-symbols-outlined text-[18px]">chat</span>

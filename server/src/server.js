@@ -51,10 +51,16 @@ app.use(
   }),
 );
 
-connectDB();
+connectDB().then(() => {
+  const User = require("./models/user.model");
+  User.updateMany({}, { isOnline: false })
+    .then(() => console.log("Reset all users online status to offline"))
+    .catch((err) => console.error("Failed to reset online statuses:", err));
+});
 
 const apiRoutes = require('./routes/api');
 const NotificationService = require('./service/notification.service');
+const ChatService = require('./service/chat.service');
 
 app.use('/api', apiRoutes);
 
@@ -64,3 +70,4 @@ const server = app.listen(PORT, () => {
 });
 
 NotificationService.attachWebSocketServer(server);
+ChatService.attachWebSocketServer(server);

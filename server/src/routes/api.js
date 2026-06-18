@@ -5,6 +5,7 @@ const authRoutes = require("./auth.route");
 const postRoutes = require("./post.route");
 const commentRoutes = require("./comment.route");
 const notificationRoutes = require("./notification.route");
+const storyRoutes = require("./story.route");
 const adminRoutes = require("./admin.route");
 const { authMiddleware, authorize } = require("../middleware/authMiddleware");
 const { validateEditProfile } = require("../middleware/validateRequest");
@@ -12,6 +13,8 @@ const { editProfileLimiter } = require("../middleware/rateLimiter");
 const userRoutes = require("./user.route");
 const upload = require("../middleware/uploadMiddleware");
 const groupRoutes = require("./group.route");
+const chatRoutes = require("./chat.route");
+
 // Basic health check endpoint
 router.get("/health", (req, res) => {
   res.json({ status: "Server is running" });
@@ -63,6 +66,8 @@ router.put(
 // Comment Routes
 router.use("/comments", commentRoutes);
 router.use("/notifications", notificationRoutes);
+router.use("/stories", storyRoutes);
+router.use("/chats", chatRoutes);
 
 // Authentication routes
 router.use("/auth", authRoutes);

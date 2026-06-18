@@ -8,6 +8,25 @@ const Message = require('../models/message.model');
 const REACTION_TYPES = ['like', 'love', 'haha', 'wow', 'sad', 'angry'];
 
 const getReactionUserId = (reaction) => String(reaction.user?._id || reaction.user);
+const getDocumentId = (value) => value?._id || value;
+const getPostAuthorId = (post) => getDocumentId(post?.author);
+
+const getShareNotificationReceivers = (post, senderId) => {
+  const sender = String(senderId);
+  const receivers = new Map();
+  const directAuthorId = getPostAuthorId(post);
+  const originalAuthorId = getPostAuthorId(post?.sharedFrom);
+
+  [directAuthorId, originalAuthorId].forEach((receiverId) => {
+    if (!receiverId || String(receiverId) === sender) {
+      return;
+    }
+
+    receivers.set(String(receiverId), receiverId);
+  });
+
+  return [...receivers.values()];
+};
 
 const buildReactionState = (postObj, userId = null) => {
   const reactionSummary = REACTION_TYPES.reduce((summary, type) => {
@@ -156,19 +175,29 @@ class PostService {
     await PostRepository.incrementShareCount(postId);
     const populatedSharedPost = await PostRepository.findPostById(sharedPost._id);
 
-    await NotificationService.createNotification({
-      receiver: originalPost.author?._id || originalPost.author,
-      sender: userId,
-      type: 'post_share',
-      content: 'shared your post',
-      preview: trimmedCaption || originalPost.content,
-      relatedId: sharedPost._id,
-      relatedType: 'Post',
-      data: {
-        postId: sharedPost._id,
-        originalPostId: postId,
-      },
-    });
+    const notificationReceivers = getShareNotificationReceivers(originalPost, userId);
+
+    await Promise.all(
+      notificationReceivers.map((receiver) =>
+        NotificationService.createNotification({
+          receiver,
+          sender: userId,
+          type: 'post_share',
+          content: 'shared your post to their profile',
+          preview:
+            trimmedCaption ||
+            originalPost.content ||
+            originalPost.sharedFrom?.content,
+          relatedId: sharedPost._id,
+          relatedType: 'Post',
+          data: {
+            postId: sharedPost._id,
+            originalPostId: postId,
+            target: 'timeline',
+          },
+        }),
+      ),
+    );
 
     return {
       target: 'timeline',

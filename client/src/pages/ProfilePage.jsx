@@ -6,10 +6,12 @@ import Composer from "../components/home/Composer";
 import HomeHeader from "../components/home/HomeHeader";
 import ProfileHeader from "../components/profile/ProfileHeader";
 import FriendsGrid from "../components/profile/FriendsGrid";
-import AboutCard from "../components/profile/AboutCard";
-import RecentActivityCard from "../components/profile/RecentActivityCard";
 import EditProfileModal from "../components/profile/EditProfileModal";
 import FAB from "../components/common/FAB";
+import ProfileTabs from "../components/profile/ProfileTabs";
+import ProfileImagePreviewModal from "../components/profile/ProfileImagePreviewModal";
+import ProfileAboutTab from "../components/profile/ProfileAboutTab";
+import ProfileMediaTab from "../components/profile/ProfileMediaTab";
 import { PostList } from "../components/Post";
 
 const getProfileId = (profile) =>
@@ -49,7 +51,16 @@ const ProfilePage = ({ userId }) => {
   const [unfriendLoading, setUnfriendLoading] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [coverUploading, setCoverUploading] = useState(false);
+  const [blockingUser, setBlockingUser] = useState(false);
+  const [unblockingUser, setUnblockingUser] = useState(false);
   const [notice, setNotice] = useState("");
+  const [activeTab, setActiveTab] = useState("introduction");
+  const [previewState, setPreviewState] = useState({
+    open: false,
+    image: null,
+    title: "",
+  });
+  const [profilePosts, setProfilePosts] = useState([]);
 
   const isOwnProfile = !userId;
   const currentProfile = isOwnProfile ? profile : otherProfile;
@@ -67,9 +78,7 @@ const ProfilePage = ({ userId }) => {
       setOtherProfile(response.data?.data || null);
     } catch (err) {
       setOtherProfile(null);
-      setOtherError(
-        err.response?.data?.message || "Unable to load profile.",
-      );
+      setOtherError(err.response?.data?.message || "Unable to load profile.");
     } finally {
       setOtherLoading(false);
     }
@@ -127,7 +136,9 @@ const ProfilePage = ({ userId }) => {
     try {
       const response = await userAPI.uploadCoverImage(file);
       await dispatch(fetchUserProfile());
-      setNotice(getActionMessage(response, "Cover image uploaded successfully."));
+      setNotice(
+        getActionMessage(response, "Cover image uploaded successfully."),
+      );
     } catch (err) {
       setNotice(getActionErrorMessage(err, "Unable to upload cover image."));
     } finally {
@@ -225,11 +236,61 @@ const ProfilePage = ({ userId }) => {
     }
   };
 
+  const handleBlockUser = async () => {
+    const targetId = getProfileId(otherProfile);
+    if (!targetId || blockingUser) return;
+
+    setBlockingUser(true);
+    setNotice("");
+
+    try {
+      const response = await userAPI.blockUser(targetId);
+      await refreshProfilesAfterAction();
+      setNotice(getActionMessage(response, "User blocked successfully."));
+    } catch (err) {
+      setNotice(getActionErrorMessage(err, "Unable to block user."));
+    } finally {
+      setBlockingUser(false);
+    }
+  };
+
+  const handleUnblockUser = async () => {
+    const targetId = getProfileId(otherProfile);
+    if (!targetId || unblockingUser) return;
+
+    setUnblockingUser(true);
+    setNotice("");
+
+    try {
+      const response = await userAPI.unblockUser(targetId);
+      await refreshProfilesAfterAction();
+      setNotice(getActionMessage(response, "User unblocked successfully."));
+    } catch (err) {
+      setNotice(getActionErrorMessage(err, "Unable to unblock user."));
+    } finally {
+      setUnblockingUser(false);
+    }
+  };
+
+  const openPreview = (image, title) => {
+    if (!image) return;
+    setPreviewState({ open: true, image, title });
+  };
+
+  const closePreview = () => {
+    setPreviewState({ open: false, image: null, title: "" });
+  };
+
   const displayProfile = useMemo(() => {
     const source = currentProfile || {};
     const name = source.fullName || "ZaloUTE User";
     const email = source.email || source.account?.email || "";
     const friendsCount = source.friendsCount ?? source.friends?.length ?? 0;
+    const mediaCount = profilePosts.reduce(
+      (total, post) =>
+        total + (Array.isArray(post.media) ? post.media.length : 0),
+      0,
+    );
 
     return {
       name,
@@ -241,52 +302,13 @@ const ProfilePage = ({ userId }) => {
       profileImage: source.avatar || null,
       stats: {
         friends: friendsCount,
-        posts: 0,
-        photos: 0,
+        posts: profilePosts.length,
+        photos: mediaCount,
       },
       isOnline: source.isOnline || false,
       relation: source.relation || "none",
     };
-  }, [currentProfile, isOwnProfile]);
-
-  const aboutData = useMemo(() => {
-    const source = currentProfile || {};
-
-    return [
-      {
-        icon: "call",
-        title: "Phone Number",
-        value: source.phone || "Not updated",
-      },
-      {
-        icon: "person",
-        title: "Gender",
-        value: source.gender || "Not updated",
-      },
-      {
-        icon: "cake",
-        title: "Birthday",
-        value: source.dateOfBirth
-          ? new Date(source.dateOfBirth).toLocaleDateString()
-          : "Not updated",
-      },
-      {
-        icon: "location_on",
-        title: "Lives in",
-        value: source.address || "Not updated",
-      },
-      {
-        icon: "history",
-        title: "Member since",
-        value: source.createdAt
-          ? `Joined ${new Date(source.createdAt).toLocaleDateString("en-US", {
-              month: "long",
-              year: "numeric",
-            })}`
-          : "Not updated",
-      },
-    ];
-  }, [currentProfile]);
+  }, [currentProfile, isOwnProfile, profilePosts]);
 
   const friendsData = useMemo(() => {
     const sourceFriends = currentProfile?.friends;
@@ -303,12 +325,16 @@ const ProfilePage = ({ userId }) => {
       }))
       .filter((friend) => friend.id);
   }, [currentProfile]);
-  const activities = [];
   const pageLoading = isOwnProfile
     ? loading && !profile
     : otherLoading && !otherProfile;
   const pageError = isOwnProfile ? error : otherError;
   const postAuthorId = getProfileId(currentProfile);
+  const isBlocked = Array.isArray(profile?.blockedUsers)
+    ? profile.blockedUsers.some(
+        (item) => String(item.id || item._id || item) === String(userId),
+      )
+    : false;
 
   if (pageLoading) {
     return (
@@ -323,10 +349,10 @@ const ProfilePage = ({ userId }) => {
   return (
     <div className="min-h-screen bg-[#f2f3f5] text-[#111827]">
       <div className="min-h-screen w-full bg-white">
-        <HomeHeader profile={profile} />
+        <HomeHeader profile={profile} activePage={null} />
 
-        <main className="min-h-[calc(100vh-80px)] bg-[#f2f3f5] px-5 py-5">
-          <div className="w-full space-y-5">
+        <main className="min-h-[calc(100vh-80px)] bg-[#f2f3f5] px-4 py-5 lg:px-6">
+          <div className="mx-auto w-full max-w-[70vw] space-y-5">
             {pageError ? (
               <StatusCard
                 icon="error"
@@ -339,64 +365,92 @@ const ProfilePage = ({ userId }) => {
               />
             ) : null}
 
-            {notice ? (
-              <StatusCard icon="info" message={notice} />
+            {notice ? <StatusCard icon="info" message={notice} /> : null}
+
+            <ProfileHeader
+              profileData={displayProfile}
+              onEdit={() => setIsEditModalOpen(true)}
+              isOwnProfile={isOwnProfile}
+              onUploadAvatar={handleUploadAvatar}
+              avatarUploading={avatarUploading}
+              onUploadCoverImage={handleUploadCoverImage}
+              coverUploading={coverUploading}
+              onSendFriendRequest={handleSendFriendRequest}
+              sendingFriendRequest={friendRequestLoading}
+              onAcceptFriendRequest={handleAcceptFriendRequest}
+              acceptingFriendRequest={acceptRequestLoading}
+              onRejectFriendRequest={handleRejectFriendRequest}
+              rejectingFriendRequest={rejectRequestLoading}
+              onCancelFriendRequest={handleCancelFriendRequest}
+              cancellingFriendRequest={cancelRequestLoading}
+              onUnfriend={handleUnfriend}
+              unfriending={unfriendLoading}
+              onPreviewAvatar={() =>
+                openPreview(displayProfile.profileImage, "Profile photo")
+              }
+              onPreviewCover={() =>
+                openPreview(displayProfile.coverImage, "Cover photo")
+              }
+              onBlockUser={handleBlockUser}
+              onUnblockUser={handleUnblockUser}
+              blockingUser={blockingUser}
+              unblockingUser={unblockingUser}
+              isBlocked={isBlocked}
+            />
+
+            <ProfileTabs activeTab={activeTab} onChange={setActiveTab} />
+
+            {activeTab === "introduction" ? (
+              <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(240px,30%)_minmax(0,70%)]">
+                <div>
+                  <ProfileAboutTab
+                    profile={currentProfile}
+                    showSocialLinks={false}
+                  />
+                </div>
+
+                <div className="space-y-5">
+                  {isOwnProfile ? <Composer profile={profile} /> : null}
+                  {postAuthorId ? (
+                    <PostList
+                      authorId={postAuthorId}
+                      emptyMessage="No posts yet"
+                      emptyDetail="Posts from this account will appear here."
+                      onPostsLoaded={setProfilePosts}
+                    />
+                  ) : null}
+                </div>
+              </div>
             ) : null}
 
-            <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
-              <div className="space-y-5 lg:col-span-8">
-                <ProfileHeader
-                  profileData={displayProfile}
-                  onEdit={() => setIsEditModalOpen(true)}
-                  isOwnProfile={isOwnProfile}
-                  onUploadAvatar={handleUploadAvatar}
-                  avatarUploading={avatarUploading}
-                  onUploadCoverImage={handleUploadCoverImage}
-                  coverUploading={coverUploading}
-                  onSendFriendRequest={handleSendFriendRequest}
-                  sendingFriendRequest={friendRequestLoading}
-                  onAcceptFriendRequest={handleAcceptFriendRequest}
-                  acceptingFriendRequest={acceptRequestLoading}
-                  onRejectFriendRequest={handleRejectFriendRequest}
-                  rejectingFriendRequest={rejectRequestLoading}
-                  onCancelFriendRequest={handleCancelFriendRequest}
-                  cancellingFriendRequest={cancelRequestLoading}
-                  onUnfriend={handleUnfriend}
-                  unfriending={unfriendLoading}
-                />
-                <FriendsGrid
-                  friends={friendsData}
-                  totalFriends={displayProfile.stats.friends}
-                />
+            {activeTab === "posts" ? (
+              <div className="space-y-5">
                 {isOwnProfile ? <Composer profile={profile} /> : null}
                 {postAuthorId ? (
                   <PostList
                     authorId={postAuthorId}
                     emptyMessage="No posts yet"
                     emptyDetail="Posts from this account will appear here."
+                    onPostsLoaded={setProfilePosts}
                   />
                 ) : null}
               </div>
+            ) : null}
 
-              <div className="space-y-5 lg:col-span-4">
-                <AboutCard aboutData={aboutData} />
-                <RecentActivityCard activities={activities} />
-                <div className="px-2">
-                  <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-[#6b7280]">
-                    <a className="hover:underline" href="#">
-                      Privacy
-                    </a>
-                    <a className="hover:underline" href="#">
-                      Terms
-                    </a>
-                    <a className="hover:underline" href="#">
-                      Cookies
-                    </a>
-                    <span>ZaloUTE 2026</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+            {activeTab === "about" ? (
+              <ProfileAboutTab profile={currentProfile} />
+            ) : null}
+
+            {activeTab === "media" ? (
+              <ProfileMediaTab posts={profilePosts} />
+            ) : null}
+
+            {activeTab === "friends" ? (
+              <FriendsGrid
+                friends={friendsData}
+                totalFriends={displayProfile.stats.friends}
+              />
+            ) : null}
           </div>
         </main>
       </div>
@@ -412,6 +466,13 @@ const ProfilePage = ({ userId }) => {
           <FAB icon="add" label="Post Update" />
         </>
       ) : null}
+
+      <ProfileImagePreviewModal
+        isOpen={previewState.open}
+        image={previewState.image}
+        title={previewState.title}
+        onClose={closePreview}
+      />
     </div>
   );
 };

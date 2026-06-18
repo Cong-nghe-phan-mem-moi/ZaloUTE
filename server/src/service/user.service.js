@@ -14,33 +14,50 @@ const throwError = (statusCode, code, message) => {
 };
 
 const buildProfileResponse = (user) => ({
-    userId: user._id,
-    fullName: user.fullName,
-    email: user.account?.email,
-    phone: user.phone,
-    avatar: user.avatar,
-    coverImage: user.coverImage,
-    bio: user.bio,
-    dateOfBirth: user.dateOfBirth,
-    gender: user.gender,
-    address: user.address,
-    isOnline: user.isOnline,
-    lastActive: user.lastActive,
-    friendsCount: user.friends?.length || 0,
-    friends: (user.friends || []).map((friend) => {
-        const friendId = friend?._id || friend?.id || friend;
+  userId: user._id,
+  fullName: user.fullName,
+  email: user.account?.email,
+  phone: user.phone,
+  avatar: user.avatar,
+  coverImage: user.coverImage,
+  bio: user.bio,
+  dateOfBirth: user.dateOfBirth,
+  gender: user.gender,
+  address: user.address,
+  socialLinks: {
+    facebook: user.socialLinks?.facebook || "",
+    instagram: user.socialLinks?.instagram || "",
+    tiktok: user.socialLinks?.tiktok || "",
+    youtube: user.socialLinks?.youtube || "",
+    website: user.socialLinks?.website || "",
+  },
+  isOnline: user.isOnline,
+  lastActive: user.lastActive,
+  friendsCount: user.friends?.length || 0,
+  friends: (user.friends || []).map((friend) => {
+    const friendId = friend?._id || friend?.id || friend;
 
-        return {
-            id: friendId?.toString?.() || friendId,
-            fullName: friend.fullName || friend.name || "Unknown",
-            avatar: friend.avatar || friend.image || null,
-            isOnline: friend.isOnline || false,
-            lastActive: friend.lastActive || null,
-        };
-    }),
-    createdAt: user.createdAt,
-    updatedAt: user.updatedAt,
+    return {
+      id: friendId?.toString?.() || friendId,
+      fullName: friend.fullName || friend.name || "Unknown",
+      avatar: friend.avatar || friend.image || null,
+      isOnline: friend.isOnline || false,
+      lastActive: friend.lastActive || null,
+    };
+  }),
+  blockedUsers: (user.blockedUsers || []).map((blockedUser) => ({
+    id: blockedUser?._id?.toString?.() || blockedUser?.toString?.() || blockedUser,
+    fullName: blockedUser?.fullName || "Unknown",
+    avatar: blockedUser?.avatar || null,
+  })),
+  createdAt: user.createdAt,
+  updatedAt: user.updatedAt,
 });
+
+const isUserBlocked = (user, targetUserId) =>
+  (user?.blockedUsers || []).some(
+    (blockedUser) => String(blockedUser?._id || blockedUser) === String(targetUserId),
+  );
 
 async function editProfile(userId, updateData) {
     const user = await UserRepository.getUserById(userId);
@@ -144,19 +161,137 @@ async function getMyProfileByRole(userId, role) {
 }
 
 async function getOtherUserProfile(userId, myId) {
-    const user = await UserRepository.getOtherUserById(userId);
-    if (!user) throwError(404, "USER_NOT_FOUND", "User not found");
+  const myUser = await UserRepository.getUserById(myId);
+  if (!myUser) throwError(404, "USER_NOT_FOUND", "User not found");
 
-    const userObj = user.toObject();
-    userObj.relation = await FriendRequestService.getFriendRelation(
-        userObj,
-        myId,
-    );
+  const user = await UserRepository.getOtherUserById(userId);
+  if (!user) throwError(404, "USER_NOT_FOUND", "User not found");
+
+  if (isUserBlocked(user, myId) || isUserBlocked(myUser, userId)) {
+    throwError(403, "PROFILE_BLOCKED", "You cannot view this profile");
+  }
+
+  const userObj = user.toObject();
+  userObj.relation = await FriendRequestService.getFriendRelation(
+    userObj,
+    myId,
+  );
 
     return userObj;
 }
 
+async function blockUser(userId, blockedUserId) {
+  if (String(userId) === String(blockedUserId)) {
+    throwError(400, "INVALID_BLOCK_TARGET", "You cannot block yourself");
+  }
 
+  const [user, blockedUser] = await Promise.all([
+    UserRepository.getUserById(userId),
+    UserRepository.getUserById(blockedUserId),
+  ]);
+
+  if (!user || !blockedUser) {
+    throwError(404, "USER_NOT_FOUND", "User not found");
+  }
+
+  await UserRepository.blockUser(userId, blockedUserId);
+  await UserRepository.removeUsersFromFriends(userId, blockedUserId);
+
+  const updatedUser = await UserRepository.getUserById(userId);
+
+  return {
+    success: true,
+    message: "User blocked successfully",
+    data: buildProfileResponse(updatedUser),
+  };
+}
+
+async function unblockUser(userId, blockedUserId) {
+  const [user, blockedUser] = await Promise.all([
+    UserRepository.getUserById(userId),
+    UserRepository.getUserById(blockedUserId),
+  ]);
+
+  if (!user || !blockedUser) {
+    throwError(404, "USER_NOT_FOUND", "User not found");
+  }
+
+  await UserRepository.unblockUser(userId, blockedUserId);
+  const updatedUser = await UserRepository.getUserById(userId);
+
+  return {
+    success: true,
+    message: "User unblocked successfully",
+    data: buildProfileResponse(updatedUser),
+  };
+}
+
+async function getBlockedUsers(userId) {
+  const user = await UserRepository.getUserById(userId);
+  if (!user) throwError(404, "USER_NOT_FOUND", "User not found");
+
+  return {
+    success: true,
+    data: buildProfileResponse(user).blockedUsers,
+  };
+}
+
+async function searchUsers(keyword, page, limit, myId) {
+  // 1. Kiểm tra keyword là sđt hay tên
+  let queryCondition = { _id: { $ne: myId } };
+  const isPhone = /^\d{10, 11}$/.test(keyword);
+
+  if (isPhone) {
+    queryCondition.phone = keyword;
+  } else {
+    queryCondition.searchName = { $regex: keyword, $options: "i" };
+  }
+
+  console.log(`searchUsers - queryCondition:`, queryCondition);
+
+  //2. Phân trang
+  const skip = (page - 1) * limit;
+
+  // 3. Lấy data
+  const users = await UserRepository.findUsers(queryCondition, skip, limit);
+  const total = await UserRepository.countUsers(queryCondition);
+  // console.log(`searchUsers - keyword: ${keyword}, isPhone: ${isPhone}, total found: ${total}`);
+
+  // 4. Quan hệ
+  const usersWithRelation = await Promise.all(
+    users.map(async (user) => {
+      const relation = await FriendRequestService.getFriendRelation(user, myId);
+
+      return {
+        id: user._id,
+        fullName: user.fullName,
+        avatar: user.avatar,
+        isFriend: relation === "friend",
+        relation,
+      };
+    }),
+  );
+
+  const relationPriority = {
+    friend: 3,
+    received_request: 2,
+    sent_request: 1,
+    none: 0,
+  };
+
+  usersWithRelation.sort(
+    (a, b) => relationPriority[b.relation] - relationPriority[a.relation],
+  );
+
+  return {
+    data: usersWithRelation,
+    pagination: {
+      currentPage: page,
+      totalPages: Math.ceil(total / limit),
+      totalItems: total,
+    },
+  };
+}
 
 async function logout(userId) {
     await UserRepository.setUserOffline(userId, {
@@ -296,4 +431,14 @@ module.exports = {
     getMyProfileByRole,
     getOtherUserProfile,
     logout,
+  editProfile,
+  getMyProfile,
+  updateProfileImage,
+  searchUsers,
+  getMyProfileByRole,
+  getOtherUserProfile,
+  logout,
+  blockUser,
+  unblockUser,
+  getBlockedUsers,
 };

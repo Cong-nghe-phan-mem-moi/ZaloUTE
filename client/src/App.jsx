@@ -15,6 +15,19 @@ import PostTestPage from "./pages/PostTestPage";
 import FriendRequests from "./pages/FriendRequests";
 import Friends from "./pages/Friends";
 import AdminDashboard from "./pages/AdminDashboard";
+import ChatPage from "./pages/ChatPage";
+
+const ProtectedPage = ({ token, children }) => {
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+  return children;
+};
+
+const OtherProfilePage = () => {
+  const { userId } = useParams();
+  return <ProfilePage userId={userId} />;
+};
 
 function App() {
   const dispatch = useAppDispatch();
@@ -39,6 +52,8 @@ function App() {
       dispatch(setCurrentPage("friends"));
     } else if (path === "/friend-requests") {
       dispatch(setCurrentPage("friend-requests"));
+    } else if (path === "/messages") {
+      dispatch(setCurrentPage("messages"));
     } else if (path === "/admin/dashboard" || path === "/admin-dashboard") {
       dispatch(setCurrentPage("admin-dashboard"));
     } else if (
@@ -66,6 +81,7 @@ function App() {
         <Route path="/home" element={<Navigate to="/" replace />} />
         <Route path="/friends" element={<ProtectedPage token={token}><Friends /></ProtectedPage>} />
         <Route path="/friend-requests" element={<ProtectedPage token={token}><FriendRequests /></ProtectedPage>} />
+        <Route path="/messages" element={<ProtectedPage token={token}><ChatPage /></ProtectedPage>} />
         <Route path="/admin/dashboard" element={<ProtectedPage token={token}><AdminDashboard /></ProtectedPage>} />
         <Route path="/admin-dashboard" element={<Navigate to="/admin/dashboard" replace />} />
         <Route path="/profile" element={<ProtectedPage token={token}><ProfilePage /></ProtectedPage>} />
@@ -80,19 +96,6 @@ function App() {
     </div>
   );
 }
-
-const ProtectedPage = ({ token, children }) => {
-  if (!token) {
-    return <Navigate to="/login" replace />;
-  }
-
-  return children;
-};
-
-const OtherProfilePage = () => {
-  const { userId } = useParams();
-  return <ProfilePage userId={userId} />;
-};
 
 const PostFeedbackToast = () => {
   const dispatch = useAppDispatch();

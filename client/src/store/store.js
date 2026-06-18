@@ -5,6 +5,7 @@ import uiReducer from "./slices/uiSlice";
 import userReducer from "./slices/userSlice";
 import postReducer from "./slices/postSlice";
 import commentReducer from "./slices/commentSlice";
+import chatReducer from "./slices/chatSlice";
 
 export const store = configureStore({
   reducer: {
@@ -14,5 +15,6 @@ export const store = configureStore({
     user: userReducer,
     posts: postReducer,
     comments: commentReducer,
+    chat: chatReducer,
   },
 });

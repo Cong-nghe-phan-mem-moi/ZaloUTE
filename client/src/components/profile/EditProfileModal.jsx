@@ -9,6 +9,13 @@ const getInitialFormData = (initialData) => ({
   dateOfBirth: initialData?.dateOfBirth
     ? initialData.dateOfBirth.split('T')[0]
     : '',
+  socialLinks: {
+    facebook: initialData?.socialLinks?.facebook || '',
+    instagram: initialData?.socialLinks?.instagram || '',
+    tiktok: initialData?.socialLinks?.tiktok || '',
+    youtube: initialData?.socialLinks?.youtube || '',
+    website: initialData?.socialLinks?.website || '',
+  },
 });
 
 const EditProfileModal = ({ isOpen, onClose, onSave, initialData }) => {
@@ -32,6 +39,17 @@ const EditProfileModal = ({ isOpen, onClose, onSave, initialData }) => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSocialChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      socialLinks: {
+        ...prev.socialLinks,
+        [name]: value,
+      },
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -120,6 +138,32 @@ const EditProfileModal = ({ isOpen, onClose, onSave, initialData }) => {
                 <option value="female">Female</option>
                 <option value="other">Other</option>
               </select>
+            </div>
+          </div>
+
+          <div className="space-y-3 rounded-lg border border-[#e5e7eb] p-4">
+            <h3 className="text-sm font-bold text-[#111827]">Social Links</h3>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {[
+                ['facebook', 'Facebook'],
+                ['instagram', 'Instagram'],
+                ['tiktok', 'TikTok'],
+                ['youtube', 'YouTube'],
+                ['website', 'Website'],
+              ].map(([key, label]) => (
+                <div key={key} className="space-y-1">
+                  <label className="text-sm font-semibold text-[#6b7280]">{label}</label>
+                  <input
+                    type="text"
+                    name={key}
+                    value={formData.socialLinks[key]}
+                    onChange={handleSocialChange}
+                    className="w-full rounded-md border border-[#d1d5db] bg-[#f9fafb] px-4 py-2 text-sm text-[#111827] outline-none transition-colors focus:border-[#1877f2]"
+                    disabled={isSaving}
+                    placeholder={`Enter ${label} link`}
+                  />
+                </div>
+              ))}
             </div>
           </div>
 

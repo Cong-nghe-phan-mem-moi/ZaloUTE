@@ -1,4 +1,4 @@
-﻿import axios from "axios";
+import axios from "axios";
 
 const api = axios.create({
   baseURL: "/api",
@@ -72,6 +72,9 @@ export const userAPI = {
     api.delete("/users/friend-request/cancel", { data: { receiverId } }),
   unfriend: (friendId) =>
     api.delete("/users/friend-request/unfriend", { data: { friendId } }),
+  blockUser: (userId) => api.post(`/users/${userId}/block`),
+  unblockUser: (userId) => api.post(`/users/${userId}/unblock`),
+  getBlockedUsers: () => api.get("/users/blocked"),
   logout: () => api.post("/users/logout"),
 };
 
@@ -81,6 +84,55 @@ export const notificationAPI = {
   markAsRead: (notificationId) =>
     api.put(`/notifications/${notificationId}/read`),
   markAllAsRead: () => api.put("/notifications/read-all"),
+};
+
+export const storyAPI = {
+  getStories: () => api.get("/stories"),
+  createStory: ({ text = "", background = "#1877f2", media = null }) => {
+    const formData = new FormData();
+    formData.append("text", text);
+    formData.append("background", background);
+
+    if (media) {
+      formData.append("media", media);
+    }
+
+    return api.post("/stories", formData);
+  },
+  getStory: (storyId) => api.get(`/stories/${storyId}`),
+  markViewed: (storyId) => api.post(`/stories/${storyId}/view`),
+  react: (storyId, reactionType = "like") =>
+    api.post(`/stories/${storyId}/react`, { reactionType }),
+  reply: (storyId, content) => api.post(`/stories/${storyId}/reply`, { content }),
+  getViewers: (storyId) => api.get(`/stories/${storyId}/viewers`),
+}
+
+export const chatAPI = {
+  getConversations: () => api.get("/chats/conversations"),
+  getOrCreateConversation: (targetUserId) =>
+    api.post("/chats/conversations", { targetUserId }),
+  getMessages: (conversationId, page = 1, limit = 50) =>
+    api.get(`/chats/conversations/${conversationId}/messages`, {
+      params: { page, limit },
+    }),
+  createGroup: (name, participantIds) =>
+    api.post("/chats/groups", { name, participantIds }),
+  removeGroupMember: (conversationId, memberId) =>
+    api.post(`/chats/groups/${conversationId}/remove-member`, { memberId }),
+  leaveGroup: (conversationId) =>
+    api.post(`/chats/groups/${conversationId}/leave`),
+  addGroupMembers: (conversationId, participantIds) =>
+    api.post(`/chats/groups/${conversationId}/add-members`, { participantIds }),
+  muteConversation: (conversationId, duration) =>
+    api.post(`/chats/conversations/${conversationId}/mute`, { duration }),
+  unmuteConversation: (conversationId) =>
+    api.post(`/chats/conversations/${conversationId}/unmute`),
+  blockConversation: (conversationId) =>
+    api.post(`/chats/conversations/${conversationId}/block`),
+  unblockConversation: (conversationId) =>
+    api.post(`/chats/conversations/${conversationId}/unblock`),
+  deleteConversation: (conversationId) =>
+    api.delete(`/chats/conversations/${conversationId}`),
 };
 
 export const adminAPI = {
