@@ -5,6 +5,6 @@ export const notificationAPI = {
     apiClient.get("/notifications", { params: { page, limit } }),
   markAsRead: (notificationId) =>
     apiClient.put(`/notifications/${notificationId}/read`),
+  markAsSeen: () => apiClient.put("/notifications/seen"),
   markAllAsRead: () => apiClient.put("/notifications/read-all"),
 };
-

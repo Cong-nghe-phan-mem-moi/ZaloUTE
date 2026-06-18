@@ -26,39 +26,6 @@ const getNotificationWsUrl = (token) => {
   return `${protocol}://${window.location.host}/api/notifications/ws?token=${encodedToken}`;
 };
 
-const LAST_SEEN_NOTIFICATION_KEY = "lastSeenNotificationAt";
-
-const getLastSeenNotificationAt = () => {
-  const value = localStorage.getItem(LAST_SEEN_NOTIFICATION_KEY);
-  const timestamp = value ? Number(value) : 0;
-
-  return Number.isFinite(timestamp) ? timestamp : 0;
-};
-
-const getNotificationTime = (notification) =>
-  new Date(notification?.createdAt || 0).getTime();
-
-const getNewNotificationCount = (notifications) => {
-  const lastSeenAt = getLastSeenNotificationAt();
-
-  return notifications.filter(
-    (notification) => getNotificationTime(notification) > lastSeenAt,
-  ).length;
-};
-
-const rememberNotificationsSeen = (notifications) => {
-  const latestTimestamp = notifications.reduce(
-    (latest, notification) =>
-      Math.max(latest, getNotificationTime(notification)),
-    Date.now(),
-  );
-
-  localStorage.setItem(
-    LAST_SEEN_NOTIFICATION_KEY,
-    String(latestTimestamp || Date.now()),
-  );
-};
-
 const HomeHeader = ({ profile, activePage = "home" }) => {
   const navigate = useNavigate();
   const { isLoggingOut, logout: handleLogout } = useLogout();
@@ -86,8 +53,8 @@ const HomeHeader = ({ profile, activePage = "home" }) => {
       const response = await notificationAPI.getNotifications(1, 10);
       const nextNotifications = response.data?.data?.notifications || [];
       setNotifications(nextNotifications);
-      setNewNotificationCount(getNewNotificationCount(nextNotifications));
       setUnreadCount(response.data?.data?.unreadCount || 0);
+      setNewNotificationCount(response.data?.data?.newNotificationCount || 0);
       return nextNotifications;
     } catch (error) {
       console.error("Unable to load notifications:", error);
@@ -130,20 +97,28 @@ const HomeHeader = ({ profile, activePage = "home" }) => {
 
             if (exists) return items;
             const nextItems = [data.notification, ...items].slice(0, 10);
-            if (notificationsOpenRef.current) {
-              rememberNotificationsSeen(nextItems);
-              setNewNotificationCount(0);
-            } else {
-              setNewNotificationCount(getNewNotificationCount(nextItems));
-            }
+            setNewNotificationCount(data.newNotificationCount || 0);
             return nextItems;
           });
           setUnreadCount(data.unreadCount || 0);
           setPopupNotification(data.notification);
+
+          if (notificationsOpenRef.current) {
+            notificationAPI.markAsSeen().catch((error) => {
+              console.error("Unable to mark notifications as seen:", error);
+            });
+          }
         }
 
         if (data.type === "unread_count") {
           setUnreadCount(data.unreadCount || 0);
+        }
+
+        if (
+          data.type === "new_notification_count" ||
+          data.type === "notification_seen"
+        ) {
+          setNewNotificationCount(data.newNotificationCount || 0);
         }
       } catch (error) {
         console.error("Invalid notification message:", error);
@@ -224,9 +199,14 @@ const HomeHeader = ({ profile, activePage = "home" }) => {
     setNotificationsOpen(nextOpen);
 
     if (nextOpen) {
-      const nextNotifications = await loadNotifications();
-      rememberNotificationsSeen(nextNotifications);
-      setNewNotificationCount(0);
+      await loadNotifications();
+
+      try {
+        const response = await notificationAPI.markAsSeen();
+        setNewNotificationCount(response.data?.data?.newNotificationCount || 0);
+      } catch (error) {
+        console.error("Unable to mark notifications as seen:", error);
+      }
     }
   };
 
@@ -358,4 +338,3 @@ const HeaderTab = ({ icon, active = false, href = "/" }) => (
 );
 
 export default HomeHeader;
-
