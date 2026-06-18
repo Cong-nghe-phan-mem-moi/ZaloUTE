@@ -271,6 +271,19 @@ class StoryService {
 
     return getUniqueViewers(story.viewers, userId);
   }
+
+  static async deleteStory(storyId, userId) {
+    const story = await Story.findOneAndDelete({
+      _id: storyId,
+      author: userId,
+    });
+
+    if (!story) {
+      throw new Error('Story not found');
+    }
+
+    return story;
+  }
 }
 
 module.exports = StoryService;

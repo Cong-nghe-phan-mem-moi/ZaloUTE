@@ -11,6 +11,7 @@ export const useStoryViewer = ({
   viewerState,
   currentUserId,
   onChange,
+  onDeleted,
   onFinished,
   onStoryUpdated,
 }) => {
@@ -151,9 +152,21 @@ export const useStoryViewer = ({
     }
   };
 
+  const handleDelete = async () => {
+    if (!story?._id) return;
+
+    try {
+      await storyAPI.deleteStory(story._id);
+      onDeleted?.(story);
+    } catch (err) {
+      setError(err.response?.data?.message || "Unable to delete story.");
+    }
+  };
+
   return {
     authorName,
     error,
+    handleDelete,
     goNext,
     goPrevious,
     group,
