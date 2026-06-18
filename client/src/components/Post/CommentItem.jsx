@@ -186,7 +186,7 @@ const CommentItem = ({
       }`}
     >
       <img
-        src={comment?.author?.avatar || "/default-avatar.png"}
+        src={comment?.author?.avatar || "/default-avatar.svg"}
         alt={comment?.author?.fullName}
         className={`${avatarClass} rounded-full object-cover flex-shrink-0`}
       />
@@ -286,7 +286,7 @@ const CommentItem = ({
         {replyOpen ? (
           <form onSubmit={handleSubmitReply} className="mt-3 flex gap-2">
             <img
-              src={currentUser?.avatar || "/default-avatar.png"}
+              src={currentUser?.avatar || "/default-avatar.svg"}
               alt={currentUser?.fullName}
               className="h-8 w-8 flex-shrink-0 rounded-full object-cover"
             />

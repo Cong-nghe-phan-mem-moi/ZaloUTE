@@ -57,6 +57,7 @@ const HomeHeader = ({ profile, activePage = "home" }) => {
     notificationsLoading,
     popupNotification,
     closeNotifications,
+    handleDeleteNotification,
     handleMarkAllAsRead,
     handleNotificationClick,
     handleToggleNotifications,
@@ -118,6 +119,7 @@ const HomeHeader = ({ profile, activePage = "home" }) => {
               notifications={notifications}
               unreadCount={unreadCount}
               loading={notificationsLoading}
+              onDeleteNotification={handleDeleteNotification}
               onMarkAllAsRead={handleMarkAllAsRead}
               onNotificationClick={handleNotificationClick}
             />

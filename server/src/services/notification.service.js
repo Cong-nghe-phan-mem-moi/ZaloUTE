@@ -206,6 +206,38 @@ class NotificationService {
     return { newNotificationCount: 0, notificationSeenAt };
   }
 
+  static async deleteNotification(notificationId, userId) {
+    const notification = await Notification.findOneAndDelete({
+      _id: notificationId,
+      receiver: userId,
+    });
+
+    if (!notification) {
+      return null;
+    }
+
+    const user = await User.findById(userId).select("notificationSeenAt");
+    const [unreadCount, newNotificationCount] = await Promise.all([
+      Notification.countDocuments({ receiver: userId, isRead: false }),
+      Notification.countDocuments(
+        getSeenNotificationFilter(userId, user?.notificationSeenAt),
+      ),
+    ]);
+
+    sendToUser(userId, {
+      type: "notification_deleted",
+      notificationId,
+      unreadCount,
+      newNotificationCount,
+    });
+
+    return {
+      notification,
+      unreadCount,
+      newNotificationCount,
+    };
+  }
+
   static attachWebSocketServer(server) {
     const wss = new WebSocketServer({ noServer: true });
     const closeUnauthorized = (request, socket, head, reason = "Unauthorized") => {

@@ -7,4 +7,6 @@ export const notificationAPI = {
     apiClient.put(`/notifications/${notificationId}/read`),
   markAsSeen: () => apiClient.put("/notifications/seen"),
   markAllAsRead: () => apiClient.put("/notifications/read-all"),
+  deleteNotification: (notificationId) =>
+    apiClient.delete(`/notifications/${notificationId}`),
 };
