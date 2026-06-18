@@ -344,9 +344,9 @@ async function getOtherUserProfile(req, res) {
     return res.status(200).json({
       success: true,
       data: user,
-    });   
+    });
 
-  } catch (error) { 
+  } catch (error) {
     console.error('Get Other User Profile Error:', error);
 
     if (error.statusCode === 403) {
@@ -449,6 +449,52 @@ async function logout(req, res) {
   }
 }
 
+async function handleGlobalSearch(req, res) {
+  try {
+    const { q, type, limit } = req.query;
+    const myId = req.user.userId;
+
+    if (!q || !q.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Vui lòng nhập từ khóa để tìm kiếm!'
+      });
+    }
+
+    const result = await UserService.globalSearch({
+      q: q.trim(),
+      type: type || 'all',
+      limit: limit,
+      myId
+    });
+
+    return res.status(200).json({
+      success: true,
+      type: result.type,
+      data: result.data,
+      nextLimit: result.nextLimit
+    });
+
+  } catch (error) {
+    console.error('Global Search Error:', error);
+
+    if (error.statusCode === 400) {
+      return res.status(400).json({
+        success: false,
+        code: error.code,
+        message: error.message,
+      });
+    }
+
+    return res.status(error.statusCode || 500).json({
+      success: false,
+      code: error.code || 'GLOBAL_SEARCH_ERROR',
+      message: error.message || 'Internal server error',
+    });
+  }
+}
+
+
 module.exports = {
   editProfile,
   uploadAvatar,
@@ -460,6 +506,8 @@ module.exports = {
   searchUsers,
   getOtherUserProfile,
   logout,
+  handleGlobalSearch,
+}; 
   blockUser,
   unblockUser,
   getBlockedUsers,

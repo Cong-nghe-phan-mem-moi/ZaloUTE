@@ -13,7 +13,7 @@ const populatePostQuery = (query) =>
         { path: 'reactions.user', select: 'fullName avatar email' },
       ],
     });
-
+ 
 class PostRepository {
   static async createPost(postData) {
     const post = new Post(postData);
@@ -154,5 +154,24 @@ class PostRepository {
     );
   }
 }
+
+async function searchPosts({keyword, limit = 10}){
+  return await Post.find({
+    $text: { $search: keyword }
+  })
+  .populate('author', '_id fullName avatar')
+  .limit(limit)
+  .lean()
+}
+
+async function countSearchPosts({ keyword }) {
+    return await Post.countDocuments({
+        $text: { $search: keyword } 
+    });
+}
+
+
+PostRepository.searchPosts = searchPosts;
+PostRepository.countSearchPosts = countSearchPosts;
 
 module.exports = PostRepository;

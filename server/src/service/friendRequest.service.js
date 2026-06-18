@@ -396,6 +396,10 @@ async function checkFriendRequest(userId, myId) {
   return await getFriendRelation(userId, myId);
 }
 
+async function getPendingRequests(myId, userIds) {
+  return await FriendRequestRepo.findPendingRequestsInUserList(myId, userIds);
+}
+
 module.exports = {
   sendFriendRequest,
   cancelFriendRequest,
@@ -406,6 +410,7 @@ module.exports = {
   checkFriendRequest,
   acceptFriendRequest,
   getFriendRelation,
+  getPendingRequests,
 };
 
 

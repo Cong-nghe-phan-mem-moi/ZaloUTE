@@ -12,12 +12,14 @@ const { validateEditProfile } = require("../middleware/validateRequest");
 const { editProfileLimiter } = require("../middleware/rateLimiter");
 const userRoutes = require("./user.route");
 const upload = require("../middleware/uploadMiddleware");
+const groupRoutes = require("./group.route");
 const chatRoutes = require("./chat.route");
 
 // Basic health check endpoint
 router.get("/health", (req, res) => {
   res.json({ status: "Server is running" });
 });
+
 
 // User Profile Routes
 router.get(
@@ -74,4 +76,7 @@ router.use("/admin", adminRoutes);
 
 // Post routes
 router.use("/posts", postRoutes);
+// Group routes
+router.use("/groups", groupRoutes);
 module.exports = router;
+

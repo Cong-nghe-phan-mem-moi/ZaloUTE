@@ -62,14 +62,8 @@ async function getProfileByRole(userId, role) {
   }
 
   return user;
-}
+} 
 
-async function findUsers(condition, skip, limit) {
-  return await User.find(condition)
-    .skip(skip)
-    .limit(limit)
-    .select("id fullName avatar friends");
-}
 
 async function countUsers(condition) {
   return await User.countDocuments(condition);
@@ -124,6 +118,23 @@ async function setUserOffline(userId, updateData) {
   });
 }
 
+async function searchUsers({keyword, limit = 10, myId}) {
+  return await User.find({
+    searchName: { $regex: keyword, $options: "i"},
+    _id: { $ne: myId },
+  })
+  .select("-account")
+  .limit(limit)
+  .lean();
+}
+
+async function countSearchUsers({keyword, myId}) {
+  return await User.countDocuments({
+    searchName: { $regex: keyword, $options: "i"},
+    _id: { $ne: myId },
+  });
+}
+
 module.exports = {
   createUser,
   deleteUserById,
@@ -132,12 +143,13 @@ module.exports = {
   updateProfile,
   getUserById,
   getProfileByRole,
-  findUsers,
   countUsers,
   getOtherUserById,
   addFriend,
   removeFriend,
   setUserOffline,
+  searchUsers,
+  countSearchUsers,
   blockUser,
   unblockUser,
   removeUsersFromFriends,

@@ -7,7 +7,7 @@ const userSchema = new mongoose.Schema({
     required: true,
     minlength: 3,
     maxlength: 100
-  },
+  }, 
   searchName: {
     type: String,
     lowercase: true,
@@ -90,6 +90,7 @@ const userSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
+userSchema.index({ searchName: 1 });
 
 userSchema.pre("save", async function () {
   if (this.isModified("fullName")) {
