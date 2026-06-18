@@ -18,8 +18,11 @@ export default function Home() {
     feedRefreshKey,
     friendIds,
     friendRequests,
+    groupConversations,
+    groupsLoading,
     handleAcceptRequest,
     handleContactClick,
+    handleGroupClick,
     handleRejectRequest,
     requestActionId,
     requestsLoading,
@@ -60,11 +63,14 @@ export default function Home() {
           <RightSidebar
             contacts={contacts}
             friendRequests={friendRequests}
+            groupConversations={groupConversations}
+            groupsLoading={groupsLoading}
             requestsLoading={requestsLoading}
             requestActionId={requestActionId}
             onAcceptRequest={handleAcceptRequest}
             onRejectRequest={handleRejectRequest}
             onContactClick={handleContactClick}
+            onGroupClick={handleGroupClick}
           />
         </main>
       </div>

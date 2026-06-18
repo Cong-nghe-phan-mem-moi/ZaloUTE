@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { fetchUserProfile } from "../../redux/slices/userSlice";
+import { chatAPI } from "../../services/chat.service";
 import { userAPI } from "../../services/user.service";
 
 export const useHomeSidebar = ({ dispatch, profile }) => {
   const [friendRequests, setFriendRequests] = useState([]);
+  const [groupConversations, setGroupConversations] = useState([]);
+  const [groupsLoading, setGroupsLoading] = useState(false);
   const [requestsLoading, setRequestsLoading] = useState(false);
   const [requestActionId, setRequestActionId] = useState("");
   const [feedRefreshKey, setFeedRefreshKey] = useState(0);
@@ -22,15 +25,33 @@ export const useHomeSidebar = ({ dispatch, profile }) => {
     }
   }, []);
 
+  const loadGroupConversations = useCallback(async () => {
+    setGroupsLoading(true);
+
+    try {
+      const response = await chatAPI.getConversations();
+      const conversations = response.data?.data || [];
+      setGroupConversations(
+        conversations.filter((conversation) => conversation.isGroup),
+      );
+    } catch (error) {
+      console.error("Unable to load group chats:", error);
+      setGroupConversations([]);
+    } finally {
+      setGroupsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     dispatch(fetchUserProfile());
 
     const timer = window.setTimeout(() => {
       loadFriendRequests();
+      loadGroupConversations();
     }, 0);
 
     return () => window.clearTimeout(timer);
-  }, [dispatch, loadFriendRequests]);
+  }, [dispatch, loadFriendRequests, loadGroupConversations]);
 
   const refreshSidebarData = async () => {
     await Promise.all([dispatch(fetchUserProfile()), loadFriendRequests()]);
@@ -73,6 +94,12 @@ export const useHomeSidebar = ({ dispatch, profile }) => {
     );
   }, []);
 
+  const handleGroupClick = useCallback((conversation) => {
+    window.dispatchEvent(
+      new CustomEvent("zalo-open-mini-chat", { detail: conversation }),
+    );
+  }, []);
+
   const contacts = useMemo(() => {
     if (!Array.isArray(profile?.friends) || profile.friends.length === 0) {
       return [];
@@ -102,8 +129,11 @@ export const useHomeSidebar = ({ dispatch, profile }) => {
     feedRefreshKey,
     friendIds,
     friendRequests,
+    groupConversations,
+    groupsLoading,
     handleAcceptRequest,
     handleContactClick,
+    handleGroupClick,
     handleRejectRequest,
     requestActionId,
     requestsLoading,
