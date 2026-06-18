@@ -7,7 +7,7 @@ const chatRepository = require('../repositories/chat.repository');
 const onlineTracker = require('../utils/onlineTracker');
 const {
   buildPrivacyMongoFilter,
-  canViewByPrivacy,
+  canViewPostWithSharedSource,
   getFriendIdSet,
   normalizePrivacyFromPayload,
 } = require('../utils/privacy');
@@ -77,12 +77,8 @@ const buildReactionState = (postObj, userId = null) => {
   };
 };
 
-const buildPostResponse = async (post, userId = null, viewerFriendIds = null) => {
+const buildPostResponse = async (post, userId = null) => {
   const postObj = post.toObject ? post.toObject() : post;
-  const friendIds =
-    Array.isArray(viewerFriendIds)
-      ? viewerFriendIds
-      : (await getViewerContext(userId)).friendIds;
   const reactionState = buildReactionState(postObj, userId);
 
   postObj.reactionSummary = reactionState.reactionSummary;
@@ -91,20 +87,17 @@ const buildPostResponse = async (post, userId = null, viewerFriendIds = null) =>
   postObj.isLiked = reactionState.isLiked;
   postObj.commentCount = await Comment.countDocuments({ post: postObj._id });
 
-  if (
-    postObj.sharedFrom &&
-    !canViewByPrivacy(postObj.sharedFrom, userId, friendIds)
-  ) {
-    postObj.sharedFrom = null;
-  }
-
   return postObj;
 };
 
 const buildPostsResponse = async (posts, userId = null) => {
   const { friendIds } = await getViewerContext(userId);
+  const visiblePosts = posts.filter((post) =>
+    canViewPostWithSharedSource(post, userId, friendIds),
+  );
+
   return await Promise.all(
-    posts.map((post) => buildPostResponse(post, userId, friendIds)),
+    visiblePosts.map((post) => buildPostResponse(post, userId)),
   );
 };
 
@@ -123,7 +116,7 @@ const getViewerContext = async (userId) => {
 const assertCanViewPost = async (post, userId) => {
   const { friendIds } = await getViewerContext(userId);
 
-  if (!canViewByPrivacy(post, userId, friendIds)) {
+  if (!canViewPostWithSharedSource(post, userId, friendIds)) {
     throw new Error('Post not found');
   }
 };

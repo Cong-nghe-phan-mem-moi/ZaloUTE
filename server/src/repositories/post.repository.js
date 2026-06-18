@@ -161,6 +161,14 @@ async function searchPosts({keyword, limit = 10, filter = {}}){
     ...filter,
   })
   .populate('author', '_id fullName avatar')
+  .populate({
+    path: 'sharedFrom',
+    populate: [
+      { path: 'author', select: '_id fullName avatar email' },
+      { path: 'likes', select: 'fullName avatar email' },
+      { path: 'reactions.user', select: 'fullName avatar email' },
+    ],
+  })
   .limit(limit)
   .lean()
 }

@@ -2,15 +2,15 @@ const CommentRepository = require("../repositories/comment.repository");
 const Post = require("../models/post.model");
 const User = require("../models/user.model");
 const NotificationService = require("./notification.service");
-const { canViewByPrivacy, getFriendIdSet } = require("../utils/privacy");
+const { canViewPostWithSharedSource, getFriendIdSet } = require("../utils/privacy");
 
 const assertCanViewPost = async (postId, userId) => {
   const [post, user] = await Promise.all([
-    Post.findById(postId),
+    Post.findById(postId).populate("sharedFrom"),
     User.findById(userId).select("friends"),
   ]);
 
-  if (!post || !canViewByPrivacy(post, userId, [...getFriendIdSet(user)])) {
+  if (!post || !canViewPostWithSharedSource(post, userId, [...getFriendIdSet(user)])) {
     throw new Error("Operation failed");
   }
 

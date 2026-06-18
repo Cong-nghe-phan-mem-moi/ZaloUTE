@@ -103,6 +103,22 @@ const canViewByPrivacy = (item, viewerId, viewerFriendIds = []) => {
   return false;
 };
 
+const canViewPostWithSharedSource = (post, viewerId, viewerFriendIds = []) => {
+  if (!canViewByPrivacy(post, viewerId, viewerFriendIds)) {
+    return false;
+  }
+
+  if (!post?.sharedFrom) {
+    return true;
+  }
+
+  if (typeof post.sharedFrom === 'string' || post.sharedFrom instanceof mongoose.Types.ObjectId) {
+    return true;
+  }
+
+  return canViewByPrivacy(post.sharedFrom, viewerId, viewerFriendIds);
+};
+
 const buildPrivacyMongoFilter = (viewerId, viewerFriendIds = []) => {
   const currentViewerId = getId(viewerId);
   const friendIds = viewerFriendIds.map(getId).filter(Boolean);
@@ -146,6 +162,7 @@ module.exports = {
   PRIVACY_TYPES,
   buildPrivacyMongoFilter,
   canViewByPrivacy,
+  canViewPostWithSharedSource,
   getFriendIdSet,
   normalizePrivacy,
   normalizePrivacyFromPayload,

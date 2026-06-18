@@ -4,7 +4,11 @@ const GroupRepository = require("../repositories/group.repository");
 const PostRepository = require("../repositories/post.repository");
 const FriendRequestService = require("./friendRequest.service");
 const { removeVietnameseTones } = require("../utils/stringUtil");
-const { buildPrivacyMongoFilter, getFriendIdSet } = require("../utils/privacy");
+const {
+    buildPrivacyMongoFilter,
+    canViewPostWithSharedSource,
+    getFriendIdSet,
+} = require("../utils/privacy");
 
 // Hàm Helper tạo lỗi chuẩn Node.js (Giữ được Stack Trace để dễ debug sau này)
 const throwError = (statusCode, code, message) => {
@@ -366,7 +370,8 @@ async function globalSearch({ q, type = "all", limit = 10, myId }) {
     const currentLimit = parseInt(limit, 10) || 10;
     const keyword = removeVietnameseTones(q).toLowerCase();
     const viewer = myId ? await UserRepository.findById(myId) : null;
-    const privacyFilter = buildPrivacyMongoFilter(myId, [...getFriendIdSet(viewer)]);
+    const viewerFriendIds = [...getFriendIdSet(viewer)];
+    const privacyFilter = buildPrivacyMongoFilter(myId, viewerFriendIds);
 
     if (type === "all") {
         const [rawUsers, groups, posts] = await Promise.all([
@@ -376,6 +381,9 @@ async function globalSearch({ q, type = "all", limit = 10, myId }) {
         ])
 
         const mappedUsers = await getUsersWithRelationStatus(myId, rawUsers);
+        const visiblePosts = posts.filter((post) =>
+            canViewPostWithSharedSource(post, myId, viewerFriendIds),
+        );
 
         return {
             success: true,
@@ -383,7 +391,7 @@ async function globalSearch({ q, type = "all", limit = 10, myId }) {
             data: {
                 users: mappedUsers,
                 groups,
-                posts,
+                posts: visiblePosts,
             },
             nextLimit: currentLimit + 10
         };
@@ -406,7 +414,9 @@ async function globalSearch({ q, type = "all", limit = 10, myId }) {
 
         case 'post': {
             const rawPosts = await PostRepository.searchPosts({ keyword: q, limit: currentLimit, filter: privacyFilter });
-            resultData = rawPosts;
+            resultData = rawPosts.filter((post) =>
+                canViewPostWithSharedSource(post, myId, viewerFriendIds),
+            );
             break;
         }
 
