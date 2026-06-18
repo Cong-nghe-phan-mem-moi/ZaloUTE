@@ -1,21 +1,23 @@
 import { useEffect } from "react";
 import { Navigate, Route, Routes, useLocation, useParams } from "react-router-dom";
-import { useAppSelector, useAppDispatch } from "./store/hooks";
-import { setCurrentPage } from "./store/slices/uiSlice";
-import { clearError, clearMessage } from "./store/slices/postSlice";
+import { useAppSelector, useAppDispatch } from "./redux/hooks";
+import { setCurrentPage } from "./redux/slices/uiSlice";
+import { clearError, clearMessage } from "./redux/slices/postSlice";
 import Toast from "./components/common/Toast";
 
-import Register from "./pages/Register";
-import VerifyOtp from "./pages/VerifyOtp";
-import Home from "./pages/Home";
-import LoginPage from "./pages/LoginPage";
-import ForgotPassword from "./pages/ForgotPassword";
-import ProfilePage from "./pages/ProfilePage";
-import PostTestPage from "./pages/PostTestPage";
-import FriendRequests from "./pages/FriendRequests";
-import Friends from "./pages/Friends";
-import AdminDashboard from "./pages/AdminDashboard";
-import ChatPage from "./pages/ChatPage";
+import {
+  AdminDashboard,
+  ChatPage,
+  ForgotPassword,
+  FriendRequests,
+  Friends,
+  Home,
+  LoginPage,
+  PostTestPage,
+  ProfilePage,
+  Register,
+  VerifyOtp,
+} from "./pages";
 
 const ProtectedPage = ({ token, children }) => {
   if (!token) {

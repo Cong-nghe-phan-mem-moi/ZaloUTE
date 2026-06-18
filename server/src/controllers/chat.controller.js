@@ -1,4 +1,4 @@
-const ChatService = require("../service/chat.service");
+const ChatService = require("../services/chat.service");
 
 async function getConversations(req, res) {
   try {

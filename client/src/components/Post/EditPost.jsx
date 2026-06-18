@@ -1,6 +1,6 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { updatePost } from "../../store/slices/postSlice";
+import { updatePost } from "../../redux/slices/postSlice";
 
 const EditPost = ({ post, isOpen, onClose, onPostUpdated }) => {
   const dispatch = useDispatch();

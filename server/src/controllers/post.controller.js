@@ -1,8 +1,8 @@
-﻿const PostService = require('../service/post.service');
+const PostService = require('../services/post.service');
 const path = require('path');
 
 class PostController {
-  // 4.1 Táº¡o bÃ i viáº¿t
+  // 4.1 Tạo bài viết
   static async createPost(req, res) {
     try {
       const { content } = req.body;
@@ -73,7 +73,7 @@ class PostController {
     }
   }
 
-  // 4.2 Chá»‰nh sá»­a bÃ i viáº¿t
+  // 4.2 Chỉnh sửa bài viết
   static async updatePost(req, res) {
     try {
       const { postId } = req.params;
@@ -138,7 +138,7 @@ class PostController {
     }
   }
 
-  // 4.3 XÃ³a bÃ i viáº¿t
+  // 4.3 Xóa bài viết
   static async deletePost(req, res) {
     try {
       const { postId } = req.params;
@@ -232,7 +232,7 @@ class PostController {
     }
   }
 
-  // 4.5 Xem danh sÃ¡ch like
+  // 4.5 Xem danh sách like
   static async getPostLikes(req, res) {
     try {
       const { postId } = req.params;
@@ -266,7 +266,7 @@ class PostController {
     }
   }
 
-  // 4.6 Xem danh sÃ¡ch bÃ¬nh luáº­n
+  // 4.6 Xem danh sách bình luận
   static async getPostComments(req, res) {
     try {
       const { postId } = req.params;

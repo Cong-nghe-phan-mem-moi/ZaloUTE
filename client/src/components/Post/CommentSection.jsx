@@ -1,11 +1,11 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   createComment,
   getPostComments,
   clearMessage,
   clearError,
-} from "../../store/slices/commentSlice";
+} from "../../redux/slices/commentSlice";
 import CommentItem from "./CommentItem";
 import LoadingSpinner from "../common/LoadingSpinner";
 import ErrorMessage from "../common/ErrorMessage";

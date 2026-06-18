@@ -4,8 +4,8 @@ import {
   updateComment,
   deleteComment,
   toggleLike,
-} from "../../store/slices/commentSlice";
-import { commentAPI } from "../../services/api";
+} from "../../redux/slices/commentSlice";
+import { commentAPI } from "../../services/comment.service";
 import { formatDistanceToNow } from "date-fns";
 import { enUS } from "date-fns/locale";
 

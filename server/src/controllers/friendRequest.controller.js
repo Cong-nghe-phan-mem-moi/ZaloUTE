@@ -1,4 +1,4 @@
-const FriendRequestService = require("../service/friendRequest.service");
+const FriendRequestService = require("../services/friendRequest.service");
 
 async function handleSendFriendRequest(req, res) {
   try {

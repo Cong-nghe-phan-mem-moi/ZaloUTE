@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const PostController = require('../controllers/post.controller');
-const { authMiddleware } = require('../middleware/authMiddleware');
-const upload = require('../middleware/uploadMiddleware');
+const { authMiddleware } = require('../middlewares/authMiddleware');
+const upload = require('../middlewares/uploadMiddleware');
 
 // All post routes require authentication
 router.use(authMiddleware);

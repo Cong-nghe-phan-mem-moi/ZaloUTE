@@ -7,11 +7,11 @@ const commentRoutes = require("./comment.route");
 const notificationRoutes = require("./notification.route");
 const storyRoutes = require("./story.route");
 const adminRoutes = require("./admin.route");
-const { authMiddleware, authorize } = require("../middleware/authMiddleware");
-const { validateEditProfile } = require("../middleware/validateRequest");
-const { editProfileLimiter } = require("../middleware/rateLimiter");
+const { authMiddleware, authorize } = require("../middlewares/authMiddleware");
+const { validateEditProfile } = require("../middlewares/validateRequest");
+const { editProfileLimiter } = require("../middlewares/rateLimiter");
 const userRoutes = require("./user.route");
-const upload = require("../middleware/uploadMiddleware");
+const upload = require("../middlewares/uploadMiddleware");
 const groupRoutes = require("./group.route");
 const chatRoutes = require("./chat.route");
 

@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { storyAPI } from "../../services/api";
+import { storyAPI } from "../../services/story.service";
 import getImageUrl from "../../utils/imageUrl";
-import HomeAvatar from "./HomeAvatar";
+import UserAvatar from "../common/UserAvatar";
 
 const STORY_DURATION_MS = 6000;
 
@@ -253,7 +253,7 @@ const AddStoryCard = ({ profile, onCreate }) => (
         />
       ) : (
         <div className="flex h-full w-full items-center justify-center bg-[#e7f3ff]">
-          <HomeAvatar name={profile?.fullName || "You"} size="md" />
+          <UserAvatar name={profile?.fullName || "You"} size="md" />
         </div>
       )}
       <span className="absolute bottom-8 left-1/2 flex h-9 w-9 -translate-x-1/2 items-center justify-center rounded-full border-4 border-white bg-[#1877f2] text-white">
@@ -305,7 +305,7 @@ const OwnStoryCard = ({ profile, group, onOpen }) => {
           hasUnread ? "bg-[#1877f2]" : "bg-white/70"
         }`}
       >
-        <HomeAvatar
+        <UserAvatar
           image={profile?.avatar ? getImageUrl(profile.avatar) : null}
           name={profile?.fullName || "You"}
           size="xs"
@@ -350,7 +350,7 @@ const StoryGroupCard = ({ group, onOpen }) => {
           hasUnread ? "bg-[#1877f2]" : "bg-white/70"
         }`}
       >
-        <HomeAvatar image={getAuthorAvatar(previewStory)} name={authorName} size="xs" />
+        <UserAvatar image={getAuthorAvatar(previewStory)} name={authorName} size="xs" />
       </div>
       <p className="absolute bottom-2 left-2 right-2 line-clamp-2 text-xs font-bold text-white">
         {authorName}
@@ -731,7 +731,7 @@ const StoryViewer = ({
             </div>
 
             <div className="flex items-center gap-3">
-              <HomeAvatar image={getAuthorAvatar(story)} name={authorName} size="sm" />
+              <UserAvatar image={getAuthorAvatar(story)} name={authorName} size="sm" />
               <div className="min-w-0">
                 <p className="truncate text-sm font-bold">{authorName}</p>
                 <p className="text-xs text-white/70">
@@ -953,7 +953,7 @@ const OwnerStoryInsights = ({ story, onClose }) => (
 
 const StoryPerson = ({ user, meta, dark = true }) => (
   <div className="mb-2 flex items-center gap-2">
-    <HomeAvatar
+    <UserAvatar
       image={user?.avatar ? getImageUrl(user.avatar) : null}
       name={user?.fullName || "User"}
       size="xs"

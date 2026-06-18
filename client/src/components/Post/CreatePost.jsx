@@ -1,6 +1,6 @@
-﻿import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { createPost } from '../../store/slices/postSlice';
+import { createPost } from '../../redux/slices/postSlice';
 
 const CreatePost = ({ onPostCreated }) => {
   const dispatch = useDispatch();

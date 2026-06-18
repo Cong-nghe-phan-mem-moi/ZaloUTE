@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const GroupController = require('../controllers/group.controller');
-const { authMiddleware } = require('../middleware/authMiddleware');
-const { isGroupAdmin } = require('../middleware/group.middleware');
+const { authMiddleware } = require('../middlewares/authMiddleware');
+const { isGroupAdmin } = require('../middlewares/group.middleware');
 
 router.use(authMiddleware);
 

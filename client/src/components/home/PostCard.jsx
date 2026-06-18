@@ -1,9 +1,9 @@
-import HomeAvatar from "./HomeAvatar";
+import UserAvatar from "../common/UserAvatar";
 
 const PostCard = () => (
   <article className="rounded bg-white p-7 shadow-sm">
     <div className="flex items-center gap-3">
-      <HomeAvatar name="Pentania Gloria" />
+      <UserAvatar name="Pentania Gloria" />
       <div>
         <h3 className="text-sm font-bold">Pentania Gloria</h3>
         <p className="text-xs text-[#6b7280]">5 minutes ago</p>

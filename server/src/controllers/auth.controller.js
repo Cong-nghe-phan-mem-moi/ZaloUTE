@@ -1,6 +1,6 @@
-﻿const AuthRepository = require("../repo/auth.repository");
-const OtpRepository = require("../repo/otp.repository");
-const authService = require("../service/auth.service");
+const AuthRepository = require("../repositories/auth.repository");
+const OtpRepository = require("../repositories/otp.repository");
+const authService = require("../services/auth.service");
 
 const saveResetPasswordSession = (req, email) => {
   if (!req.session) {

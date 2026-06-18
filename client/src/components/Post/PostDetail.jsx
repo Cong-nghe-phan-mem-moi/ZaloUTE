@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { getPost, toggleLike } from "../../store/slices/postSlice";
+import { getPost, toggleLike } from "../../redux/slices/postSlice";
 import { formatDistanceToNow } from "date-fns";
 import { enUS } from "date-fns/locale";
 import LoadingSpinner from "../common/LoadingSpinner";

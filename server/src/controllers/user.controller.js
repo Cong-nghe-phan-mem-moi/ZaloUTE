@@ -1,5 +1,5 @@
-﻿const UserService = require('../service/user.service');
-const FriendRequestService = require('../service/friendRequest.service');
+const UserService = require('../services/user.service');
+const FriendRequestService = require('../services/friendRequest.service');
 async function editProfile(req, res) {
   try {
     const userId = req.user.userId;
@@ -457,7 +457,7 @@ async function handleGlobalSearch(req, res) {
     if (!q || !q.trim()) {
       return res.status(400).json({
         success: false,
-        message: 'Vui lòng nhập từ khóa để tìm kiếm!'
+        message: 'Vui l�ng nh?p t? kh�a d? t�m ki?m!'
       });
     }
 

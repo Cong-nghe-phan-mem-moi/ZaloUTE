@@ -1,9 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { notificationAPI, userAPI } from "../../services/api";
-import { useAppDispatch } from "../../store/hooks";
-import { clearProfile } from "../../store/slices/userSlice";
-import HomeAvatar from "./HomeAvatar";
+import { useClickOutside, useLogout } from "../../hooks";
+import { notificationAPI } from "../../services/notification.service";
+import { AppLogo, IconButton, UserAvatar, UserSearchBox } from "../common";
+import {
+  NotificationPopup,
+  NotificationsDropdown,
+} from "./header/Notifications";
+import ProfileMenu from "./header/ProfileMenu";
 
 const getNotificationWsUrl = (token) => {
   const encodedToken = encodeURIComponent(token);
@@ -56,35 +60,24 @@ const rememberNotificationsSeen = (notifications) => {
 };
 
 const HomeHeader = ({ profile, activePage = "home" }) => {
-  const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const { isLoggingOut, logout: handleLogout } = useLogout();
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [newNotificationCount, setNewNotificationCount] = useState(0);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [popupNotification, setPopupNotification] = useState(null);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const notificationsRef = useRef(null);
   const profileMenuRef = useRef(null);
   const notificationsOpenRef = useRef(false);
-  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 
-  const handleLogout = async () => {
-    if (isLoggingOut) return;
+  const closeNotifications = useCallback(() => setNotificationsOpen(false), []);
+  const closeProfileMenu = useCallback(() => setProfileMenuOpen(false), []);
 
-    setIsLoggingOut(true);
-
-    try {
-      await userAPI.logout();
-    } catch (error) {
-      console.error("Logout failed:", error);
-    } finally {
-      localStorage.removeItem("token");
-      dispatch(clearProfile());
-      navigate("/login", { replace: true });
-    }
-  };
+  useClickOutside(notificationsRef, closeNotifications);
+  useClickOutside(profileMenuRef, closeProfileMenu);
 
   const loadNotifications = useCallback(async () => {
     setNotificationsLoading(true);
@@ -226,27 +219,6 @@ const HomeHeader = ({ profile, activePage = "home" }) => {
     notificationsOpenRef.current = notificationsOpen;
   }, [notificationsOpen]);
 
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (
-        notificationsRef.current &&
-        !notificationsRef.current.contains(event.target)
-      ) {
-        setNotificationsOpen(false);
-      }
-
-      if (
-        profileMenuRef.current &&
-        !profileMenuRef.current.contains(event.target)
-      ) {
-        setProfileMenuOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
   const handleToggleNotifications = async () => {
     const nextOpen = !notificationsOpen;
     setNotificationsOpen(nextOpen);
@@ -294,14 +266,8 @@ const HomeHeader = ({ profile, activePage = "home" }) => {
   return (
     <header className="flex h-20 items-center justify-between gap-4 bg-white px-6 lg:px-12">
       <div className="flex items-center gap-5">
-        <Link
-          to="/"
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1877f2] text-xl font-bold text-white"
-          aria-label="ZaloUTE home"
-        >
-          z
-        </Link>
-        <SearchBox />
+        <AppLogo />
+        <UserSearchBox />
       </div>
 
       <nav className="hidden flex-1 items-center justify-center gap-8 text-[#6b7280] md:flex">
@@ -316,13 +282,13 @@ const HomeHeader = ({ profile, activePage = "home" }) => {
       </nav>
 
       <div className="flex items-center gap-3">
-        <CircleIcon
+        <IconButton
           icon="forum"
           label="Messages"
           onClick={() => window.location.assign("/messages")}
         />
         <div className="relative" ref={notificationsRef}>
-          <CircleIcon
+          <IconButton
             icon="notifications"
             label="Notifications"
             onClick={handleToggleNotifications}
@@ -346,7 +312,7 @@ const HomeHeader = ({ profile, activePage = "home" }) => {
             aria-expanded={profileMenuOpen}
             aria-label="Open profile menu"
           >
-            <HomeAvatar
+            <UserAvatar
               image={profile?.avatar}
               name={profile?.fullName}
               size="sm"
@@ -378,170 +344,6 @@ const HomeHeader = ({ profile, activePage = "home" }) => {
   );
 };
 
-const ProfileMenu = ({ profile, isLoggingOut, onLogout }) => (
-  <div className="absolute right-0 top-12 z-50 w-72 rounded-lg border border-[#dddfe2] bg-white p-2 shadow-2xl">
-    <Link
-      to="/user/profile"
-      className="flex items-center gap-3 rounded-lg p-3 text-[#111827] hover:bg-[#f2f3f5]"
-    >
-      <HomeAvatar image={profile?.avatar} name={profile?.fullName} size="sm" />
-      <div className="min-w-0">
-        <p className="truncate text-sm font-bold">
-          {profile?.fullName || "Hexa Pentania"}
-        </p>
-        <p className="text-xs text-[#6b7280]">View your profile</p>
-      </div>
-    </Link>
-
-    <div className="my-1 h-px bg-[#e5e7eb]" />
-
-    <button
-      type="button"
-      onClick={onLogout}
-      disabled={isLoggingOut}
-      className="flex w-full items-center gap-3 rounded-lg p-3 text-left text-sm font-semibold text-[#111827] hover:bg-[#f2f3f5] disabled:cursor-not-allowed disabled:opacity-60"
-    >
-      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#f1f3f5]">
-        <span className="material-symbols-outlined text-[20px]">logout</span>
-      </span>
-      {isLoggingOut ? "Logging out..." : "Log out"}
-    </button>
-  </div>
-);
-
-const SearchBox = () => {
-  const [keyword, setKeyword] = useState("");
-  const [results, setResults] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [isOpen, setIsOpen] = useState(false);
-  const searchRef = useRef(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (searchRef.current && !searchRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  useEffect(() => {
-    const value = keyword.trim();
-
-    if (value.length < 2) {
-      return;
-    }
-
-    let isCurrent = true;
-
-    const timer = window.setTimeout(async () => {
-      try {
-        const response = await userAPI.searchUsers(value, 1, 8);
-        if (!isCurrent) return;
-        setResults(response.data?.data || []);
-      } catch (err) {
-        if (!isCurrent) return;
-        setResults([]);
-        setError(err.response?.data?.message || "Unable to search users.");
-      } finally {
-        if (isCurrent) {
-          setLoading(false);
-          setIsOpen(true);
-        }
-      }
-    }, 300);
-
-    return () => {
-      isCurrent = false;
-      window.clearTimeout(timer);
-    };
-  }, [keyword]);
-
-  const shouldShowDropdown = isOpen && keyword.trim().length >= 2;
-
-  return (
-    <div className="relative hidden md:block" ref={searchRef}>
-      <div className="flex h-10 items-center gap-2 rounded-full bg-white text-[#6b7280]">
-        <span className="material-symbols-outlined text-[20px]">search</span>
-        <input
-          className="w-44 border-0 bg-transparent text-sm outline-none placeholder:text-[#9ca3af]"
-          placeholder="Search ..."
-          type="text"
-          value={keyword}
-          onChange={(event) => {
-            const nextKeyword = event.target.value;
-            setKeyword(nextKeyword);
-            setIsOpen(true);
-
-            if (nextKeyword.trim().length < 2) {
-              setResults([]);
-              setError("");
-              setLoading(false);
-            } else {
-              setLoading(true);
-              setError("");
-            }
-          }}
-          onFocus={() => setIsOpen(true)}
-        />
-      </div>
-
-      {shouldShowDropdown ? (
-        <div className="absolute left-0 top-12 z-50 w-[min(360px,calc(100vw-24px))] rounded-lg border border-[#dddfe2] bg-white p-2 shadow-2xl">
-          <div className="px-2 py-2 text-sm font-semibold text-[#65676b]">
-            Search results
-          </div>
-
-          {loading ? (
-            <div className="flex items-center gap-3 px-2 py-3 text-[#65676b]">
-              <span className="h-5 w-5 animate-spin rounded-full border-2 border-[#1877f2] border-t-transparent" />
-              <span className="text-sm">Searching...</span>
-            </div>
-          ) : null}
-
-          {!loading && error ? (
-            <p className="px-2 py-3 text-sm text-red-600">{error}</p>
-          ) : null}
-
-          {!loading && !error && results.length === 0 ? (
-            <p className="px-2 py-3 text-sm text-[#65676b]">
-              No matching users found.
-            </p>
-          ) : null}
-
-          {!loading && !error
-            ? results.map((user) => <SearchResultItem key={user.id} user={user} />)
-            : null}
-        </div>
-      ) : null}
-    </div>
-  );
-};
-
-const SearchResultItem = ({ user }) => (
-  <Link
-    to={`/users/profile/${user.id}`}
-    className="flex items-center gap-3 rounded-lg p-2 text-[#050505] hover:bg-[#f0f2f5]"
-  >
-    <HomeAvatar image={user.avatar} name={user.fullName} size="sm" />
-    <div className="min-w-0">
-      <p className="truncate text-[15px] font-semibold">{user.fullName}</p>
-      <p className="text-xs text-[#65676b]">
-        {user.relation === "friend"
-          ? "Friend"
-          : user.relation === "sent_request"
-            ? "Request sent"
-            : user.relation === "received_request"
-              ? "Respond to request"
-              : "View profile"}
-      </p>
-    </div>
-  </Link>
-);
-
 const HeaderTab = ({ icon, active = false, href = "/" }) => (
   <Link
     to={href}
@@ -554,243 +356,6 @@ const HeaderTab = ({ icon, active = false, href = "/" }) => (
     <span className="material-symbols-outlined text-[24px]">{icon}</span>
   </Link>
 );
-
-const CircleIcon = ({ icon, label, onClick, disabled = false, badge = 0 }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    disabled={disabled}
-    title={label}
-    aria-label={label}
-    className="relative flex h-9 w-9 items-center justify-center rounded-full bg-[#f1f3f5] text-[#111827] hover:bg-[#e5e7eb] disabled:cursor-not-allowed disabled:opacity-60"
-  >
-    <span className="material-symbols-outlined text-[20px]">{icon}</span>
-    {badge > 0 ? (
-      <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-red-500 px-1 text-center text-[10px] font-bold leading-5 text-white">
-        {badge > 9 ? "9+" : badge}
-      </span>
-    ) : null}
-  </button>
-);
-
-const notificationLinks = {
-  friend_request: "/friend-requests",
-  friend_accept: "/friends",
-  post_like: "/",
-  post_comment: "/",
-  post_share: "/",
-  comment_reply: "/",
-  comment_like: "/",
-  story_reaction: "/",
-  mention: "/messages",
-  new_message: "/messages",
-};
-
-const isFriendAcceptNotification = (notification) =>
-  notification.type === "friend_accept" ||
-  notification.content === "accepted your friend request";
-
-const getNotificationHref = (notification) => {
-  const data = notification.data || {};
-
-  if (notification.type === "mention") {
-    const conversationId = data.conversationId || notification.relatedId;
-    return conversationId ? `/messages?conversationId=${conversationId}` : "/messages";
-  }
-
-  if (notification.type === "new_message") {
-    const conversationId = data.conversationId || notification.relatedId;
-    return conversationId ? `/messages?conversationId=${conversationId}` : "/messages";
-  }
-
-  if (notification.type === "friend_request") {
-    const userId = data.profileId || notification.sender?._id;
-    return userId ? `/users/profile/${userId}` : "/friend-requests";
-  }
-
-  if (isFriendAcceptNotification(notification)) {
-    const userId = data.profileId || notification.sender?._id || notification.relatedId;
-    return userId ? `/users/profile/${userId}` : "/friends";
-  }
-
-  if (["post_like", "post_share"].includes(notification.type)) {
-    const postId = data.postId || data.sharedPostId || notification.relatedId;
-    return postId ? `/?postId=${encodeURIComponent(postId)}` : "/";
-  }
-
-  if (["post_comment", "comment_reply", "comment_like"].includes(notification.type)) {
-    const postId =
-      data.postId ||
-      (notification.relatedType === "Post" ? notification.relatedId : null);
-    const commentId =
-      data.commentId ||
-      (notification.relatedType === "Comment" ? notification.relatedId : null);
-    const parentCommentId = data.parentCommentId;
-
-    if (!postId) return "/";
-
-    const params = new URLSearchParams({ postId: String(postId) });
-    if (commentId) params.set("commentId", String(commentId));
-    if (parentCommentId) params.set("parentCommentId", String(parentCommentId));
-
-    return `/?${params.toString()}`;
-  }
-
-  if (notification.type === "story_reaction") {
-    const storyId = data.storyId || notification.relatedId;
-    return storyId ? `/?storyId=${encodeURIComponent(storyId)}` : "/";
-  }
-
-  return notificationLinks[notification.type] || "/";
-};
-
-const popupTitles = {
-  friend_request: "New friend request",
-  friend_accept: "Friend request accepted",
-  post_like: "New like",
-  post_comment: "New comment",
-  post_share: "New share",
-  comment_reply: "New reply",
-  comment_like: "New comment like",
-  story_reaction: "New story reaction",
-  mention: "Mention",
-  new_message: "New message",
-};
-
-const NotificationPopup = ({ notification, onClose }) => {
-  const senderName = notification.sender?.fullName || "Someone";
-  const title = isFriendAcceptNotification(notification)
-    ? "Friend request accepted"
-    : popupTitles[notification.type] || "New notification";
-  const href = getNotificationHref(notification);
-
-  return (
-    <div className="fixed right-5 top-24 z-[60] w-[min(360px,calc(100vw-32px))] rounded-lg border border-[#dbe4f0] bg-white p-4 shadow-2xl">
-      <div className="mb-2 flex items-start justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-3">
-          <HomeAvatar
-            image={notification.sender?.avatar}
-            name={senderName}
-            size="sm"
-          />
-          <div className="min-w-0">
-            <p className="text-sm font-bold text-[#111827]">{title}</p>
-            <p className="truncate text-xs text-[#6b7280]">{senderName}</p>
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={onClose}
-          className="rounded-full p-1 text-[#6b7280] hover:bg-[#f2f3f5]"
-          aria-label="Close notification popup"
-        >
-          <span className="material-symbols-outlined text-[18px]">close</span>
-        </button>
-      </div>
-
-      <Link to={href} className="block rounded-md hover:bg-[#f8fafc]">
-        <p className="text-sm text-[#111827]">
-          <span className="font-semibold">{senderName}</span>{" "}
-          {notification.content || "sent you a notification"}
-        </p>
-        {notification.preview ? (
-          <p className="mt-2 line-clamp-2 rounded-md bg-[#f2f3f5] px-3 py-2 text-sm text-[#4b5563]">
-            "{notification.preview}"
-          </p>
-        ) : null}
-      </Link>
-    </div>
-  );
-};
-
-const NotificationsDropdown = ({
-  notifications,
-  unreadCount,
-  loading,
-  onMarkAllAsRead,
-  onNotificationClick,
-}) => (
-  <div className="absolute right-0 top-12 z-50 w-[min(380px,calc(100vw-24px))] rounded-lg border border-[#dddfe2] bg-white p-3 shadow-2xl">
-    <div className="mb-3 flex items-center justify-between">
-      <h2 className="text-lg font-bold text-[#111827]">Notifications</h2>
-      {unreadCount > 0 ? (
-        <button
-          type="button"
-          onClick={onMarkAllAsRead}
-          className="text-xs font-semibold text-[#1877f2] hover:underline"
-        >
-          Mark all read
-        </button>
-      ) : null}
-    </div>
-
-    {loading ? (
-      <div className="flex items-center gap-3 rounded-md p-3 text-sm text-[#6b7280]">
-        <span className="h-5 w-5 animate-spin rounded-full border-2 border-[#1877f2] border-t-transparent" />
-        Loading notifications...
-      </div>
-    ) : null}
-
-    {!loading && notifications.length === 0 ? (
-      <div className="rounded-md bg-[#f2f3f5] p-4 text-center text-sm font-semibold text-[#6b7280]">
-        No notifications yet.
-      </div>
-    ) : null}
-
-    {!loading && notifications.length > 0 ? (
-      <div className="max-h-[420px] space-y-1 overflow-y-auto">
-        {notifications.map((notification) => (
-          <NotificationItem
-            key={notification._id}
-            notification={notification}
-            onClick={onNotificationClick}
-          />
-        ))}
-      </div>
-    ) : null}
-  </div>
-);
-
-const NotificationItem = ({ notification, onClick }) => {
-  const senderName = notification.sender?.fullName || "Someone";
-  const href = getNotificationHref(notification);
-
-  return (
-    <Link
-      to={href}
-      onClick={(event) => {
-        event.preventDefault();
-        onClick?.(notification, href);
-      }}
-      className={`flex gap-3 rounded-md p-2 hover:bg-[#f2f3f5] ${
-        notification.isRead ? "" : "bg-[#eef5ff]"
-      }`}
-    >
-      <HomeAvatar
-        image={notification.sender?.avatar}
-        name={senderName}
-        size="sm"
-      />
-      <div className="min-w-0 flex-1">
-        <p className="text-sm text-[#111827]">
-          <span className="font-bold">{senderName}</span>{" "}
-          {notification.content || "sent you a notification"}
-        </p>
-        {notification.preview ? (
-          <p className="mt-1 line-clamp-2 text-xs text-[#4b5563]">
-            "{notification.preview}"
-          </p>
-        ) : null}
-        <p className="mt-1 text-xs text-[#6b7280]">
-          {new Date(notification.createdAt).toLocaleString()}
-        </p>
-      </div>
-      {!notification.isRead ? (
-        <span className="mt-2 h-2 w-2 rounded-full bg-[#1877f2]" />
-      ) : null}
-    </Link>
-  );
-};
 
 export default HomeHeader;
 

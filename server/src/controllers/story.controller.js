@@ -1,4 +1,4 @@
-const StoryService = require('../service/story.service');
+const StoryService = require('../services/story.service');
 
 const fileToMedia = (file) => {
   if (!file) return null;

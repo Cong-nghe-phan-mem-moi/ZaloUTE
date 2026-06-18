@@ -1,4 +1,4 @@
-const GroupService = require('../service/group.service');
+const GroupService = require('../services/group.service');
 
 function getAuthUserId(req) {
   return req.user.userId || req.user.id;

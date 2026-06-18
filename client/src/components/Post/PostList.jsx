@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import {
@@ -7,7 +7,7 @@ import {
   toggleLike,
   deletePost,
   resetPosts,
-} from "../../store/slices/postSlice";
+} from "../../redux/slices/postSlice";
 import { formatDistanceToNow } from "date-fns";
 import { enUS } from "date-fns/locale";
 import LoadingSpinner from "../common/LoadingSpinner";

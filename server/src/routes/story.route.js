@@ -1,7 +1,7 @@
 const express = require('express');
 const StoryController = require('../controllers/story.controller');
-const { authMiddleware } = require('../middleware/authMiddleware');
-const upload = require('../middleware/uploadMiddleware');
+const { authMiddleware } = require('../middlewares/authMiddleware');
+const upload = require('../middlewares/uploadMiddleware');
 
 const router = express.Router();
 

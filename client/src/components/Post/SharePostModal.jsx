@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { sharePost } from "../../store/slices/postSlice";
+import { sharePost } from "../../redux/slices/postSlice";
 
 const SharePostModal = ({ post, isOpen, onClose }) => {
   const dispatch = useDispatch();

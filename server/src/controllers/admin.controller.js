@@ -1,4 +1,4 @@
-const AdminService = require("../service/admin.service");
+const AdminService = require("../services/admin.service");
 
 const sendError = (res, error) => {
   const status = error.message?.includes("not found") ? 404 : 400;

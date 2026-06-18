@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import HomeAvatar from "./HomeAvatar";
+import UserAvatar from "../common/UserAvatar";
 import { newsItems } from "./homeData";
 
 const RightSidebar = ({
@@ -100,7 +100,7 @@ const FriendRequestCard = ({
         to={senderId ? `/users/profile/${senderId}` : "/friend-requests"}
         className="mb-3 flex items-center gap-3"
       >
-        <HomeAvatar image={sender.avatar} name={sender.fullName || "User"} />
+        <UserAvatar image={sender.avatar} name={sender.fullName || "User"} />
         <div className="min-w-0">
           <p className="truncate text-sm font-bold">
             {sender.fullName || "Unknown user"}
@@ -136,7 +136,7 @@ const Contact = ({ contact }) => (
     to={contact.id ? `/users/profile/${contact.id}` : "/friends"}
     className="flex items-center gap-3 rounded-md hover:bg-[#f2f3f5]"
   >
-    <HomeAvatar image={contact.avatar} name={contact.name} />
+    <UserAvatar image={contact.avatar} name={contact.name} />
     <div>
       <p className="text-sm font-bold">{contact.name}</p>
       <p className="flex items-center gap-2 text-xs text-[#6b7280]">

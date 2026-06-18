@@ -1,7 +1,7 @@
-﻿const CommentService = require("../service/comment.service");
+const CommentService = require("../services/comment.service");
 
 class CommentController {
-  // ThÃªm bÃ¬nh luáº­n
+  // Thêm bình luận
   static async createComment(req, res) {
     try {
       const { postId } = req.params;
@@ -29,7 +29,7 @@ class CommentController {
     }
   }
 
-  // Chá»‰nh sá»­a bÃ¬nh luáº­n
+  // Chỉnh sửa bình luận
   static async updateComment(req, res) {
     try {
       const { commentId } = req.params;
@@ -71,7 +71,7 @@ class CommentController {
     }
   }
 
-  // XÃ³a bÃ¬nh luáº­n
+  // Xóa bình luận
   static async deleteComment(req, res) {
     try {
       const { commentId } = req.params;
@@ -107,7 +107,7 @@ class CommentController {
     }
   }
 
-  // Like/Unlike bÃ¬nh luáº­n
+  // Like/Unlike bình luận
   static async toggleLikeComment(req, res) {
     try {
       const { commentId } = req.params;
@@ -137,7 +137,7 @@ class CommentController {
     }
   }
 
-  // Láº¥y bÃ¬nh luáº­n cá»§a bÃ i viáº¿t
+  // Lấy bình luận của bài viết
   static async getPostComments(req, res) {
     try {
       const { postId } = req.params;
@@ -162,7 +162,7 @@ class CommentController {
     }
   }
 
-  // Láº¥y reply cá»§a má»™t bÃ¬nh luáº­n
+  // Lấy reply của một bình luận
   static async getCommentReplies(req, res) {
     try {
       const { commentId } = req.params;

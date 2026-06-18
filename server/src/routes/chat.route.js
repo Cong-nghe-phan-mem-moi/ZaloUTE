@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const chatController = require("../controllers/chat.controller");
-const { authMiddleware } = require("../middleware/authMiddleware");
+const { authMiddleware } = require("../middlewares/authMiddleware");
 
 // Áp dụng middleware xác thực cho tất cả route chat
 router.use(authMiddleware);

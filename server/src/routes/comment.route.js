@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const CommentController = require("../controllers/comment.controller");
-const { authMiddleware } = require("../middleware/authMiddleware");
+const { authMiddleware } = require("../middlewares/authMiddleware");
 
 // All comment routes require authentication
 router.use(authMiddleware);

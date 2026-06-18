@@ -1,7 +1,8 @@
 import { useRef, useState } from "react";
-import { useAppDispatch, useAppSelector } from "../../store/hooks";
-import { createPost } from "../../store/slices/postSlice";
-import HomeAvatar from "./HomeAvatar";
+import { useObjectUrls } from "../../hooks";
+import { useAppDispatch, useAppSelector } from "../../redux/hooks";
+import { createPost } from "../../redux/slices/postSlice";
+import UserAvatar from "../common/UserAvatar";
 
 const Composer = ({ profile }) => {
   const dispatch = useAppDispatch();
@@ -59,7 +60,7 @@ const Composer = ({ profile }) => {
     <section className="rounded bg-white p-7 shadow-sm">
       <form onSubmit={handleSubmit}>
         <div className="flex items-center gap-3">
-          <HomeAvatar image={profile?.avatar} name={profile?.fullName} />
+          <UserAvatar image={profile?.avatar} name={profile?.fullName} />
           <div>
             <p className="text-sm font-bold">
               {profile?.fullName || "Hexa Betania"}
@@ -136,6 +137,8 @@ const Composer = ({ profile }) => {
 };
 
 const SelectedMediaPreview = ({ files, onRemove }) => {
+  const previewUrls = useObjectUrls(files);
+
   if (files.length === 0) {
     return null;
   }
@@ -145,7 +148,7 @@ const SelectedMediaPreview = ({ files, onRemove }) => {
   const isSingleImage = files.length === 1 && files[0].type.startsWith("image/");
 
   if (isSingleImage) {
-    const previewUrl = URL.createObjectURL(files[0]);
+    const previewUrl = previewUrls[0];
 
     return (
       <div className="mt-4 overflow-hidden rounded-lg bg-[#f2f3f5]">
@@ -154,7 +157,6 @@ const SelectedMediaPreview = ({ files, onRemove }) => {
             src={previewUrl}
             alt={files[0].name}
             className="max-h-[420px] w-full object-contain"
-            onLoad={() => URL.revokeObjectURL(previewUrl)}
           />
           <RemovePreviewButton
             label={`Remove ${files[0].name}`}
@@ -168,7 +170,7 @@ const SelectedMediaPreview = ({ files, onRemove }) => {
   return (
     <div className="mt-4 grid grid-cols-6 gap-1 overflow-hidden rounded-lg">
       {visibleFiles.map((file, index) => {
-        const previewUrl = URL.createObjectURL(file);
+        const previewUrl = previewUrls[index];
         const isImage = file.type.startsWith("image/");
 
         return (
@@ -184,14 +186,12 @@ const SelectedMediaPreview = ({ files, onRemove }) => {
                 src={previewUrl}
                 alt={file.name}
                 className="h-full w-full object-cover"
-                onLoad={() => URL.revokeObjectURL(previewUrl)}
               />
             ) : (
               <video
                 src={previewUrl}
                 controls
                 className="h-full w-full bg-black object-cover"
-                onLoadedData={() => URL.revokeObjectURL(previewUrl)}
               />
             )}
             <RemovePreviewButton

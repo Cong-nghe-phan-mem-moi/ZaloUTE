@@ -1,4 +1,4 @@
-﻿const mongoose = require('mongoose');
+const mongoose = require('mongoose');
 const { removeVietnameseTones } = require("../utils/stringUtil");
 
 const userSchema = new mongoose.Schema({

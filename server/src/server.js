@@ -31,8 +31,8 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files from uploads directory
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+// Serve uploaded files from storage while keeping the public URL stable.
+app.use('/uploads', express.static(path.join(__dirname, '../storage/uploads')));
 
 app.use(
   session({
@@ -59,8 +59,8 @@ connectDB().then(() => {
 });
 
 const apiRoutes = require('./routes/api');
-const NotificationService = require('./service/notification.service');
-const ChatService = require('./service/chat.service');
+const NotificationService = require('./services/notification.service');
+const ChatService = require('./services/chat.service');
 
 app.use('/api', apiRoutes);
 

@@ -1,4 +1,4 @@
-﻿const nodemailer = require("nodemailer");
+const nodemailer = require("nodemailer");
 
 const smtpPort = Number(process.env.SMTP_PORT || 587);
 

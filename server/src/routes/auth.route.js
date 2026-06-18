@@ -16,17 +16,17 @@ const {
   validateForgotPasswordRequest,
   validateForgotPasswordVerifyOTP,
   validateResetPassword,
-} = require("../middleware/validation");
+} = require("../middlewares/validation");
 const {
   registerLimiter,
   forgotPasswordRequestLimiter,
   forgotPasswordVerifyLimiter,
   resetPasswordLimiter,
   loginLimiter,
-} = require("../middleware/rateLimiter");
+} = require("../middlewares/rateLimiter");
 const {
   resetPasswordSessionMiddleware,
-} = require("../middleware/authMiddleware");
+} = require("../middlewares/authMiddleware");
 
 // POST /api/auth/register
 router.post("/register", registerLimiter, validateRegister, register);
