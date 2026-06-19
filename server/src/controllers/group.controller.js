@@ -52,6 +52,21 @@ async function getGroups(req, res) {
   }
 }
 
+async function getGroupInvitations(req, res) {
+  try {
+    const userId = getAuthUserId(req);
+    const result = await GroupService.getGroupInvitations(userId);
+
+    return res.status(200).json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    console.error('Lỗi khi lấy lời mời vào nhóm:', error);
+    return sendError(res, error, 'GET_GROUP_INVITATIONS_ERROR', 'Đã xảy ra lỗi khi lấy lời mời vào nhóm');
+  }
+}
+
 async function getGroupDetail(req, res) {
   try {
     const userId = getAuthUserId(req);
@@ -124,6 +139,47 @@ async function handleAcceptGroupInvitation(req, res) {
   }
 }
 
+async function handleRejectGroupInvitation(req, res) {
+  try {
+    const userId = getAuthUserId(req);
+    const { groupId } = req.params;
+
+    await GroupService.rejectGroupInvitation(userId, groupId);
+
+    return res.status(200).json({
+      success: true,
+      code: 'REJECT_INVITATION_SUCCESS',
+      message: 'Đã từ chối lời mời tham gia nhóm',
+    });
+  } catch (error) {
+    console.error('Lỗi khi từ chối lời mời tham gia nhóm:', error);
+    return sendError(res, error, 'REJECT_INVITATION_ERROR', 'Đã xảy ra lỗi khi từ chối lời mời');
+  }
+}
+
+async function handleCancelGroupInvitation(req, res) {
+  try {
+    const adminId = getAuthUserId(req);
+    const { groupId } = req.params;
+    const { targetUserId, userId, memberId, inviteUserId } = req.body;
+
+    await GroupService.cancelGroupInvitation(
+      adminId,
+      groupId,
+      targetUserId || userId || memberId || inviteUserId,
+    );
+
+    return res.status(200).json({
+      success: true,
+      code: 'CANCEL_INVITATION_SUCCESS',
+      message: 'Đã xóa lời mời tham gia nhóm',
+    });
+  } catch (error) {
+    console.error('Lỗi khi xóa lời mời tham gia nhóm:', error);
+    return sendError(res, error, 'CANCEL_INVITATION_ERROR', 'Đã xảy ra lỗi khi xóa lời mời');
+  }
+}
+
 async function handleApproveJoinRequest(req, res) {
   try {
     const adminId = getAuthUserId(req);
@@ -166,13 +222,40 @@ async function handleAssignAdmin(req, res) {
   }
 }
 
+async function handleRemoveMember(req, res) {
+  try {
+    const adminId = getAuthUserId(req);
+    const { groupId } = req.params;
+    const { targetUserId, userId, memberId } = req.body;
+
+    await GroupService.removeMember(
+      adminId,
+      groupId,
+      targetUserId || userId || memberId,
+    );
+
+    return res.status(200).json({
+      success: true,
+      code: 'REMOVE_MEMBER_SUCCESS',
+      message: 'Đã xóa thành viên khỏi nhóm',
+    });
+  } catch (error) {
+    console.error('Lỗi khi xóa thành viên khỏi nhóm:', error);
+    return sendError(res, error, 'REMOVE_MEMBER_ERROR', 'Đã xảy ra lỗi khi xóa thành viên');
+  }
+}
+
 module.exports = {
   createGroup,
   getGroups,
+  getGroupInvitations,
   getGroupDetail,
   handleUpdateGroupInfo,
   handleInviteToGroup,
   handleAcceptGroupInvitation,
+  handleRejectGroupInvitation,
+  handleCancelGroupInvitation,
   handleApproveJoinRequest,
   handleAssignAdmin,
+  handleRemoveMember,
 };
