@@ -4,6 +4,7 @@ const router = express.Router();
 const userController = require("../controllers/user.controller");
 const authMiddleware = require("../middlewares/authMiddleware");
 const friendRequestController = require("../controllers/friendRequest.controller");
+const FollowController = require("../controllers/follow.controller");
 
 router.get(
   "/search",
@@ -33,6 +34,12 @@ router.post(
   "/:id/unblock",
   authMiddleware.authMiddleware,
   userController.unblockUser,
+);
+
+router.post(
+  "/:id/follow",
+  authMiddleware.authMiddleware,
+  FollowController.toggleFollowUser,
 );
 
 router.post(

@@ -8,6 +8,7 @@ import {
 import { commentAPI } from "../../services/comment.service";
 import { formatDistanceToNow } from "date-fns";
 import { enUS } from "date-fns/locale";
+import ReportModal from "../report/ReportModal";
 
 const MAX_COMMENT_LENGTH = 1000;
 
@@ -42,6 +43,7 @@ const CommentItem = ({
   const [replyCount, setReplyCount] = useState(comment?.replyCount || 0);
   const [replyContent, setReplyContent] = useState("");
   const [replyOpen, setReplyOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
   const [repliesLoading, setRepliesLoading] = useState(false);
   const [replySubmitting, setReplySubmitting] = useState(false);
 
@@ -186,7 +188,7 @@ const CommentItem = ({
       }`}
     >
       <img
-        src={comment?.author?.avatar || "/default-avatar.png"}
+        src={comment?.author?.avatar || "/default-avatar.svg"}
         alt={comment?.author?.fullName}
         className={`${avatarClass} rounded-full object-cover flex-shrink-0`}
       />
@@ -281,12 +283,22 @@ const CommentItem = ({
               </button>
             </>
           )}
+
+          {!isAuthor ? (
+            <button
+              type="button"
+              onClick={() => setReportOpen(true)}
+              className="text-gray-500 hover:text-red-500 transition"
+            >
+              Report
+            </button>
+          ) : null}
         </div>
 
         {replyOpen ? (
           <form onSubmit={handleSubmitReply} className="mt-3 flex gap-2">
             <img
-              src={currentUser?.avatar || "/default-avatar.png"}
+              src={currentUser?.avatar || "/default-avatar.svg"}
               alt={currentUser?.fullName}
               className="h-8 w-8 flex-shrink-0 rounded-full object-cover"
             />
@@ -362,6 +374,12 @@ const CommentItem = ({
           </div>
         ) : null}
       </div>
+
+      <ReportModal
+        target={reportOpen ? { type: "Comment", id: commentId } : null}
+        onClose={() => setReportOpen(false)}
+        onSubmitted={() => window.alert("Report submitted.")}
+      />
     </div>
   );
 };

@@ -213,15 +213,29 @@ class PostRepository {
       { new: true },
     );
   }
+
+  static async getSuggestedPosts({ filter = {}, limit = 3, candidateLimit = 80 }) {
+    return await populatePostQuery(Post.find(filter))
+      .sort({ createdAt: -1 })
+      .limit(Math.max(limit, candidateLimit));
+  }
 }
 
-async function searchPosts({keyword, limit = 10}){
+async function searchPosts({keyword, limit = 10, filter = {}}){
   return await Post.find({
     $text: { $search: keyword },
     group: null,
     approvalStatus: 'approved',
   })
   .populate('author', '_id fullName avatar')
+  .populate({
+    path: 'sharedFrom',
+    populate: [
+      { path: 'author', select: '_id fullName avatar email' },
+      { path: 'likes', select: 'fullName avatar email' },
+      { path: 'reactions.user', select: 'fullName avatar email' },
+    ],
+  })
   .limit(limit)
   .lean()
 }

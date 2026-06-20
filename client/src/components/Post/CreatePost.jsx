@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { createPost } from '../../redux/slices/postSlice';
+import { DEFAULT_POST_PRIVACY } from '../../utils/privacy';
+import AudienceSelector from '../privacy/AudienceSelector';
 
 const CreatePost = ({ onPostCreated }) => {
   const dispatch = useDispatch();
@@ -10,6 +12,7 @@ const CreatePost = ({ onPostCreated }) => {
   const [content, setContent] = useState('');
   const [media, setMedia] = useState([]);
   const [previewUrls, setPreviewUrls] = useState([]);
+  const [privacy, setPrivacy] = useState(DEFAULT_POST_PRIVACY);
   const fileInputRef = useRef(null);
 
   // Reset form when message is set (indicates successful post)
@@ -19,6 +22,7 @@ const CreatePost = ({ onPostCreated }) => {
         setContent('');
         setMedia([]);
         setPreviewUrls([]);
+        setPrivacy(DEFAULT_POST_PRIVACY);
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
@@ -79,6 +83,7 @@ const CreatePost = ({ onPostCreated }) => {
     // Create FormData for multipart upload
     const formData = new FormData();
     formData.append('content', content);
+    formData.append('privacy', JSON.stringify(privacy));
 
     // Add media files
     media.forEach((item) => {
@@ -101,7 +106,7 @@ const CreatePost = ({ onPostCreated }) => {
       {/* Header */}
       <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-100">
         <img
-          src={currentUser?.avatar || '/default-avatar.png'}
+          src={currentUser?.avatar || '/default-avatar.svg'}
           alt={currentUser?.fullName}
           className="w-12 h-12 rounded-full object-cover"
         />
@@ -123,6 +128,13 @@ const CreatePost = ({ onPostCreated }) => {
         className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none mb-4"
         rows={3}
         maxLength={5000}
+      />
+
+      <AudienceSelector
+        friends={currentUser?.friends || []}
+        privacy={privacy}
+        onChange={setPrivacy}
+        className="mb-4 max-w-sm"
       />
 
       {/* Character count */}

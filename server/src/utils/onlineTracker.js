@@ -17,6 +17,12 @@ function setNotificationSendHelper(helper) {
   sendToUserNotification = helper;
 }
 
+function sendChatToUser(userId, payload) {
+  if (sendToUserChat) {
+    sendToUserChat(userId, payload);
+  }
+}
+
 function getOnlineStatus(userId) {
   const key = userId.toString();
   const chatCount = chatConnections.get(key) || 0;
@@ -96,4 +102,5 @@ module.exports = {
   getOnlineStatus,
   setChatSendHelper,
   setNotificationSendHelper,
+  sendChatToUser,
 };

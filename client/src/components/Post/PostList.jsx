@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import {
@@ -7,7 +7,10 @@ import {
   getPostsByAuthor,
   toggleLike,
   deletePost,
+  hidePost,
   resetPosts,
+  toggleFollowAuthor,
+  toggleSavePost,
 } from "../../redux/slices/postSlice";
 import { formatDistanceToNow } from "date-fns";
 import { enUS } from "date-fns/locale";
@@ -17,6 +20,8 @@ import EditPost from "./EditPost";
 import SharePostModal from "./SharePostModal";
 import SharedPostPreview from "./SharedPostPreview";
 import PostEngagement from "./PostEngagement";
+import { getPrivacyOption } from "../../utils/privacy";
+import ReportModal from "../report/ReportModal";
 
 const getUserId = (user) => user?.userId || user?._id || user?.id;
 
@@ -170,11 +175,16 @@ const PostList = ({
   const { posts, loading, pagination } = useSelector(
     (state) => state.posts,
   );
+  const suggestedPosts = useSelector((state) => state.posts.suggestedPosts || []);
   const currentUser = useSelector((state) => state.user?.profile);
   const [selectedPostId, setSelectedPostId] = useState(initialSelectedPostId);
   const [editingPostId, setEditingPostId] = useState(null);
   const [sharingPostId, setSharingPostId] = useState(null);
+  const [reportTarget, setReportTarget] = useState(null);
   const [page, setPage] = useState(1);
+  const [sortBy, setSortBy] = useState("newest");
+  const loadMoreRef = useRef(null);
+  const canLoadMore = pagination && pagination.page < pagination.totalPages;
 
   const allowedAuthorIdSet = useMemo(() => {
     if (!Array.isArray(allowedAuthorIds)) {
@@ -198,6 +208,9 @@ const PostList = ({
     onPostsLoaded?.(visiblePosts);
   }, [onPostsLoaded, visiblePosts]);
 
+  // ==================== KHU VỰC ĐÃ ĐƯỢC FIX CONFLICT ====================
+  
+  // 1. Reset và Fetch trang đầu tiên (Hợp nhất dependency)
   useEffect(() => {
     const timer = window.setTimeout(() => {
       setPage(1);
@@ -215,11 +228,12 @@ const PostList = ({
       return () => window.clearTimeout(timer);
     }
 
-    dispatch(getNewsFeed({ page: 1, limit: 10 }));
+    dispatch(getNewsFeed({ page: 1, limit: 10, sortBy }));
 
     return () => window.clearTimeout(timer);
-  }, [authorId, dispatch, groupId, refreshKey]);
+  }, [authorId, dispatch, groupId, refreshKey, sortBy]);
 
+  // 2. Fetch các trang tiếp theo khi biến 'page' thay đổi
   useEffect(() => {
     if (page === 1) {
       return;
@@ -235,8 +249,29 @@ const PostList = ({
       return;
     }
 
-    dispatch(getNewsFeed({ page, limit: 10 }));
-  }, [authorId, dispatch, groupId, page]);
+    dispatch(getNewsFeed({ page, limit: 10, sortBy }));
+  }, [authorId, dispatch, groupId, page, sortBy]);
+
+  // 3. Tự động kích hoạt load more bằng IntersectionObserver (Infinite Scroll)
+  useEffect(() => {
+    if (authorId || !loadMoreRef.current || !canLoadMore) {
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !loading) {
+          handleLoadMore();
+        }
+      },
+      { rootMargin: "320px" },
+    );
+
+    observer.observe(loadMoreRef.current);
+    return () => observer.disconnect();
+  }, [authorId, canLoadMore, loading]);
+
+  // ======================================================================
 
   useEffect(() => {
     if (!initialSelectedPostId) {
@@ -261,7 +296,29 @@ const PostList = ({
     }
   };
 
+  const handleHidePost = (postId) => {
+    dispatch(hidePost(postId));
+  };
+
+  const handleToggleSavePost = (postId) => {
+    dispatch(toggleSavePost(postId));
+  };
+
+  const handleToggleFollowAuthor = (post) => {
+    const authorProfileId = post.author?._id;
+    const currentUserId = getUserId(currentUser);
+    if (!authorProfileId || String(authorProfileId) === String(currentUserId)) {
+      return;
+    }
+
+    dispatch(toggleFollowAuthor(authorProfileId));
+  };
+
   const handleLoadMore = () => {
+    if (loading || !canLoadMore) {
+      return;
+    }
+
     setPage((prev) => prev + 1);
   };
 
@@ -288,13 +345,194 @@ const PostList = ({
       return;
     }
 
-    dispatch(getNewsFeed({ page: 1, limit: page * 10 }));
+    dispatch(getNewsFeed({ page: 1, limit: page * 10, sortBy }));
+  };
+
+  const renderPost = (post, { suggested = false } = {}) => {
+    const privacyOption = getPrivacyOption(post.privacy?.type);
+    const isOwnPost = String(getUserId(currentUser)) === String(post.author?._id);
+
+    return (
+      <div
+        key={post._id}
+        className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition overflow-hidden"
+      >
+        <div className="flex items-center justify-between p-4 border-b border-gray-100">
+          <div className="flex items-center gap-3 flex-1">
+            <img
+              src={post.author?.avatar || "/default-avatar.svg"}
+              alt={post.author?.fullName}
+              className="w-12 h-12 rounded-full object-cover cursor-pointer hover:opacity-80"
+              onClick={() => handleOpenAuthorProfile(post)}
+            />
+            <div className="flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3
+                  className="font-semibold text-gray-900 cursor-pointer hover:text-blue-600"
+                  onClick={() => handleOpenAuthorProfile(post)}
+                >
+                  {post.author?.fullName}
+                </h3>
+                {suggested ? (
+                  <span className="rounded bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-600">
+                    Suggested
+                  </span>
+                ) : null}
+              </div>
+              <button
+                type="button"
+                className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700"
+                onClick={() => setSelectedPostId(post._id)}
+              >
+                <span>
+                  {formatDistanceToNow(new Date(post.createdAt), {
+                    addSuffix: true,
+                    locale: enUS,
+                  })}
+                </span>
+                <span className="material-symbols-outlined text-[15px]">
+                  {privacyOption.icon}
+                </span>
+                <span className="sr-only">{privacyOption.label}</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap justify-end gap-2">
+            {!isOwnPost ? (
+              <button
+                type="button"
+                onClick={() => handleToggleFollowAuthor(post)}
+                className="rounded px-2 py-1 text-sm font-semibold text-blue-600 hover:bg-blue-50"
+              >
+                {post.isFollowingAuthor ? "Unfollow" : "Follow"}
+              </button>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => handleToggleSavePost(post._id)}
+              className="text-gray-500 hover:text-blue-600 p-1 rounded hover:bg-gray-100"
+              title={post.isSaved ? "Unsave post" : "Save post"}
+            >
+              <span className="material-symbols-outlined text-[20px]">
+                {post.isSaved ? "bookmark" : "bookmark_add"}
+              </span>
+            </button>
+            {!isOwnPost ? (
+              <button
+                type="button"
+                onClick={() => handleHidePost(post._id)}
+                className="text-gray-500 hover:text-red-600 p-1 rounded hover:bg-gray-100"
+                title="Hide post"
+              >
+                <span className="material-symbols-outlined text-[20px]">
+                  visibility_off
+                </span>
+              </button>
+            ) : null}
+            {!isOwnPost ? (
+              <button
+                type="button"
+                onClick={() => setReportTarget({ type: "Post", id: post._id })}
+                className="text-gray-500 hover:text-red-600 p-1 rounded hover:bg-gray-100"
+                title="Report post"
+              >
+                <span className="material-symbols-outlined text-[20px]">
+                  flag
+                </span>
+              </button>
+            ) : null}
+            {isOwnPost ? (
+              <>
+                <button
+                  onClick={() => setEditingPostId(post._id)}
+                  className="text-gray-400 hover:text-gray-600 p-1 rounded hover:bg-gray-100"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => handleDeletePost(post._id)}
+                  className="text-gray-400 hover:text-red-600 p-1 rounded hover:bg-gray-100"
+                >
+                  Delete
+                </button>
+              </>
+            ) : null}
+          </div>
+        </div>
+
+        <div
+          className="p-4 cursor-pointer hover:bg-gray-50 transition"
+          onClick={() => setSelectedPostId(post._id)}
+        >
+          {post.content ? (
+            <p className="text-gray-800 text-base leading-relaxed mb-3 line-clamp-5">
+              {post.content}
+            </p>
+          ) : null}
+
+          <PostMediaPreview media={post.media} />
+          <SharedPostPreview post={post.sharedFrom} onOpen={setSelectedPostId} />
+        </div>
+
+        <PostEngagement
+          post={post}
+          onReact={(reactionType) => handleReaction(post._id, reactionType)}
+          onComment={() => setSelectedPostId(post._id)}
+          onShare={() => setSharingPostId(post._id)}
+        />
+      </div>
+    );
   };
 
   if (loading && visiblePosts.length === 0) return <LoadingSpinner />;
 
   return (
     <div className="w-full space-y-4 pb-8">
+      {!authorId ? (
+        <div className="flex items-center justify-between rounded-lg bg-white px-4 py-3 shadow-sm">
+          <p className="text-sm font-bold text-gray-900">News Feed</p>
+          <div className="flex rounded-md bg-gray-100 p-1 text-sm font-semibold">
+            <button
+              type="button"
+              onClick={() => setSortBy("newest")}
+              className={`rounded px-3 py-1.5 ${
+                sortBy === "newest"
+                  ? "bg-white text-blue-600 shadow-sm"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              Newest
+            </button>
+            <button
+              type="button"
+              onClick={() => setSortBy("engagement")}
+              className={`rounded px-3 py-1.5 ${
+                sortBy === "engagement"
+                  ? "bg-white text-blue-600 shadow-sm"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              Top
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {!authorId && suggestedPosts.length > 0 ? (
+        <section className="space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <h3 className="text-sm font-bold text-gray-900">
+              Suggested popular posts
+            </h3>
+            <span className="text-xs font-semibold text-gray-500">
+              Based on public engagement
+            </span>
+          </div>
+          {suggestedPosts.map((post) => renderPost(post, { suggested: true }))}
+        </section>
+      ) : null}
+
       {visiblePosts.length === 0 ? (
         <div className="p-8 text-center text-gray-500 bg-white rounded-lg">
           <p className="text-lg">{emptyMessage}</p>
@@ -302,83 +540,9 @@ const PostList = ({
         </div>
       ) : (
         <>
-          {visiblePosts.map((post) => (
-            <div
-              key={post._id}
-              className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition overflow-hidden"
-            >
-              <div className="flex items-center justify-between p-4 border-b border-gray-100">
-                <div className="flex items-center gap-3 flex-1">
-                  <img
-                    src={post.author?.avatar || "/default-avatar.png"}
-                    alt={post.author?.fullName}
-                    className="w-12 h-12 rounded-full object-cover cursor-pointer hover:opacity-80"
-                    onClick={() => handleOpenAuthorProfile(post)}
-                  />
-                  <div className="flex-1">
-                    <h3
-                      className="font-semibold text-gray-900 cursor-pointer hover:text-blue-600"
-                      onClick={() => handleOpenAuthorProfile(post)}
-                    >
-                      {post.author?.fullName}
-                    </h3>
-                    <p
-                      className="text-sm text-gray-500 cursor-pointer hover:text-gray-700"
-                      onClick={() => setSelectedPostId(post._id)}
-                    >
-                      {formatDistanceToNow(new Date(post.createdAt), {
-                        addSuffix: true,
-                        locale: enUS,
-                      })}
-                    </p>
-                  </div>
-                </div>
+          {visiblePosts.map((post) => renderPost(post))}
 
-                {String(getUserId(currentUser)) === String(post.author?._id) && (
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setEditingPostId(post._id)}
-                      className="text-gray-400 hover:text-gray-600 p-1 rounded hover:bg-gray-100"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDeletePost(post._id)}
-                      className="text-gray-400 hover:text-red-600 p-1 rounded hover:bg-gray-100"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              <div
-                className="p-4 cursor-pointer hover:bg-gray-50 transition"
-                onClick={() => setSelectedPostId(post._id)}
-              >
-                {post.content ? (
-                  <p className="text-gray-800 text-base leading-relaxed mb-3 line-clamp-5">
-                    {post.content}
-                  </p>
-                ) : null}
-
-                <PostMediaPreview media={post.media} />
-                <SharedPostPreview
-                  post={post.sharedFrom}
-                  onOpen={setSelectedPostId}
-                />
-              </div>
-
-              <PostEngagement
-                post={post}
-                onReact={(reactionType) => handleReaction(post._id, reactionType)}
-                onComment={() => setSelectedPostId(post._id)}
-                onShare={() => setSharingPostId(post._id)}
-              />
-            </div>
-          ))}
-
-          {pagination && pagination.page < pagination.totalPages && (
+          {canLoadMore && (
             <div className="text-center py-4">
               <button
                 onClick={handleLoadMore}
@@ -389,6 +553,7 @@ const PostList = ({
               </button>
             </div>
           )}
+          <div ref={loadMoreRef} className="h-1" aria-hidden="true" />
         </>
       )}
 
@@ -414,6 +579,12 @@ const PostList = ({
         post={posts.find((post) => post._id === sharingPostId)}
         isOpen={!!sharingPostId}
         onClose={() => setSharingPostId(null)}
+      />
+
+      <ReportModal
+        target={reportTarget}
+        onClose={() => setReportTarget(null)}
+        onSubmitted={() => window.alert("Report submitted.")}
       />
     </div>
   );

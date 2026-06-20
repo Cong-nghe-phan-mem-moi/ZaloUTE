@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { format, formatDistanceToNow } from "date-fns";
 import { enUS } from "date-fns/locale";
 import HomeHeader from "../../components/home/HomeHeader";
 import RightSidebar from "../../components/home/RightSidebar";
 import UserAvatar from "../../components/common/UserAvatar";
+import SharedPostPreview from "../../components/post/SharedPostPreview";
+import getImageUrl from "../../utils/imageUrl";
 import {
   AddMembersModal,
   ConfirmModal,
@@ -33,6 +35,8 @@ import {
   deleteConversation,
   updateParticipantStatus,
 } from "../../redux/slices/chatSlice";
+import { stickerAPI } from "../../services/sticker.service";
+import { getConversationPreview } from "../../utils/chatUtils";
 
 const getChatWsUrl = (token) => {
   const encodedToken = encodeURIComponent(token);
@@ -61,8 +65,52 @@ const formatLastActive = (lastActive) => {
   }
 };
 
+const StoryReplyPreview = ({ story, onOpen }) => {
+  if (!story) {
+    return (
+      <div className="mt-2 rounded-xl border border-white/20 bg-black/10 p-3 text-xs">
+        Story is no longer available.
+      </div>
+    );
+  }
+
+  const mediaUrl = story.media?.url ? getImageUrl(story.media.url) : null;
+
+  return (
+    <button
+      type="button"
+      onClick={() => onOpen?.(story._id)}
+      className="mt-2 flex w-full max-w-xs items-center gap-3 rounded-xl border border-gray-200 bg-white p-2 text-left text-gray-900 hover:bg-gray-50"
+    >
+      <div
+        className="flex h-16 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg text-center text-[10px] font-bold text-white"
+        style={{ background: mediaUrl ? "#111827" : story.background || "#1877f2" }}
+      >
+        {mediaUrl ? (
+          story.type === "video" ? (
+            <video className="h-full w-full object-cover" src={mediaUrl} muted />
+          ) : (
+            <img className="h-full w-full object-cover" src={mediaUrl} alt="" />
+          )
+        ) : (
+          <span className="line-clamp-3 px-1">{story.text || "Story"}</span>
+        )}
+      </div>
+      <div className="min-w-0">
+        <p className="truncate text-xs font-bold">
+          {story.author?.fullName || "Story"}
+        </p>
+        <p className="line-clamp-2 text-xs text-gray-500">
+          {story.text || (story.media ? "Story media" : "Story")}
+        </p>
+      </div>
+    </button>
+  );
+};
+
 const ChatPage = () => {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const { profile } = useAppSelector((state) => state.user);
   const {
     conversations,
@@ -77,6 +125,9 @@ const ChatPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [socket, setSocket] = useState(null);
   const [typingState, setTypingState] = useState(false);
+  const [stickerPacks, setStickerPacks] = useState([]);
+  const [stickersOpen, setStickersOpen] = useState(false);
+  const [activeStickerPack, setActiveStickerPack] = useState(0);
   const typingTimeoutRef = useRef(null);
   const messageEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -267,6 +318,25 @@ const ChatPage = () => {
     dispatch(fetchConversations());
   }, [dispatch]);
 
+  useEffect(() => {
+    let isCurrent = true;
+
+    stickerAPI
+      .getStickerPacks()
+      .then((response) => {
+        if (!isCurrent) return;
+        setStickerPacks(response.data?.data || []);
+      })
+      .catch((error) => {
+        console.error("Unable to load sticker packs:", error);
+        if (isCurrent) setStickerPacks([]);
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, []);
+
   // Mở cuộc hội thoại khi có query parameter conversationId từ thông báo
   useEffect(() => {
     if (queryConversationId && conversations.length > 0) {
@@ -442,6 +512,27 @@ const ChatPage = () => {
   };
 
   // Xử lý thu hồi tin nhắn
+  const handleSendSticker = (sticker) => {
+    if (
+      !sticker?.imageUrl ||
+      !activeConversation ||
+      !socket ||
+      socket.readyState !== WebSocket.OPEN
+    ) {
+      return;
+    }
+
+    socket.send(
+      JSON.stringify({
+        type: "send_message",
+        conversationId: activeConversation._id,
+        content: sticker.imageUrl,
+        messageType: "sticker",
+      }),
+    );
+    setStickersOpen(false);
+  };
+
   const handleRevokeMessage = (msg) => {
     if (!socket || socket.readyState !== WebSocket.OPEN || !activeConversation) return;
 
@@ -815,13 +906,7 @@ const ChatPage = () => {
                               className={`text-xs truncate mt-0.5 ${hasUnread ? "font-semibold text-black" : "text-gray-500"
                                 }`}
                             >
-                              {conv.lastMessage
-                                ? conv.lastMessage.isRevoked
-                                  ? "Message has been unsent"
-                                  : conv.lastMessage.senderId?._id === (profile?.id || profile?.userId)
-                                    ? `You: ${conv.lastMessage.content}`
-                                    : conv.lastMessage.content
-                                : "No messages yet"}
+                              {getConversationPreview(conv, profile)}
                             </p>
                           </div>
 
@@ -1121,6 +1206,44 @@ const ChatPage = () => {
                                 >
                                   Message has been unsent
                                 </div>
+                              ) : msg.messageType === "sticker" ? (
+                                <img
+                                  src={msg.content}
+                                  alt="Sticker"
+                                  className="h-28 w-28 rounded-xl object-contain"
+                                />
+                              ) : msg.messageType === "post_share" ? (
+                                <div
+                                  className={`max-w-sm rounded-2xl p-2 shadow-sm text-sm ${
+                                    isMe
+                                      ? "bg-[#1877f2] text-white rounded-br-none"
+                                      : "bg-white text-gray-800 rounded-bl-none"
+                                  }`}
+                                >
+                                  {msg.content && msg.content !== "Shared a post" ? (
+                                    <p className="px-2 py-1 text-sm">{msg.content}</p>
+                                  ) : null}
+                                  <div className={isMe ? "[&_*]:text-gray-900" : ""}>
+                                    <SharedPostPreview
+                                      post={msg.sharedPost}
+                                      onOpen={(postId) => navigate(`/?postId=${postId}`)}
+                                    />
+                                  </div>
+                                </div>
+                              ) : msg.messageType === "story_reply" ? (
+                                <div
+                                  className={`max-w-sm rounded-2xl p-2 shadow-sm text-sm ${
+                                    isMe
+                                      ? "bg-[#1877f2] text-white rounded-br-none"
+                                      : "bg-white text-gray-800 rounded-bl-none"
+                                  }`}
+                                >
+                                  <p className="px-2 py-1 text-sm">{msg.content}</p>
+                                  <StoryReplyPreview
+                                    story={msg.sharedStory}
+                                    onOpen={(storyId) => navigate(`/?storyId=${storyId}`)}
+                                  />
+                                </div>
                               ) : (
                                 <div
                                   className={`px-4 py-2.5 rounded-2xl shadow-sm text-sm break-all ${isMe
@@ -1320,6 +1443,60 @@ const ChatPage = () => {
                   </div>
                 )}
 
+                {stickersOpen ? (
+                  <div className="absolute bottom-full left-4 right-4 mb-2 z-40 rounded-2xl border border-gray-200 bg-white shadow-xl">
+                    <div className="flex items-center justify-between border-b border-gray-100 px-3 py-2">
+                      <div className="flex max-w-[80%] gap-2 overflow-x-auto">
+                        {stickerPacks.length === 0 ? (
+                          <span className="px-2 py-1 text-xs font-semibold text-gray-500">
+                            No sticker packs
+                          </span>
+                        ) : (
+                          stickerPacks.map((pack, index) => (
+                            <button
+                              key={pack.name}
+                              type="button"
+                              onClick={() => setActiveStickerPack(index)}
+                              className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${
+                                activeStickerPack === index
+                                  ? "bg-[#1877f2] text-white"
+                                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                              }`}
+                            >
+                              {pack.name}
+                            </button>
+                          ))
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setStickersOpen(false)}
+                        className="rounded-full p-1 text-gray-500 hover:bg-gray-100"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">close</span>
+                      </button>
+                    </div>
+
+                    <div className="grid max-h-64 grid-cols-5 gap-2 overflow-y-auto p-3 sm:grid-cols-8">
+                      {(stickerPacks[activeStickerPack]?.stickers || []).map((sticker) => (
+                        <button
+                          key={sticker._id}
+                          type="button"
+                          onClick={() => handleSendSticker(sticker)}
+                          className="rounded-lg p-1 hover:bg-gray-100"
+                          title={sticker.name}
+                        >
+                          <img
+                            src={sticker.imageUrl}
+                            alt={sticker.name}
+                            className="h-14 w-14 object-contain"
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+
                 <form
                   onSubmit={handleSendMessage}
                   className="bg-white border-t border-gray-200 p-4 flex items-center gap-3 shrink-0"
@@ -1330,7 +1507,13 @@ const ChatPage = () => {
                   <button type="button" className="p-2 hover:bg-gray-100 rounded-full text-gray-500 transition">
                     <span className="material-symbols-outlined">image</span>
                   </button>
-                  <button type="button" className="p-2 hover:bg-gray-100 rounded-full text-gray-500 transition">
+                  <button
+                    type="button"
+                    onClick={() => setStickersOpen((open) => !open)}
+                    className={`p-2 hover:bg-gray-100 rounded-full transition ${
+                      stickersOpen ? "text-[#1877f2] bg-blue-50" : "text-gray-500"
+                    }`}
+                  >
                     <span className="material-symbols-outlined">sticky_note_2</span>
                   </button>
                   <input

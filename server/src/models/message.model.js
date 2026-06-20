@@ -14,7 +14,7 @@ const messageSchema = new mongoose.Schema({
     },
     messageType: {
         type: String,
-        enum: ['text', 'image', 'sticker', 'system', 'video', 'post_share'],
+        enum: ['text', 'image', 'sticker', 'system', 'video', 'post_share', 'story_reply'],
         default: 'text'
     },
     content: {
@@ -37,6 +37,11 @@ const messageSchema = new mongoose.Schema({
     sharedPost: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Post',
+        default: null
+    },
+    sharedStory: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Story',
         default: null
     },
     reactions: [{

@@ -19,5 +19,6 @@ router.post('/:storyId/view', StoryController.markViewed);
 router.post('/:storyId/react', StoryController.reactToStory);
 router.post('/:storyId/reply', StoryController.replyToStory);
 router.get('/:storyId/viewers', StoryController.getViewers);
+router.delete('/:storyId', StoryController.deleteStory);
 
 module.exports = router;

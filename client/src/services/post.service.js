@@ -32,8 +32,11 @@ export const postAPI = {
     );
   },
 
-  getNewsFeed: (page = 1, limit = 10) =>
-    apiClient.get("/posts/feed", { params: { page, limit } }),
+  getNewsFeed: (page = 1, limit = 10, sortBy = "newest") =>
+    apiClient.get("/posts/feed", { params: { page, limit, sortBy } }),
+
+  getSuggestedPosts: (limit = 3) =>
+    apiClient.get("/posts/suggested", { params: { limit } }),
 
   getPost: (postId) => apiClient.get(`/posts/${postId}`),
 
@@ -49,6 +52,8 @@ export const postAPI = {
   },
 
   deletePost: (postId) => apiClient.delete(`/posts/${postId}`),
+  hidePost: (postId) => apiClient.post(`/posts/${postId}/hide`),
+  toggleSavePost: (postId) => apiClient.post(`/posts/${postId}/save`),
   toggleLike: (postId, reactionType = "like") =>
     apiClient.post(`/posts/${postId}/like`, { reactionType }),
   sharePost: (postId, payload) =>
@@ -68,4 +73,3 @@ export const postAPI = {
   searchPosts: (keyword, page = 1, limit = 10) =>
     apiClient.get("/posts/search", { params: { keyword, page, limit } }),
 };
-

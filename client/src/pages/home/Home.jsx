@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useLocation } from "react-router-dom";
 import Composer from "../../components/home/Composer";
 import HomeHeader from "../../components/home/HomeHeader";
@@ -6,18 +6,26 @@ import LeftSidebar from "../../components/home/LeftSidebar";
 import RightSidebar from "../../components/home/RightSidebar";
 import Stories from "../../components/home/Stories";
 import { PostList } from "../../components/post";
+import { useHomeSidebar } from "../../hooks";
 import { useAppDispatch, useAppSelector } from "../../redux/hooks";
-import { fetchUserProfile } from "../../redux/slices/userSlice";
-import { userAPI } from "../../services/user.service";
 
 export default function Home() {
   const dispatch = useAppDispatch();
   const location = useLocation();
   const { profile } = useAppSelector((state) => state.user);
-  const [friendRequests, setFriendRequests] = useState([]);
-  const [requestsLoading, setRequestsLoading] = useState(false);
-  const [requestActionId, setRequestActionId] = useState("");
-  const [feedRefreshKey, setFeedRefreshKey] = useState(0);
+  const {
+    contacts,
+    feedRefreshKey,
+    friendRequests,
+    groupConversations,
+    groupsLoading,
+    handleAcceptRequest,
+    handleContactClick,
+    handleGroupClick,
+    handleRejectRequest,
+    requestActionId,
+    requestsLoading,
+  } = useHomeSidebar({ dispatch, profile });
   const postTarget = useMemo(() => {
     const params = new URLSearchParams(location.search);
 
@@ -28,89 +36,6 @@ export default function Home() {
       storyId: params.get("storyId"),
     };
   }, [location.search]);
-
-  const loadFriendRequests = useCallback(async () => {
-    setRequestsLoading(true);
-
-    try {
-      const response = await userAPI.getIncomingFriendRequests();
-      setFriendRequests(response.data?.data || []);
-    } catch (error) {
-      console.error("Unable to load friend requests:", error);
-      setFriendRequests([]);
-    } finally {
-      setRequestsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    dispatch(fetchUserProfile());
-
-    const timer = window.setTimeout(() => {
-      loadFriendRequests();
-    }, 0);
-
-    return () => window.clearTimeout(timer);
-  }, [dispatch, loadFriendRequests]);
-
-  const refreshSidebarData = async () => {
-    await Promise.all([dispatch(fetchUserProfile()), loadFriendRequests()]);
-  };
-
-  const handleAcceptRequest = async (senderId) => {
-    if (!senderId || requestActionId) return;
-
-    setRequestActionId(senderId);
-
-    try {
-      await userAPI.acceptFriendRequest(senderId);
-      await refreshSidebarData();
-      setFeedRefreshKey((key) => key + 1);
-    } catch (error) {
-      console.error("Unable to accept friend request:", error);
-    } finally {
-      setRequestActionId("");
-    }
-  };
-
-  const handleRejectRequest = async (senderId) => {
-    if (!senderId || requestActionId) return;
-
-    setRequestActionId(senderId);
-
-    try {
-      await userAPI.rejectFriendRequest(senderId);
-      await refreshSidebarData();
-    } catch (error) {
-      console.error("Unable to reject friend request:", error);
-    } finally {
-      setRequestActionId("");
-    }
-  };
-
-  const contacts = useMemo(() => {
-    if (!Array.isArray(profile?.friends) || profile.friends.length === 0) {
-      return [];
-    }
-
-    return profile.friends.map((friend) => ({
-      id: friend?.userId || friend?._id || friend?.id || friend,
-      name: friend?.fullName || friend?.name || "Friend",
-      avatar: friend?.avatar || friend?.image || null,
-      status: friend?.isOnline ? "Online" : "View profile",
-      online: friend?.isOnline || false,
-    }));
-  }, [profile]);
-
-  const friendIds = useMemo(() => {
-    if (!Array.isArray(profile?.friends)) {
-      return [];
-    }
-
-    return profile.friends
-      .map((friend) => friend?.userId || friend?._id || friend?.id || friend)
-      .filter(Boolean);
-  }, [profile]);
 
   return (
     <div className="min-h-screen bg-[#f2f3f5] text-[#111827]">
@@ -124,7 +49,6 @@ export default function Home() {
             <Stories profile={profile} initialStoryId={postTarget.storyId} />
             <Composer profile={profile} />
             <PostList
-              allowedAuthorIds={friendIds}
               refreshKey={feedRefreshKey}
               initialSelectedPostId={postTarget.postId}
               focusedCommentId={postTarget.commentId}
@@ -137,10 +61,14 @@ export default function Home() {
           <RightSidebar
             contacts={contacts}
             friendRequests={friendRequests}
+            groupConversations={groupConversations}
+            groupsLoading={groupsLoading}
             requestsLoading={requestsLoading}
             requestActionId={requestActionId}
             onAcceptRequest={handleAcceptRequest}
             onRejectRequest={handleRejectRequest}
+            onContactClick={handleContactClick}
+            onGroupClick={handleGroupClick}
           />
         </main>
       </div>

@@ -76,6 +76,22 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   }],
+  following: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
+  followers: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
+  hiddenPosts: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Post'
+  }],
+  savedPosts: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Post'
+  }],
   blockedUsers: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
@@ -85,6 +101,14 @@ const userSchema = new mongoose.Schema({
     default: false
   },
   lastActive: {
+    type: Date,
+    default: Date.now
+  },
+  notificationSeenAt: {
+    type: Date,
+    default: Date.now
+  },
+  chatSeenAt: {
     type: Date,
     default: Date.now
   }

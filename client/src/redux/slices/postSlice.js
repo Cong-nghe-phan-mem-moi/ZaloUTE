@@ -1,8 +1,10 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 import { postAPI } from '../../services/post.service'
+import { userAPI } from '../../services/user.service'
 
 const initialState = {
   posts: [],
+  suggestedPosts: [],
   currentPost: null,
   likes: [],
   comments: [],
@@ -90,9 +92,9 @@ export const getGroupPosts = createAsyncThunk(
 // 4.4 View news feed
 export const getNewsFeed = createAsyncThunk(
   'posts/getNewsFeed',
-  async ({ page = 1, limit = 10 }, { rejectWithValue }) => {
+  async ({ page = 1, limit = 10, sortBy = 'newest' }, { rejectWithValue }) => {
     try {
-      const response = await postAPI.getNewsFeed(page, limit)
+      const response = await postAPI.getNewsFeed(page, limit, sortBy)
       return response.data.data
     } catch (error) {
       return rejectWithValue(
@@ -182,6 +184,48 @@ export const sharePost = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || 'Unable to share post',
+      )
+    }
+  },
+)
+
+export const hidePost = createAsyncThunk(
+  'posts/hidePost',
+  async (postId, { rejectWithValue }) => {
+    try {
+      const response = await postAPI.hidePost(postId)
+      return response.data.data
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Unable to hide post',
+      )
+    }
+  },
+)
+
+export const toggleSavePost = createAsyncThunk(
+  'posts/toggleSavePost',
+  async (postId, { rejectWithValue }) => {
+    try {
+      const response = await postAPI.toggleSavePost(postId)
+      return response.data.data
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Unable to save post',
+      )
+    }
+  },
+)
+
+export const toggleFollowAuthor = createAsyncThunk(
+  'posts/toggleFollowAuthor',
+  async (userId, { rejectWithValue }) => {
+    try {
+      const response = await userAPI.toggleFollowUser(userId)
+      return response.data.data
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Unable to follow user',
       )
     }
   },
@@ -289,9 +333,9 @@ const postSlice = createSlice({
       })
       .addCase(getNewsFeed.fulfilled, (state, action) => {
         state.loading = false
-        // If page is 1, replace posts; otherwise append
         if (action.meta.arg.page === 1) {
           state.posts = action.payload.posts
+          state.suggestedPosts = action.payload.suggestedPosts || []
         } else {
           state.posts = [...state.posts, ...action.payload.posts]
         }
@@ -302,7 +346,7 @@ const postSlice = createSlice({
         state.error = action.payload
       })
 
-      // Get Group Posts
+      // Get Group Posts (Từ nhánh feat/group)
       .addCase(getGroupPosts.pending, (state) => {
         state.loading = true
         state.error = null
@@ -319,6 +363,37 @@ const postSlice = createSlice({
       .addCase(getGroupPosts.rejected, (state, action) => {
         state.loading = false
         state.error = action.payload
+      })
+
+      // Các Reducer tương tác bài viết (Từ nhánh develop)
+      .addCase(hidePost.fulfilled, (state, action) => {
+        state.posts = state.posts.filter((post) => post._id !== action.payload.postId)
+        state.suggestedPosts = state.suggestedPosts.filter(
+          (post) => post._id !== action.payload.postId,
+        )
+      })
+      .addCase(toggleSavePost.fulfilled, (state, action) => {
+        const applySaved = (post) => {
+          if (post?._id === action.payload.postId) {
+            post.isSaved = action.payload.isSaved
+          }
+        }
+
+        state.posts.forEach(applySaved)
+        state.suggestedPosts.forEach(applySaved)
+        applySaved(state.currentPost)
+      })
+      .addCase(toggleFollowAuthor.fulfilled, (state, action) => {
+        const { userId, isFollowing } = action.payload
+        const applyFollow = (post) => {
+          if (String(post?.author?._id) === String(userId)) {
+            post.isFollowingAuthor = isFollowing
+          }
+        }
+
+        state.posts.forEach(applyFollow)
+        state.suggestedPosts.forEach(applyFollow)
+        applyFollow(state.currentPost)
       })
 
       // Get Single Post

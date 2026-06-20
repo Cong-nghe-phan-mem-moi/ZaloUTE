@@ -63,6 +63,42 @@ const postSchema = new mongoose.Schema({
     shareCaption: {
         type: String,
         default: ''
+    },
+    privacy: {
+        type: {
+            type: String,
+            enum: ['public', 'friends', 'only_me', 'custom', 'hide_some'],
+            default: 'public',
+            index: true
+        },
+        allowedViewers: [{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User'
+        }],
+        hiddenViewers: [{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User'
+        }]
+    },
+    moderation: {
+        hidden: {
+            type: Boolean,
+            default: false,
+            index: true
+        },
+        hiddenReason: {
+            type: String,
+            default: ''
+        },
+        hiddenBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            default: null
+        },
+        hiddenAt: {
+            type: Date,
+            default: null
+        }
     }
 }, { timestamps: true });
 

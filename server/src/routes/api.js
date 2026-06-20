@@ -14,6 +14,8 @@ const userRoutes = require("./user.route");
 const upload = require("../middlewares/uploadMiddleware");
 const groupRoutes = require("./group.route");
 const chatRoutes = require("./chat.route");
+const stickerRoutes = require("./sticker.route");
+const reportRoutes = require("./report.route");
 
 // Basic health check endpoint
 router.get("/health", (req, res) => {
@@ -67,6 +69,8 @@ router.put(
 router.use("/comments", commentRoutes);
 router.use("/notifications", notificationRoutes);
 router.use("/stories", storyRoutes);
+router.use("/stickers", stickerRoutes);
+router.use("/reports", reportRoutes);
 router.use("/chats", chatRoutes);
 
 // Authentication routes

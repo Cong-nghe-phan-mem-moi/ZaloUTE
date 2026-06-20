@@ -86,7 +86,7 @@ const PostDetail = ({
         <div className="sticky top-0 z-10 flex items-center justify-between border-b bg-white p-4">
           <div className="flex items-center gap-3">
             <img
-              src={currentPost.author?.avatar || "/default-avatar.png"}
+              src={currentPost.author?.avatar || "/default-avatar.svg"}
               alt={currentPost.author?.fullName}
               className="h-12 w-12 rounded-full object-cover"
             />

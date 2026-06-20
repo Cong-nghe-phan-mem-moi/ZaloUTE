@@ -135,6 +135,7 @@ export const NotificationsDropdown = ({
   notifications,
   unreadCount,
   loading,
+  onDeleteNotification,
   onMarkAllAsRead,
   onNotificationClick,
 }) => (
@@ -171,6 +172,7 @@ export const NotificationsDropdown = ({
           <NotificationItem
             key={notification._id}
             notification={notification}
+            onDelete={onDeleteNotification}
             onClick={onNotificationClick}
           />
         ))}
@@ -179,18 +181,22 @@ export const NotificationsDropdown = ({
   </div>
 );
 
-const NotificationItem = ({ notification, onClick }) => {
+const NotificationItem = ({ notification, onClick, onDelete }) => {
   const senderName = notification.sender?.fullName || "Someone";
   const href = getNotificationHref(notification);
 
   return (
-    <Link
-      to={href}
-      onClick={(event) => {
-        event.preventDefault();
-        onClick?.(notification, href);
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={() => onClick?.(notification, href)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onClick?.(notification, href);
+        }
       }}
-      className={`flex gap-3 rounded-md p-2 hover:bg-[#f2f3f5] ${
+      className={`flex cursor-pointer gap-3 rounded-md p-2 hover:bg-[#f2f3f5] ${
         notification.isRead ? "" : "bg-[#eef5ff]"
       }`}
     >
@@ -213,10 +219,23 @@ const NotificationItem = ({ notification, onClick }) => {
           {new Date(notification.createdAt).toLocaleString()}
         </p>
       </div>
-      {!notification.isRead ? (
-        <span className="mt-2 h-2 w-2 rounded-full bg-[#1877f2]" />
-      ) : null}
-    </Link>
+      <div className="flex shrink-0 items-start gap-2">
+        {!notification.isRead ? (
+          <span className="mt-2 h-2 w-2 rounded-full bg-[#1877f2]" />
+        ) : null}
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            onDelete?.(notification);
+          }}
+          className="flex h-7 w-7 items-center justify-center rounded-full text-[#6b7280] hover:bg-white hover:text-red-600"
+          title="Delete notification"
+          aria-label="Delete notification"
+        >
+          <span className="material-symbols-outlined text-[17px]">delete</span>
+        </button>
+      </div>
+    </div>
   );
 };
-
