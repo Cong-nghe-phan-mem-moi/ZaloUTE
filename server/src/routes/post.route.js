@@ -27,9 +27,16 @@ router.get('/search', PostController.searchPosts);
 // Get posts by author
 router.get('/author/:authorId', PostController.getPostsByAuthor);
 
+// Group posts
+router.get('/group/:groupId', PostController.getGroupPosts);
+router.get('/group/:groupId/pending', PostController.getPendingGroupPosts);
+
 // Share post to timeline or message
 router.post('/:postId/share', PostController.sharePost);
 
+// Group post moderation
+router.post('/:postId/approve', PostController.approveGroupPost);
+router.post('/:postId/reject', PostController.rejectGroupPost);
 // Hide or save a post for current user
 router.post('/:postId/hide', PostController.hidePost);
 router.post('/:postId/save', PostController.toggleSavePost);
