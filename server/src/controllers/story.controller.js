@@ -133,6 +133,23 @@ class StoryController {
       });
     }
   }
+
+  static async deleteStory(req, res) {
+    try {
+      const story = await StoryService.deleteStory(req.params.storyId, req.user.userId);
+
+      return res.status(200).json({
+        success: true,
+        message: 'Story deleted',
+        data: story,
+      });
+    } catch (error) {
+      return res.status(404).json({
+        success: false,
+        message: error.message || 'Unable to delete story',
+      });
+    }
+  }
 }
 
 module.exports = StoryController;

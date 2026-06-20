@@ -40,6 +40,8 @@ async function getUserById(userId) {
     const user = await User.findById(userId)
       .populate("account")
       .populate("friends", "fullName avatar isOnline lastActive")
+      .populate("following", "fullName avatar isOnline lastActive")
+      .populate("followers", "fullName avatar isOnline lastActive")
       .populate("blockedUsers", "fullName avatar");
     console.log("getUserById - user found:", !!user, user?.fullName);
     return user;
@@ -73,6 +75,8 @@ async function getOtherUserById(userId) {
   return await User.findById(userId)
     .select("-account")
     .populate("friends", "fullName avatar isOnline lastActive")
+    .populate("following", "fullName avatar isOnline lastActive")
+    .populate("followers", "fullName avatar isOnline lastActive")
     .populate("blockedUsers", "fullName avatar");
 }
 
@@ -88,6 +92,10 @@ async function unblockUser(userId, blockedUserId) {
     { _id: userId },
     { $pull: { blockedUsers: blockedUserId } },
   );
+}
+
+async function findUsersBlocking(userId) {
+  return await User.find({ blockedUsers: userId }).select("_id");
 }
 
 async function removeUsersFromFriends(userId, otherUserId) {
@@ -152,5 +160,6 @@ module.exports = {
   countSearchUsers,
   blockUser,
   unblockUser,
+  findUsersBlocking,
   removeUsersFromFriends,
 };

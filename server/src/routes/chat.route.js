@@ -8,9 +8,11 @@ router.use(authMiddleware);
 
 // Lấy danh sách hội thoại
 router.get("/conversations", chatController.getConversations);
+router.get("/conversations/badge", chatController.getConversationBadge);
 
 // Lấy hoặc tạo hội thoại 1-1 với user khác
 router.post("/conversations", chatController.getOrCreateConversation);
+router.post("/conversations/seen", chatController.markConversationsAsSeen);
 
 // Lấy tin nhắn trong hội thoại
 router.get("/conversations/:conversationId/messages", chatController.getMessages);

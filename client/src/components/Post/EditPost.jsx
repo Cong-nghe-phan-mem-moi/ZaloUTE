@@ -1,14 +1,21 @@
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { updatePost } from "../../redux/slices/postSlice";
+import {
+  DEFAULT_POST_PRIVACY,
+  normalizePrivacy,
+} from "../../utils/privacy";
+import AudienceSelector from "../privacy/AudienceSelector";
 
 const EditPost = ({ post, isOpen, onClose, onPostUpdated }) => {
   const dispatch = useDispatch();
   const { loading, message } = useSelector((state) => state.posts);
+  const currentUser = useSelector((state) => state.user?.profile);
 
   const [content, setContent] = useState("");
   const [media, setMedia] = useState([]);
   const [previewUrls, setPreviewUrls] = useState([]);
+  const [privacy, setPrivacy] = useState(DEFAULT_POST_PRIVACY);
 
   // Initialize form with post data
   useEffect(() => {
@@ -17,6 +24,7 @@ const EditPost = ({ post, isOpen, onClose, onPostUpdated }) => {
         setContent(post.content || "");
         setMedia(post.media || []);
         setPreviewUrls((post.media || []).map((m) => m.url));
+        setPrivacy(normalizePrivacy(post.privacy, DEFAULT_POST_PRIVACY));
       }, 0);
       return () => clearTimeout(timer);
     }
@@ -84,6 +92,7 @@ const EditPost = ({ post, isOpen, onClose, onPostUpdated }) => {
     // Create FormData
     const formData = new FormData();
     formData.append("content", content);
+    formData.append("privacy", JSON.stringify(privacy));
 
     // Append existing media info (for media to keep)
     const existingMedia = media.filter((item) => !item.file);
@@ -133,6 +142,13 @@ const EditPost = ({ post, isOpen, onClose, onPostUpdated }) => {
           <div className="text-sm text-gray-500 mt-2">
             {content.length}/5000 characters
           </div>
+
+          <AudienceSelector
+            friends={currentUser?.friends || []}
+            privacy={privacy}
+            onChange={setPrivacy}
+            className="mt-4"
+          />
 
           {/* Media preview */}
           {previewUrls.length > 0 && (

@@ -34,7 +34,7 @@ export const userAPI = {
     apiClient.delete("/users/friend-request/unfriend", { data: { friendId } }),
   blockUser: (userId) => apiClient.post(`/users/${userId}/block`),
   unblockUser: (userId) => apiClient.post(`/users/${userId}/unblock`),
+  toggleFollowUser: (userId) => apiClient.post(`/users/${userId}/follow`),
   getBlockedUsers: () => apiClient.get("/users/blocked"),
   logout: () => apiClient.post("/users/logout"),
 };
-

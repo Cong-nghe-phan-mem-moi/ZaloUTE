@@ -1,4 +1,5 @@
 const Notification = require("../models/notification.model");
+const User = require("../models/user.model");
 const jwt = require("jsonwebtoken");
 const { WebSocketServer, WebSocket } = require("ws");
 
@@ -18,6 +19,10 @@ const buildPreview = (text) => {
 };
 
 const onlineTracker = require("../utils/onlineTracker");
+const getSeenNotificationFilter = (userId, notificationSeenAt) => ({
+  receiver: userId,
+  createdAt: { $gt: notificationSeenAt || new Date(0) },
+});
 
 const sendToUser = (userId, payload) => {
   const userClients = clients.get(userId.toString());
@@ -111,15 +116,20 @@ class NotificationService {
       data,
     });
 
-    const [populatedNotification, unreadCount] = await Promise.all([
+    const receiverUser = await User.findById(receiverId).select("notificationSeenAt");
+    const [populatedNotification, unreadCount, newNotificationCount] = await Promise.all([
       Notification.findById(notification._id).populate("sender", "fullName avatar"),
       Notification.countDocuments({ receiver: receiverId, isRead: false }),
+      Notification.countDocuments(
+        getSeenNotificationFilter(receiverId, receiverUser?.notificationSeenAt),
+      ),
     ]);
 
     sendToUser(receiverId, {
       type: "notification",
       notification: populatedNotification,
       unreadCount,
+      newNotificationCount,
     });
 
     return populatedNotification;
@@ -130,7 +140,8 @@ class NotificationService {
     if (limit < 1 || limit > 50) limit = 20;
 
     const skip = (page - 1) * limit;
-    const [notifications, total, unreadCount] = await Promise.all([
+    const user = await User.findById(userId).select("notificationSeenAt");
+    const [notifications, total, unreadCount, newNotificationCount] = await Promise.all([
       Notification.find({ receiver: userId })
         .populate("sender", "fullName avatar")
         .sort({ createdAt: -1 })
@@ -138,11 +149,15 @@ class NotificationService {
         .limit(limit),
       Notification.countDocuments({ receiver: userId }),
       Notification.countDocuments({ receiver: userId, isRead: false }),
+      Notification.countDocuments(
+        getSeenNotificationFilter(userId, user?.notificationSeenAt),
+      ),
     ]);
 
     return {
       notifications,
       unreadCount,
+      newNotificationCount,
       pagination: {
         page,
         limit,
@@ -176,6 +191,51 @@ class NotificationService {
       { isRead: true },
     );
     sendToUser(userId, { type: "unread_count", unreadCount: 0 });
+  }
+
+  static async markAsSeen(userId) {
+    const notificationSeenAt = new Date();
+
+    await User.findByIdAndUpdate(userId, { notificationSeenAt });
+    sendToUser(userId, {
+      type: "notification_seen",
+      newNotificationCount: 0,
+      notificationSeenAt,
+    });
+
+    return { newNotificationCount: 0, notificationSeenAt };
+  }
+
+  static async deleteNotification(notificationId, userId) {
+    const notification = await Notification.findOneAndDelete({
+      _id: notificationId,
+      receiver: userId,
+    });
+
+    if (!notification) {
+      return null;
+    }
+
+    const user = await User.findById(userId).select("notificationSeenAt");
+    const [unreadCount, newNotificationCount] = await Promise.all([
+      Notification.countDocuments({ receiver: userId, isRead: false }),
+      Notification.countDocuments(
+        getSeenNotificationFilter(userId, user?.notificationSeenAt),
+      ),
+    ]);
+
+    sendToUser(userId, {
+      type: "notification_deleted",
+      notificationId,
+      unreadCount,
+      newNotificationCount,
+    });
+
+    return {
+      notification,
+      unreadCount,
+      newNotificationCount,
+    };
   }
 
   static attachWebSocketServer(server) {
@@ -227,6 +287,24 @@ class NotificationService {
           })
           .catch((error) => {
             console.error("Unable to send unread count:", error);
+          });
+
+        User.findById(user.userId)
+          .select("notificationSeenAt")
+          .then((currentUser) =>
+            Notification.countDocuments(
+              getSeenNotificationFilter(user.userId, currentUser?.notificationSeenAt),
+            ),
+          )
+          .then((newNotificationCount) => {
+            if (ws.readyState === WebSocket.OPEN) {
+              ws.send(
+                JSON.stringify({ type: "new_notification_count", newNotificationCount }),
+              );
+            }
+          })
+          .catch((error) => {
+            console.error("Unable to send new notification count:", error);
           });
       });
     });

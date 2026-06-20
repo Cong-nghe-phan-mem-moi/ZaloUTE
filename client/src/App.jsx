@@ -13,7 +13,6 @@ import {
   Friends,
   Home,
   LoginPage,
-  PostTestPage,
   ProfilePage,
   Register,
   VerifyOtp,
@@ -91,7 +90,6 @@ function App() {
         <Route path="/admin/profile" element={<ProtectedPage token={token}><ProfilePage /></ProtectedPage>} />
         <Route path="/edit-profile" element={<ProtectedPage token={token}><ProfilePage /></ProtectedPage>} />
         <Route path="/users/profile/:userId" element={<ProtectedPage token={token}><OtherProfilePage /></ProtectedPage>} />
-        <Route path="/post-test" element={<PostTestPage />} />
         <Route path="*" element={<Navigate to={token ? "/" : "/login"} replace />} />
       </Routes>
       <PostFeedbackToast />

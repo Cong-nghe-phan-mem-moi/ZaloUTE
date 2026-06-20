@@ -2,10 +2,18 @@ import apiClient from "./apiClient";
 
 export const storyAPI = {
   getStories: () => apiClient.get("/stories"),
-  createStory: ({ text = "", background = "#1877f2", media = null }) => {
+  createStory: ({
+    text = "",
+    background = "#1877f2",
+    media = null,
+    privacy = null,
+  }) => {
     const formData = new FormData();
     formData.append("text", text);
     formData.append("background", background);
+    if (privacy) {
+      formData.append("privacy", JSON.stringify(privacy));
+    }
 
     if (media) {
       formData.append("media", media);
@@ -20,5 +28,5 @@ export const storyAPI = {
   reply: (storyId, content) =>
     apiClient.post(`/stories/${storyId}/reply`, { content }),
   getViewers: (storyId) => apiClient.get(`/stories/${storyId}/viewers`),
+  deleteStory: (storyId) => apiClient.delete(`/stories/${storyId}`),
 };
-

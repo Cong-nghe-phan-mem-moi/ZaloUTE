@@ -32,7 +32,7 @@ const SharedPostPreview = ({ post, onOpen }) => {
     >
       <div className="mb-2 flex items-center gap-2">
         <img
-          src={post.author?.avatar || "/default-avatar.png"}
+          src={post.author?.avatar || "/default-avatar.svg"}
           alt={post.author?.fullName || "Post author"}
           className="h-8 w-8 rounded-full object-cover"
         />
