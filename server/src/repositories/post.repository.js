@@ -5,6 +5,8 @@ const populatePostQuery = (query) =>
     .populate('author', '_id fullName avatar email')
     .populate('likes', 'fullName avatar email')
     .populate('reactions.user', 'fullName avatar email')
+    .populate('group', 'name avatar')
+    .populate('approvedBy', 'fullName avatar')
     .populate({
       path: 'sharedFrom',
       populate: [
@@ -44,25 +46,83 @@ class PostRepository {
   }
 
   static async getPostsByAuthors(authorIds, skip, limit) {
-    return await populatePostQuery(Post.find({ author: { $in: authorIds } }))
+    return await populatePostQuery(Post.find({
+      author: { $in: authorIds },
+      group: null,
+      approvalStatus: 'approved',
+    }))
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
   }
 
   static async getPostsByAuthorsCount(authorIds) {
-    return await Post.countDocuments({ author: { $in: authorIds } });
+    return await Post.countDocuments({
+      author: { $in: authorIds },
+      group: null,
+      approvalStatus: 'approved',
+    });
   }
 
   static async getPostsByAuthor(authorId, skip, limit) {
-    return await populatePostQuery(Post.find({ author: authorId }))
+    return await populatePostQuery(Post.find({
+      author: authorId,
+      group: null,
+      approvalStatus: 'approved',
+    }))
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
   }
 
   static async getPostsByAuthorCount(authorId) {
-    return await Post.countDocuments({ author: authorId });
+    return await Post.countDocuments({
+      author: authorId,
+      group: null,
+      approvalStatus: 'approved',
+    });
+  }
+
+  static async getPostsByGroup(groupId, skip, limit) {
+    return await populatePostQuery(Post.find({
+      group: groupId,
+      approvalStatus: 'approved',
+    }))
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+  }
+
+  static async getPostsByGroupCount(groupId) {
+    return await Post.countDocuments({
+      group: groupId,
+      approvalStatus: 'approved',
+    });
+  }
+
+  static async getPendingPostsByGroup(groupId, skip, limit) {
+    return await populatePostQuery(Post.find({
+      group: groupId,
+      approvalStatus: 'pending',
+    }))
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+  }
+
+  static async getPendingPostsByGroupCount(groupId) {
+    return await Post.countDocuments({
+      group: groupId,
+      approvalStatus: 'pending',
+    });
+  }
+
+  static async updatePostApproval(postId, approvalData) {
+    return await populatePostQuery(Post.findByIdAndUpdate(
+      postId,
+      { $set: approvalData },
+      { new: true },
+    ));
   }
 
   static async addLike(postId, userId) {
@@ -157,7 +217,9 @@ class PostRepository {
 
 async function searchPosts({keyword, limit = 10}){
   return await Post.find({
-    $text: { $search: keyword }
+    $text: { $search: keyword },
+    group: null,
+    approvalStatus: 'approved',
   })
   .populate('author', '_id fullName avatar')
   .limit(limit)
@@ -166,7 +228,9 @@ async function searchPosts({keyword, limit = 10}){
 
 async function countSearchPosts({ keyword }) {
     return await Post.countDocuments({
-        $text: { $search: keyword } 
+        $text: { $search: keyword },
+        group: null,
+        approvalStatus: 'approved',
     });
 }
 

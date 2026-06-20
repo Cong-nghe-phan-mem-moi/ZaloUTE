@@ -5,7 +5,7 @@ class PostController {
   // 4.1 Tạo bài viết
   static async createPost(req, res) {
     try {
-      const { content } = req.body;
+      const { content, groupId } = req.body;
       const userId = req.user.userId;
 
       console.log('CreatePost - req.body:', req.body);
@@ -28,11 +28,15 @@ class PostController {
         });
       }
 
-      const post = await PostService.createPost(userId, content, media);
+      const post = await PostService.createPost(userId, content, media, {
+        groupId: groupId || null,
+      });
 
       return res.status(201).json({
         success: true,
-        message: 'Operation failed',
+        message: post.approvalStatus === 'pending'
+          ? 'Bài viết đã gửi và đang chờ admin duyệt'
+          : 'Đã tạo bài viết',
         data: post,
       });
     } catch (error) {
@@ -354,6 +358,100 @@ class PostController {
       return res.status(400).json({
         success: false,
         message: error.message || 'Operation failed',
+      });
+    }
+  }
+
+  static async getGroupPosts(req, res) {
+    try {
+      const { groupId } = req.params;
+      const { page = 1, limit = 10 } = req.query;
+      const userId = req.user.userId;
+
+      const result = await PostService.getGroupPosts(
+        groupId,
+        userId,
+        parseInt(page),
+        parseInt(limit),
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: 'Đã tải bài viết trong nhóm',
+        data: result,
+      });
+    } catch (error) {
+      console.error('Lỗi khi tải bài viết trong nhóm:', error);
+      return res.status(400).json({
+        success: false,
+        message: error.message || 'Không thể tải bài viết trong nhóm',
+      });
+    }
+  }
+
+  static async getPendingGroupPosts(req, res) {
+    try {
+      const { groupId } = req.params;
+      const { page = 1, limit = 10 } = req.query;
+      const userId = req.user.userId;
+
+      const result = await PostService.getPendingGroupPosts(
+        groupId,
+        userId,
+        parseInt(page),
+        parseInt(limit),
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: 'Đã tải bài viết chờ duyệt',
+        data: result,
+      });
+    } catch (error) {
+      console.error('Lỗi khi tải bài viết chờ duyệt:', error);
+      return res.status(400).json({
+        success: false,
+        message: error.message || 'Không thể tải bài viết chờ duyệt',
+      });
+    }
+  }
+
+  static async approveGroupPost(req, res) {
+    try {
+      const { postId } = req.params;
+      const userId = req.user.userId;
+      const post = await PostService.approveGroupPost(postId, userId);
+
+      return res.status(200).json({
+        success: true,
+        message: 'Đã duyệt bài viết',
+        data: post,
+      });
+    } catch (error) {
+      console.error('Lỗi khi duyệt bài viết nhóm:', error);
+      return res.status(400).json({
+        success: false,
+        message: error.message || 'Không thể duyệt bài viết',
+      });
+    }
+  }
+
+  static async rejectGroupPost(req, res) {
+    try {
+      const { postId } = req.params;
+      const userId = req.user.userId;
+      const post = await PostService.rejectGroupPost(postId, userId);
+
+      return res.status(200).json({
+        success: true,
+        message: 'Đã từ chối bài viết',
+        data: post,
+      });
+    } catch (error) {
+      console.error('Lỗi khi từ chối bài viết nhóm:', error);
+      return res.status(400).json({
+        success: false,
+        message: error.message || 'Không thể từ chối bài viết',
       });
     }
   }

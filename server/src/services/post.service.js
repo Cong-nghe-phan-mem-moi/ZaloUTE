@@ -4,6 +4,7 @@ const NotificationService = require('./notification.service');
 const User = require('../models/user.model');
 const Conversation = require('../models/conversation.model');
 const Message = require('../models/message.model');
+const GroupRepository = require('../repositories/group.repository');
 
 const REACTION_TYPES = ['like', 'love', 'haha', 'wow', 'sad', 'angry'];
 
@@ -85,8 +86,37 @@ const buildPostResponse = async (post, userId = null) => {
 const buildPostsResponse = async (posts, userId = null) =>
   await Promise.all(posts.map((post) => buildPostResponse(post, userId)));
 
+const includesDocumentId = (values = [], id) =>
+  values.some((value) => String(getDocumentId(value)) === String(id));
+
+const ensureGroupMember = async (groupId, userId) => {
+  const group = await GroupRepository.findGroupById(groupId);
+  if (!group) {
+    throw new Error('Không tìm thấy nhóm');
+  }
+
+  const isMember = includesDocumentId(group.members, userId);
+  if (!isMember) {
+    throw new Error('Bạn phải là thành viên nhóm để đăng bài');
+  }
+
+  return {
+    group,
+    isAdmin: includesDocumentId(group.admins, userId),
+  };
+};
+
+const ensureGroupAdmin = async (groupId, userId) => {
+  const { group, isAdmin } = await ensureGroupMember(groupId, userId);
+  if (!isAdmin) {
+    throw new Error('Chỉ admin nhóm mới được duyệt bài');
+  }
+
+  return group;
+};
+
 class PostService {
-  static async createPost(userId, content, media = []) {
+  static async createPost(userId, content, media = [], options = {}) {
     const trimmedContent = content?.trim() || '';
     // Validate content
     if (trimmedContent.length === 0 && (!media || media.length === 0)) {
@@ -97,8 +127,24 @@ class PostService {
       throw new Error('Operation failed');
     }
 
+    const groupId = options.groupId || null;
+    let approvalStatus = 'approved';
+    let approvedBy = userId;
+    let approvedAt = new Date();
+
+    if (groupId) {
+      const { isAdmin } = await ensureGroupMember(groupId, userId);
+      approvalStatus = isAdmin ? 'approved' : 'pending';
+      approvedBy = isAdmin ? userId : null;
+      approvedAt = isAdmin ? new Date() : null;
+    }
+
     const postData = {
       author: userId,
+      group: groupId,
+      approvalStatus,
+      approvedBy,
+      approvedAt,
       content: trimmedContent,
       media: media || [],
       likes: [],
@@ -454,6 +500,86 @@ class PostService {
     };
   }
 
+  static async getGroupPosts(groupId, userId, page = 1, limit = 10) {
+    if (page < 1) page = 1;
+    if (limit < 1 || limit > 50) limit = 10;
+
+    await ensureGroupMember(groupId, userId);
+
+    const skip = (page - 1) * limit;
+    const posts = await PostRepository.getPostsByGroup(groupId, skip, limit);
+    const total = await PostRepository.getPostsByGroupCount(groupId);
+
+    return {
+      posts: await buildPostsResponse(posts, userId),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  static async getPendingGroupPosts(groupId, userId, page = 1, limit = 10) {
+    if (page < 1) page = 1;
+    if (limit < 1 || limit > 50) limit = 10;
+
+    await ensureGroupAdmin(groupId, userId);
+
+    const skip = (page - 1) * limit;
+    const posts = await PostRepository.getPendingPostsByGroup(groupId, skip, limit);
+    const total = await PostRepository.getPendingPostsByGroupCount(groupId);
+
+    return {
+      posts: await buildPostsResponse(posts, userId),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  static async approveGroupPost(postId, userId) {
+    const post = await PostRepository.findPostById(postId);
+    if (!post) {
+      throw new Error('Không tìm thấy bài viết');
+    }
+
+    if (!post.group) {
+      throw new Error('Đây không phải bài viết trong nhóm');
+    }
+
+    await ensureGroupAdmin(getDocumentId(post.group), userId);
+
+    return await PostRepository.updatePostApproval(postId, {
+      approvalStatus: 'approved',
+      approvedBy: userId,
+      approvedAt: new Date(),
+    });
+  }
+
+  static async rejectGroupPost(postId, userId) {
+    const post = await PostRepository.findPostById(postId);
+    if (!post) {
+      throw new Error('Không tìm thấy bài viết');
+    }
+
+    if (!post.group) {
+      throw new Error('Đây không phải bài viết trong nhóm');
+    }
+
+    await ensureGroupAdmin(getDocumentId(post.group), userId);
+
+    return await PostRepository.updatePostApproval(postId, {
+      approvalStatus: 'rejected',
+      approvedBy: userId,
+      approvedAt: new Date(),
+    });
+  }
+
   // Search posts
   static async searchPosts(keyword, page = 1, limit = 10, userId = null) {
     // Validate pagination
@@ -468,7 +594,13 @@ class PostService {
     const searchRegex = new RegExp(keyword.trim(), 'i');
 
     const Post = require('../models/post.model');
-    const posts = await Post.find({ content: searchRegex })
+    const searchFilter = {
+      content: searchRegex,
+      group: null,
+      approvalStatus: 'approved',
+    };
+
+    const posts = await Post.find(searchFilter)
       .populate('author', 'fullName avatar email')
       .populate('likes', 'fullName avatar email')
       .populate('reactions.user', 'fullName avatar email')
@@ -484,7 +616,7 @@ class PostService {
       .skip(skip)
       .limit(limit);
 
-    const total = await Post.countDocuments({ content: searchRegex });
+    const total = await Post.countDocuments(searchFilter);
 
     const postsWithLikeStatus = await buildPostsResponse(posts, userId);
 

@@ -7,6 +7,25 @@ const postSchema = new mongoose.Schema({
         ref: 'User',
         required: true
     },
+    group: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Group',
+        default: null
+    },
+    approvalStatus: {
+        type: String,
+        enum: ['approved', 'pending', 'rejected'],
+        default: 'approved'
+    },
+    approvedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        default: null
+    },
+    approvedAt: {
+        type: Date,
+        default: null
+    },
     content: {
         type: String,
         default: ''
@@ -48,5 +67,6 @@ const postSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 postSchema.index({ content: 'text' });
+postSchema.index({ group: 1, approvalStatus: 1, createdAt: -1 });
 
 module.exports = mongoose.model('Post', postSchema);
