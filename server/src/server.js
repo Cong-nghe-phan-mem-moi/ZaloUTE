@@ -9,16 +9,33 @@ const app = express();
 const allowedOrigins = new Set([
   "http://localhost:3000",
   "http://localhost:5173",
+  "http://127.0.0.1:3000",
+  "http://127.0.0.1:5173",
   ...String(process.env.CORS_ORIGIN || "")
     .split(",")
     .map((origin) => origin.trim())
     .filter(Boolean),
 ]);
 
+function isAllowedDevOrigin(origin) {
+  if (process.env.NODE_ENV === "production") {
+    return false;
+  }
+
+  try {
+    const url = new URL(origin);
+    const isLocalHost = ["localhost", "127.0.0.1"].includes(url.hostname);
+    const isDevPort = Number(url.port) >= 3000 && Number(url.port) <= 5999;
+    return isLocalHost && isDevPort;
+  } catch {
+    return false;
+  }
+}
+
 app.use(
   cors({
     origin(origin, callback) {
-      if (!origin || allowedOrigins.has(origin)) {
+      if (!origin || allowedOrigins.has(origin) || isAllowedDevOrigin(origin)) {
         callback(null, true);
         return;
       }

@@ -29,6 +29,7 @@ class PostController {
       }
 
       const post = await PostService.createPost(userId, content, media, {
+        ...req.body,
         groupId: groupId || null,
       });
 

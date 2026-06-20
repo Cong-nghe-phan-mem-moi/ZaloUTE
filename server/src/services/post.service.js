@@ -257,7 +257,7 @@ class PostService {
       likes: [],
       reactions: [],
       commentCount: 0,
-      privacy: normalizePrivacyFromPayload(payload),
+      privacy: normalizePrivacyFromPayload(options),
     };
 
     const post = await PostRepository.createPost(postData);
