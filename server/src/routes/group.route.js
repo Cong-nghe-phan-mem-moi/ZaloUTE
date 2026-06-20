@@ -15,6 +15,7 @@ router.post('/:groupId/invite', isGroupAdmin, GroupController.handleInviteToGrou
 router.post('/:groupId/cancel-invite', isGroupAdmin, GroupController.handleCancelGroupInvitation);
 router.post('/:groupId/accept-invite', GroupController.handleAcceptGroupInvitation);
 router.post('/:groupId/reject-invite', GroupController.handleRejectGroupInvitation);
+router.post('/:groupId/request', GroupController.handleRequestJoinGroup);
 router.post('/:groupId/approve', isGroupAdmin, GroupController.handleApproveJoinRequest);
 router.post('/:groupId/assign-admin', isGroupAdmin, GroupController.handleAssignAdmin);
 router.post('/:groupId/remove-member', isGroupAdmin, GroupController.handleRemoveMember);

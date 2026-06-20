@@ -176,6 +176,30 @@ async function rejectGroupInvitation(userId, groupId) {
   return result;
 }
 
+async function requestJoinGroup(userId, groupId) {
+  const group = await GroupRepository.findGroupById(groupId);
+  if (!group) throwCustomError(404, 'Không tìm thấy nhóm', 'GROUP_NOT_FOUND');
+
+  if (includesUserId(group.members, userId) || includesUserId(group.admins, userId)) {
+    throwCustomError(409, 'Bạn đã là thành viên nhóm này', 'ALREADY_MEMBER');
+  }
+
+  if (includesUserId(group.pendingRequests, userId)) {
+    throwCustomError(409, 'Yêu cầu tham gia nhóm đang chờ admin duyệt', 'REQUEST_ALREADY_PENDING');
+  }
+
+  if (includesUserId(group.pendingInvites, userId)) {
+    throwCustomError(409, 'Bạn đã có lời mời tham gia nhóm này, hãy chấp nhận lời mời', 'INVITE_ALREADY_PENDING');
+  }
+
+  const result = await GroupRepository.addPendingRequest(groupId, userId);
+  if (!result.modifiedCount) {
+    throwCustomError(409, 'Không thể gửi yêu cầu tham gia nhóm, vui lòng tải lại và thử lại', 'REQUEST_JOIN_FAILED');
+  }
+
+  return result;
+}
+
 async function cancelGroupInvitation(adminId, groupId, targetUserId) {
   if (!targetUserId) {
     throwCustomError(400, 'Thiếu người dùng cần xóa lời mời', 'VALIDATION_ERROR');
@@ -278,6 +302,7 @@ module.exports = {
   inviteToGroup,
   acceptGroupInvitation,
   rejectGroupInvitation,
+  requestJoinGroup,
   cancelGroupInvitation,
   approveJoinRequest,
   assignAdmin,

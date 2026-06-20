@@ -157,6 +157,24 @@ async function handleRejectGroupInvitation(req, res) {
   }
 }
 
+async function handleRequestJoinGroup(req, res) {
+  try {
+    const userId = getAuthUserId(req);
+    const { groupId } = req.params;
+
+    await GroupService.requestJoinGroup(userId, groupId);
+
+    return res.status(200).json({
+      success: true,
+      code: 'REQUEST_JOIN_GROUP_SUCCESS',
+      message: 'Đã gửi yêu cầu tham gia nhóm, vui lòng chờ admin duyệt',
+    });
+  } catch (error) {
+    console.error('Lỗi khi gửi yêu cầu tham gia nhóm:', error);
+    return sendError(res, error, 'REQUEST_JOIN_GROUP_ERROR', 'Đã xảy ra lỗi khi gửi yêu cầu tham gia nhóm');
+  }
+}
+
 async function handleCancelGroupInvitation(req, res) {
   try {
     const adminId = getAuthUserId(req);
@@ -254,6 +272,7 @@ module.exports = {
   handleInviteToGroup,
   handleAcceptGroupInvitation,
   handleRejectGroupInvitation,
+  handleRequestJoinGroup,
   handleCancelGroupInvitation,
   handleApproveJoinRequest,
   handleAssignAdmin,

@@ -79,6 +79,23 @@ async function addPendingInvites(groupId, targetUserIds) {
     );
 }
 
+async function addPendingRequest(groupId, userId) {
+    return await Group.updateOne(
+        {
+            _id: groupId,
+            members: { $nin: getIdVariants(userId) },
+            admins: { $nin: getIdVariants(userId) },
+            pendingInvites: { $nin: getIdVariants(userId) },
+            pendingRequests: { $nin: getIdVariants(userId) }
+        },
+        {
+            $addToSet: {
+                pendingRequests: toObjectId(userId)
+            }
+        }
+    );
+}
+
 async function removeInviteAndAddMember(groupId, userId) {
     const memberId = toObjectId(userId);
     const memberIds = getIdVariants(userId);
@@ -166,6 +183,7 @@ module.exports = {
     getInvitationsByUserId,
     updateGroupInfo,
     addPendingInvites,
+    addPendingRequest,
     removeInviteAndAddMember,
     removePendingInvite,
     removeMember,
