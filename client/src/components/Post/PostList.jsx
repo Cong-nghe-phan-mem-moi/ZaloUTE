@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import {
   getNewsFeed,
+  getGroupPosts,
   getPostsByAuthor,
   toggleLike,
   deletePost,
@@ -159,6 +160,7 @@ const PostMediaPreview = ({ media }) => {
 
 const PostList = ({
   authorId = null,
+  groupId = null,
   allowedAuthorIds = null,
   refreshKey = 0,
   initialSelectedPostId = null,
@@ -206,12 +208,20 @@ const PostList = ({
     onPostsLoaded?.(visiblePosts);
   }, [onPostsLoaded, visiblePosts]);
 
+  // ==================== KHU VỰC ĐÃ ĐƯỢC FIX CONFLICT ====================
+  
+  // 1. Reset và Fetch trang đầu tiên (Hợp nhất dependency)
   useEffect(() => {
     const timer = window.setTimeout(() => {
       setPage(1);
     }, 0);
 
     dispatch(resetPosts());
+
+    if (groupId) {
+      dispatch(getGroupPosts({ groupId, page: 1, limit: 10 }));
+      return () => window.clearTimeout(timer);
+    }
 
     if (authorId) {
       dispatch(getPostsByAuthor({ authorId, page: 1, limit: 10 }));
@@ -221,10 +231,16 @@ const PostList = ({
     dispatch(getNewsFeed({ page: 1, limit: 10, sortBy }));
 
     return () => window.clearTimeout(timer);
-  }, [authorId, dispatch, refreshKey, sortBy]);
+  }, [authorId, dispatch, groupId, refreshKey, sortBy]);
 
+  // 2. Fetch các trang tiếp theo khi biến 'page' thay đổi
   useEffect(() => {
     if (page === 1) {
+      return;
+    }
+
+    if (groupId) {
+      dispatch(getGroupPosts({ groupId, page, limit: 10 }));
       return;
     }
 
@@ -234,8 +250,9 @@ const PostList = ({
     }
 
     dispatch(getNewsFeed({ page, limit: 10, sortBy }));
-  }, [authorId, page, dispatch, sortBy]);
+  }, [authorId, dispatch, groupId, page, sortBy]);
 
+  // 3. Tự động kích hoạt load more bằng IntersectionObserver (Infinite Scroll)
   useEffect(() => {
     if (authorId || !loadMoreRef.current || !canLoadMore) {
       return undefined;
@@ -253,6 +270,8 @@ const PostList = ({
     observer.observe(loadMoreRef.current);
     return () => observer.disconnect();
   }, [authorId, canLoadMore, loading]);
+
+  // ======================================================================
 
   useEffect(() => {
     if (!initialSelectedPostId) {
@@ -316,12 +335,17 @@ const PostList = ({
   };
 
   const reloadCurrentList = () => {
+    if (groupId) {
+      dispatch(getGroupPosts({ groupId, page: 1, limit: page * 10 }));
+      return;
+    }
+
     if (authorId) {
       dispatch(getPostsByAuthor({ authorId, page: 1, limit: page * 10 }));
       return;
     }
 
-    dispatch(getNewsFeed({ page: 1, limit: page * 10 }));
+    dispatch(getNewsFeed({ page: 1, limit: page * 10, sortBy }));
   };
 
   const renderPost = (post, { suggested = false } = {}) => {

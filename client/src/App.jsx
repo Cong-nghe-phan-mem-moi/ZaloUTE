@@ -11,10 +11,13 @@ import {
   ForgotPassword,
   FriendRequests,
   Friends,
+  GroupDetail,
+  Groups,
   Home,
   LoginPage,
   ProfilePage,
   Register,
+  SearchPage,
   VerifyOtp,
 } from "./pages";
 
@@ -53,6 +56,10 @@ function App() {
       dispatch(setCurrentPage("friends"));
     } else if (path === "/friend-requests") {
       dispatch(setCurrentPage("friend-requests"));
+    } else if (path === "/groups" || path.startsWith("/groups/")) {
+      dispatch(setCurrentPage("groups"));
+    } else if (path === "/search") {
+      dispatch(setCurrentPage("search"));
     } else if (path === "/messages") {
       dispatch(setCurrentPage("messages"));
     } else if (path === "/admin/dashboard" || path === "/admin-dashboard") {
@@ -82,6 +89,9 @@ function App() {
         <Route path="/home" element={<Navigate to="/" replace />} />
         <Route path="/friends" element={<ProtectedPage token={token}><Friends /></ProtectedPage>} />
         <Route path="/friend-requests" element={<ProtectedPage token={token}><FriendRequests /></ProtectedPage>} />
+        <Route path="/groups" element={<ProtectedPage token={token}><Groups /></ProtectedPage>} />
+        <Route path="/groups/:groupId" element={<ProtectedPage token={token}><GroupDetail /></ProtectedPage>} />
+        <Route path="/search" element={<ProtectedPage token={token}><SearchPage /></ProtectedPage>} />
         <Route path="/messages" element={<ProtectedPage token={token}><ChatPage /></ProtectedPage>} />
         <Route path="/admin/dashboard" element={<ProtectedPage token={token}><AdminDashboard /></ProtectedPage>} />
         <Route path="/admin-dashboard" element={<Navigate to="/admin/dashboard" replace />} />

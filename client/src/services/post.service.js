@@ -9,15 +9,26 @@ const createPostFormData = (content, media = []) => {
   return formData;
 };
 
+const appendOptionalFields = (formData, fields = {}) => {
+  Object.entries(fields).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== "") {
+      formData.append(key, value);
+    }
+  });
+
+  return formData;
+};
+
 export const postAPI = {
-  createPost: (formDataOrContent, media = []) => {
+  createPost: (formDataOrContent, media = [], options = {}) => {
     if (formDataOrContent instanceof FormData) {
+      appendOptionalFields(formDataOrContent, options);
       return apiClient.post("/posts", formDataOrContent);
     }
 
     return apiClient.post(
       "/posts",
-      createPostFormData(formDataOrContent, media),
+      appendOptionalFields(createPostFormData(formDataOrContent, media), options),
     );
   },
 
@@ -53,6 +64,12 @@ export const postAPI = {
     apiClient.get(`/posts/${postId}/comments`, { params: { page, limit } }),
   getPostsByAuthor: (authorId, page = 1, limit = 10) =>
     apiClient.get(`/posts/author/${authorId}`, { params: { page, limit } }),
+  getGroupPosts: (groupId, page = 1, limit = 10) =>
+    apiClient.get(`/posts/group/${groupId}`, { params: { page, limit } }),
+  getPendingGroupPosts: (groupId, page = 1, limit = 10) =>
+    apiClient.get(`/posts/group/${groupId}/pending`, { params: { page, limit } }),
+  approveGroupPost: (postId) => apiClient.post(`/posts/${postId}/approve`),
+  rejectGroupPost: (postId) => apiClient.post(`/posts/${postId}/reject`),
   searchPosts: (keyword, page = 1, limit = 10) =>
     apiClient.get("/posts/search", { params: { keyword, page, limit } }),
 };
