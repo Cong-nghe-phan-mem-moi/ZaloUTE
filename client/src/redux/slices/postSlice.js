@@ -59,13 +59,29 @@ const applyShareState = (post, shareState) => {
 // Create post
 export const createPost = createAsyncThunk(
   'posts/createPost',
-  async (formDataOrContent, { rejectWithValue }) => {
+  async (payload, { rejectWithValue }) => {
     try {
-      const response = await postAPI.createPost(formDataOrContent)
+      const formDataOrContent = payload?.formData || payload
+      const options = payload?.options || {}
+      const response = await postAPI.createPost(formDataOrContent, [], options)
       return response.data.data
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || 'Unable to create post',
+      )
+    }
+  },
+)
+
+export const getGroupPosts = createAsyncThunk(
+  'posts/getGroupPosts',
+  async ({ groupId, page = 1, limit = 10 }, { rejectWithValue }) => {
+    try {
+      const response = await postAPI.getGroupPosts(groupId, page, limit)
+      return response.data.data
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Không thể tải bài viết trong nhóm',
       )
     }
   },
@@ -253,8 +269,13 @@ const postSlice = createSlice({
       })
       .addCase(createPost.fulfilled, (state, action) => {
         state.loading = false
-        state.posts.unshift(action.payload)
-        state.message = 'Post created successfully'
+        if (action.payload?.approvalStatus !== 'pending') {
+          state.posts.unshift(action.payload)
+        }
+        state.message =
+          action.payload?.approvalStatus === 'pending'
+            ? 'Bài viết đang chờ admin nhóm duyệt'
+            : 'Đã tạo bài viết thành công'
       })
       .addCase(createPost.rejected, (state, action) => {
         state.loading = false
@@ -277,6 +298,25 @@ const postSlice = createSlice({
         state.pagination = action.payload.pagination
       })
       .addCase(getNewsFeed.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload
+      })
+
+      // Get Group Posts
+      .addCase(getGroupPosts.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(getGroupPosts.fulfilled, (state, action) => {
+        state.loading = false
+        if (action.meta.arg.page === 1) {
+          state.posts = action.payload.posts
+        } else {
+          state.posts = [...state.posts, ...action.payload.posts]
+        }
+        state.pagination = action.payload.pagination
+      })
+      .addCase(getGroupPosts.rejected, (state, action) => {
         state.loading = false
         state.error = action.payload
       })

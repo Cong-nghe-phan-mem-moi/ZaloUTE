@@ -32,13 +32,23 @@ export const useUserSearch = (
       }));
 
       try {
-        const response = await userAPI.searchUsers(normalizedKeyword, 1, limit);
+        const response = await userAPI.globalSearch(normalizedKeyword, "all", limit);
         if (!isCurrent) return;
+        const payload = response.data?.data || {};
+        const users = (payload.users || []).map((item) => ({
+          ...item,
+          kind: "user",
+        }));
+        const groups = (payload.groups || []).map((item) => ({
+          ...item,
+          kind: "group",
+        }));
+
         setSearchState({
           error: "",
           keyword: normalizedKeyword,
           loading: false,
-          results: response.data?.data || [],
+          results: [...users, ...groups].slice(0, limit),
         });
       } catch (err) {
         if (!isCurrent) return;

@@ -276,8 +276,8 @@ const HomeHeader = ({ profile, activePage = "home" }) => {
         <HeaderTab icon="smart_display" />
         <HeaderTab
           icon="groups"
-          href="/friends"
-          active={activePage === "friends"}
+          href="/groups"
+          active={activePage === "groups"}
         />
       </nav>
 

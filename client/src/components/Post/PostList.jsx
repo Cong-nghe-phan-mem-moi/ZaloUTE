@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import {
   getNewsFeed,
+  getGroupPosts,
   getPostsByAuthor,
   toggleLike,
   deletePost,
@@ -154,6 +155,7 @@ const PostMediaPreview = ({ media }) => {
 
 const PostList = ({
   authorId = null,
+  groupId = null,
   allowedAuthorIds = null,
   refreshKey = 0,
   initialSelectedPostId = null,
@@ -203,6 +205,11 @@ const PostList = ({
 
     dispatch(resetPosts());
 
+    if (groupId) {
+      dispatch(getGroupPosts({ groupId, page: 1, limit: 10 }));
+      return () => window.clearTimeout(timer);
+    }
+
     if (authorId) {
       dispatch(getPostsByAuthor({ authorId, page: 1, limit: 10 }));
       return () => window.clearTimeout(timer);
@@ -211,10 +218,15 @@ const PostList = ({
     dispatch(getNewsFeed({ page: 1, limit: 10 }));
 
     return () => window.clearTimeout(timer);
-  }, [authorId, dispatch, refreshKey]);
+  }, [authorId, dispatch, groupId, refreshKey]);
 
   useEffect(() => {
     if (page === 1) {
+      return;
+    }
+
+    if (groupId) {
+      dispatch(getGroupPosts({ groupId, page, limit: 10 }));
       return;
     }
 
@@ -224,7 +236,7 @@ const PostList = ({
     }
 
     dispatch(getNewsFeed({ page, limit: 10 }));
-  }, [authorId, page, dispatch]);
+  }, [authorId, dispatch, groupId, page]);
 
   useEffect(() => {
     if (!initialSelectedPostId) {
@@ -266,6 +278,11 @@ const PostList = ({
   };
 
   const reloadCurrentList = () => {
+    if (groupId) {
+      dispatch(getGroupPosts({ groupId, page: 1, limit: page * 10 }));
+      return;
+    }
+
     if (authorId) {
       dispatch(getPostsByAuthor({ authorId, page: 1, limit: page * 10 }));
       return;

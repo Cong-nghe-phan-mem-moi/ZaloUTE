@@ -17,6 +17,10 @@ export const userAPI = {
     apiClient.get("/users/search", {
       params: { keyword, page, limit },
     }),
+  globalSearch: (q, type = "all", limit = 10) =>
+    apiClient.get("/users/search", {
+      params: { q, type, limit },
+    }),
   getOtherProfile: (id) => apiClient.get(`/users/profile/${id}`),
   sendFriendRequest: (receiverId) =>
     apiClient.post("/users/friend-request", { receiverId }),

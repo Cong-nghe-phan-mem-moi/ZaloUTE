@@ -1,7 +1,9 @@
 import { useCallback, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useClickOutside, useUserSearch } from "../../hooks";
 import UserAvatar from "./UserAvatar";
+
+const getId = (item) => item?._id || item?.id || item?.userId || "";
 
 const UserSearchBox = ({
   placeholder = "Search ...",
@@ -12,6 +14,7 @@ const UserSearchBox = ({
   avatarSize = "sm",
   avatarVariant = "warm",
 }) => {
+  const navigate = useNavigate();
   const [keyword, setKeyword] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const searchRef = useRef(null);
@@ -21,6 +24,13 @@ const UserSearchBox = ({
   useClickOutside(searchRef, closeSearch);
 
   const shouldShowDropdown = isOpen && hasQuery;
+  const handleSubmitSearch = () => {
+    const value = keyword.trim();
+    if (!value) return;
+
+    setIsOpen(false);
+    navigate(`/search?q=${encodeURIComponent(value)}&type=all`);
+  };
 
   return (
     <div className={wrapperClassName} ref={searchRef}>
@@ -36,6 +46,12 @@ const UserSearchBox = ({
             setIsOpen(true);
           }}
           onFocus={() => setIsOpen(true)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              handleSubmitSearch();
+            }
+          }}
         />
       </div>
 
@@ -57,9 +73,7 @@ const UserSearchBox = ({
           ) : null}
 
           {!loading && !error && results.length === 0 ? (
-            <p className="px-2 py-3 text-sm text-[#65676b]">
-              No matching users found.
-            </p>
+            <p className="px-2 py-3 text-sm text-[#65676b]">Không có kết quả phù hợp.</p>
           ) : null}
 
           {!loading && !error
@@ -78,31 +92,39 @@ const UserSearchBox = ({
   );
 };
 
-const SearchResultItem = ({ user, avatarSize, avatarVariant }) => (
-  <Link
-    to={`/users/profile/${user.id}`}
-    className="flex items-center gap-3 rounded-lg p-2 text-[#050505] hover:bg-[#f0f2f5]"
-  >
-    <UserAvatar
-      image={user.avatar}
-      name={user.fullName}
-      size={avatarSize}
-      variant={avatarVariant}
-    />
-    <div className="min-w-0">
-      <p className="truncate text-[15px] font-semibold">{user.fullName}</p>
-      <p className="text-xs text-[#65676b]">
-        {user.relation === "friend"
-          ? "Friend"
-          : user.relation === "sent_request"
-            ? "Request sent"
-            : user.relation === "received_request"
-              ? "Respond to request"
-              : "View profile"}
-      </p>
-    </div>
-  </Link>
-);
+const SearchResultItem = ({ user, avatarSize, avatarVariant }) => {
+  const isGroup = user.kind === "group";
+  const title = isGroup ? user.name : user.fullName;
+  const href = isGroup ? `/groups/${getId(user)}` : `/users/profile/${getId(user)}`;
+
+  return (
+    <Link
+      to={href}
+      className="flex items-center gap-3 rounded-lg p-2 text-[#050505] hover:bg-[#f0f2f5]"
+    >
+      <UserAvatar
+        image={user.avatar}
+        name={title}
+        size={avatarSize}
+        variant={avatarVariant}
+      />
+      <div className="min-w-0">
+        <p className="truncate text-[15px] font-semibold">{title}</p>
+        <p className="text-xs text-[#65676b]">
+          {isGroup
+            ? `${user.members?.length || 0} thành viên`
+            : user.relation === "friend"
+              ? "Bạn bè"
+              : user.relation === "sent_request"
+                ? "Đã gửi lời mời"
+                : user.relation === "received_request"
+                  ? "Phản hồi lời mời"
+                  : "Xem trang cá nhân"}
+        </p>
+      </div>
+    </Link>
+  );
+};
 
 export default UserSearchBox;
 
