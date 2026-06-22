@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { format, formatDistanceToNow } from "date-fns";
 import { enUS } from "date-fns/locale";
@@ -241,7 +241,6 @@ const ChatPage = () => {
     });
   };
 
-  // Xử lý tắt thông báo hội thoại
   const handleMuteConversation = (conversationId, duration) => {
     dispatch(muteConversation({ conversationId, duration }))
       .unwrap()
@@ -254,7 +253,6 @@ const ChatPage = () => {
       });
   };
 
-  // Xử lý bật lại thông báo
   const handleUnmuteConversation = (conversationId) => {
     dispatch(unmuteConversation(conversationId))
       .unwrap()
@@ -266,7 +264,6 @@ const ChatPage = () => {
       });
   };
 
-  // Xử lý chặn cuộc hội thoại
   const handleBlockConversation = (conversationId) => {
     dispatch(blockConversation(conversationId))
       .unwrap()
@@ -278,7 +275,6 @@ const ChatPage = () => {
       });
   };
 
-  // Xử lý bỏ chặn cuộc hội thoại
   const handleUnblockConversation = (conversationId) => {
     dispatch(unblockConversation(conversationId))
       .unwrap()
@@ -290,7 +286,6 @@ const ChatPage = () => {
       });
   };
 
-  // Xử lý xóa cuộc hội thoại
   const handleDeleteConversation = (conversationId) => {
     setConfirmModal({
       isOpen: true,
@@ -312,7 +307,6 @@ const ChatPage = () => {
     });
   };
 
-  // Load profile và danh sách hội thoại lúc khởi động
   useEffect(() => {
     dispatch(fetchUserProfile());
     dispatch(fetchConversations());
@@ -337,7 +331,6 @@ const ChatPage = () => {
     };
   }, []);
 
-  // Mở cuộc hội thoại khi có query parameter conversationId từ thông báo
   useEffect(() => {
     if (queryConversationId && conversations.length > 0) {
       const targetConv = conversations.find(
@@ -346,19 +339,16 @@ const ChatPage = () => {
       if (targetConv) {
         dispatch(selectConversationAndFetchMessages(targetConv));
 
-        // Xóa query param để không lặp lại hành động
         searchParams.delete("conversationId");
         setSearchParams(searchParams);
       }
     }
   }, [queryConversationId, conversations, dispatch, searchParams, setSearchParams]);
 
-  // Cuộn xuống tin nhắn mới nhất
   useEffect(() => {
     messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Thiết lập kết nối WebSocket
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) return undefined;
@@ -383,7 +373,6 @@ const ChatPage = () => {
           if (type === "message") {
             dispatch(addReceivedMessage(payload.data));
 
-            // Nếu nhận được tin nhắn và đang mở hội thoại đó, đánh dấu đã đọc
             if (activeConversationId === payload.data.conversationId) {
               ws.send(
                 JSON.stringify({
@@ -448,7 +437,6 @@ const ChatPage = () => {
     };
   }, [dispatch, activeConversationId]);
 
-  // Đánh dấu đã đọc khi chuyển sang cuộc hội thoại mới
   useEffect(() => {
     if (
       socket &&
@@ -464,7 +452,6 @@ const ChatPage = () => {
     }
   }, [activeConversationId, socket, messages.length]);
 
-  // Xử lý gửi tin nhắn
   const handleSendMessage = (e) => {
     e.preventDefault();
     if (
@@ -475,7 +462,6 @@ const ChatPage = () => {
     )
       return;
 
-    // Lọc ra các thành viên thực sự còn nằm trong text tin nhắn
     const activeMentions = mentionedUsers.filter((u) =>
       messageText.includes(`@${u.fullName}`)
     );
@@ -498,7 +484,6 @@ const ChatPage = () => {
     setReplyingMessage(null);
     setMentionedUsers([]);
 
-    // Ngắt thông báo đang gõ ngay khi gửi tin
     if (typingState) {
       socket.send(
         JSON.stringify({
@@ -511,7 +496,6 @@ const ChatPage = () => {
     }
   };
 
-  // Xử lý thu hồi tin nhắn
   const handleSendSticker = (sticker) => {
     if (
       !sticker?.imageUrl ||
@@ -545,7 +529,6 @@ const ChatPage = () => {
     );
   };
 
-  // Trạng thái đang gõ
   const handleKeyDown = (e) => {
     if (showTagDropdown && filteredMembersForTag.length > 0) {
       if (e.key === "ArrowDown") {
@@ -602,7 +585,6 @@ const ChatPage = () => {
     }, 2500);
   };
 
-  // Trả về tên hiển thị của cuộc trò chuyện 1-1
   const getChatPartner = (conversation) => {
     if (!conversation || !profile) return { fullName: "Chat", avatar: null, isOnline: false };
     if (conversation.isGroup) {
@@ -618,7 +600,6 @@ const ChatPage = () => {
     return partner || { fullName: "ZaloUTE User", avatar: null, isOnline: false };
   };
 
-  // Helper hiển thị nội dung tin nhắn và highlight các phần được tag/mention
   const renderMessageContent = (content, mentionsList, isMe) => {
     if (!content) return "";
 
@@ -671,20 +652,17 @@ const ChatPage = () => {
     });
   };
 
-  // Lấy danh sách bạn bè dựa trên query tìm kiếm
   const filteredFriends = searchQuery.trim()
     ? (profile?.friends || []).filter((friend) =>
       friend.fullName.toLowerCase().includes(searchQuery.toLowerCase())
     )
     : [];
 
-  // Bắt đầu chat với bạn bè được chọn
   const handleStartChatWithFriend = (friendId) => {
     dispatch(getOrCreateConversationAndSelect(friendId));
     setSearchQuery("");
   };
 
-  // Lấy danh sách thành viên cho chức năng tag
   const filteredMembersForTag = (() => {
     if (!activeConversation || !activeConversation.isGroup || !showTagDropdown) return [];
 
@@ -709,7 +687,6 @@ const ChatPage = () => {
     return result;
   })();
 
-  // Xử lý thay đổi input tin nhắn để nhận diện ký tự tag @
   const handleInputChange = (e) => {
     const value = e.target.value;
     setMessageText(value);
@@ -739,7 +716,6 @@ const ChatPage = () => {
     setShowTagDropdown(false);
   };
 
-  // Xử lý chọn thành viên từ danh sách gợi ý tag
   const handleSelectTagMember = (member) => {
     const textBeforeAt = messageText.slice(0, tagTriggerIndex);
     const textAfterQuery = messageText.slice(tagTriggerIndex + 1 + tagSearchQuery.length);
@@ -767,7 +743,6 @@ const ChatPage = () => {
     }, 0);
   };
 
-  // Xác định những người dùng đang gõ trong cuộc trò chuyện hiện tại
   const currentTypingUsers = activeConversation
     ? Object.keys(typingUsers[activeConversation._id] || {})
       .filter((uid) => typingUsers[activeConversation._id][uid])
@@ -775,7 +750,7 @@ const ChatPage = () => {
         const participant = activeConversation.participants.find(
           (p) => p._id.toString() === uid
         );
-        return participant?.fullName || "Ai đó";
+        return participant?.fullName || "Someone";
       })
     : [];
 
@@ -793,7 +768,6 @@ const ChatPage = () => {
         <HomeHeader profile={profile} activePage="messages" />
 
         <main className="grid h-[calc(100vh-80px)] grid-cols-1 bg-[#f2f3f5] lg:grid-cols-[300px_minmax(0,1fr)_300px] overflow-hidden">
-          {/* Thanh menu bên trái */}
           <aside className="border-r border-gray-200 bg-white flex flex-col h-full min-h-0">
             <div className="p-4 border-b border-gray-100">
               <div className="flex justify-between items-center mb-3">
@@ -806,7 +780,6 @@ const ChatPage = () => {
                   <span className="material-symbols-outlined text-[22px]">group_add</span>
                 </button>
               </div>
-              {/* Thanh tìm kiếm */}
               <div className="relative">
                 <span className="material-symbols-outlined text-[20px] text-gray-400 absolute left-3 top-2.5">
                   search
@@ -821,10 +794,8 @@ const ChatPage = () => {
               </div>
             </div>
 
-            {/* Vùng hiển thị danh sách hội thoại / tìm kiếm */}
             <div className="flex-1 overflow-y-auto">
               {searchQuery.trim() !== "" ? (
-                // Kết quả tìm kiếm bạn bè để chat
                 <div className="p-2">
                   <p className="text-xs font-bold text-gray-500 uppercase px-2 mb-2">
                     Search Results
@@ -848,7 +819,6 @@ const ChatPage = () => {
                   )}
                 </div>
               ) : (
-                // Danh sách hội thoại đang có
                 <div className="p-2 space-y-1">
                   {loadingConversations && conversations.length === 0 ? (
                     <div className="flex justify-center p-4">
@@ -1083,11 +1053,9 @@ const ChatPage = () => {
             </div>
           </aside>
 
-          {/* Vùng trò chuyện chính */}
           <section className="flex flex-col bg-[#f0f2f5] h-full overflow-hidden min-h-0">
             {activeConversation ? (
               <>
-                {/* Header trò chuyện */}
                 <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between shrink-0">
                   <div className="flex items-center gap-3">
                     <div className="relative">
@@ -1142,7 +1110,6 @@ const ChatPage = () => {
                   </div>
                 </div>
 
-                {/* Khu vực tin nhắn */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-3 flex flex-col">
                   {loadingMessages && messages.length === 0 ? (
                     <div className="flex justify-center p-4">
@@ -1357,7 +1324,6 @@ const ChatPage = () => {
                   <div ref={messageEndRef} />
                 </div>
 
-                {/* Khung soạn tin */}
                 {replyingMessage && (
                   <div className="bg-[#f8f9fa] border-t border-gray-200 px-6 py-2.5 flex items-center justify-between shrink-0 animate-in slide-in-from-bottom-2 duration-200">
                     <div className="flex items-center gap-2 border-l-[3px] border-[#1877f2] pl-3 min-w-0">
@@ -1391,7 +1357,7 @@ const ChatPage = () => {
                       </div>
                       <div className="flex-1 min-w-0 pt-0.5">
                         <p className="text-[11px] font-semibold text-gray-600 leading-normal">
-                          Use ↑, ↓ arrows and press Enter to select
+                          Use up/down arrows and press Enter to select
                         </p>
                       </div>
                       <button
@@ -1432,7 +1398,7 @@ const ChatPage = () => {
                               </span>
                               {isAll && (
                                 <span className="text-xs text-blue-600 font-semibold shrink-0">
-                                  · @All
+- @All
                                 </span>
                               )}
                             </div>
@@ -1536,7 +1502,6 @@ const ChatPage = () => {
               </div>
               </>
             ) : (
-              // Trạng thái trống
               <div className="flex-1 flex flex-col items-center justify-center text-gray-500 p-6 text-center">
                 <div className="w-20 h-20 bg-blue-50 text-[#1877f2] flex items-center justify-center rounded-full mb-4">
                   <span className="material-symbols-outlined text-[40px]">forum</span>
@@ -1549,7 +1514,6 @@ const ChatPage = () => {
             )}
           </section>
 
-          {/* Right Sidebar - Bạn bè online / Chi tiết nhóm */}
           {activeConversation?.isGroup && showGroupInfo ? (
             <GroupSidebar
               conversation={activeConversation}
@@ -1567,7 +1531,6 @@ const ChatPage = () => {
           )}
         </main>
 
-        {/* Modal Tạo Nhóm */}
         {isCreateGroupOpen ? (
           <CreateGroupModal
             onClose={() => setIsCreateGroupOpen(false)}
@@ -1576,7 +1539,6 @@ const ChatPage = () => {
           />
         ) : null}
 
-        {/* Modal Thêm Thành Viên */}
         {isAddMembersOpen ? (
           <AddMembersModal
             onClose={() => setIsAddMembersOpen(false)}
@@ -1602,3 +1564,4 @@ const ChatPage = () => {
 };
 
 export default ChatPage;
+

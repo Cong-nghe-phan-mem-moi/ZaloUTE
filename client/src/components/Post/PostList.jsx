@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import {
@@ -208,9 +208,7 @@ const PostList = ({
     onPostsLoaded?.(visiblePosts);
   }, [onPostsLoaded, visiblePosts]);
 
-  // ==================== KHU VỰC ĐÃ ĐƯỢC FIX CONFLICT ====================
   
-  // 1. Reset và Fetch trang đầu tiên (Hợp nhất dependency)
   useEffect(() => {
     const timer = window.setTimeout(() => {
       setPage(1);
@@ -233,7 +231,6 @@ const PostList = ({
     return () => window.clearTimeout(timer);
   }, [authorId, dispatch, groupId, refreshKey, sortBy]);
 
-  // 2. Fetch các trang tiếp theo khi biến 'page' thay đổi
   useEffect(() => {
     if (page === 1) {
       return;
@@ -252,7 +249,6 @@ const PostList = ({
     dispatch(getNewsFeed({ page, limit: 10, sortBy }));
   }, [authorId, dispatch, groupId, page, sortBy]);
 
-  // 3. Tự động kích hoạt load more bằng IntersectionObserver (Infinite Scroll)
   useEffect(() => {
     if (authorId || !loadMoreRef.current || !canLoadMore) {
       return undefined;

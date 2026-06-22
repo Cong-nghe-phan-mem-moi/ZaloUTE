@@ -1,4 +1,4 @@
-const User = require("../models/user.model");
+﻿const User = require("../models/user.model");
 
 async function createUser(userData) {
   const user = new User(userData);
@@ -13,7 +13,7 @@ async function linkAccountToUser(userId, accountId) {
   return await User.findByIdAndUpdate(
     userId,
     { account: accountId },
-    { returnDocument: "after" }, // Mongoose v6+ dùng new: true hoặc returnDocument
+    { returnDocument: "after" },
   );
 }
 

@@ -1,4 +1,4 @@
-const CommentRepository = require("../repositories/comment.repository");
+﻿const CommentRepository = require("../repositories/comment.repository");
 const Post = require("../models/post.model");
 const User = require("../models/user.model");
 const NotificationService = require("./notification.service");
@@ -22,7 +22,6 @@ const assertCanViewPost = async (postId, userId) => {
 };
 
 class CommentService {
-  // Thêm bình luận
   static async createComment(postId, userId, content, replyTo = null) {
     if (!content || content.trim().length === 0) {
       throw new Error("Operation failed");
@@ -83,8 +82,6 @@ class CommentService {
 
     return await CommentRepository.findCommentById(comment._id);
   }
-
-  // Chỉnh sửa bình luận
   static async updateComment(commentId, userId, content) {
     const comment = await CommentRepository.findCommentById(commentId);
     if (!comment) {
@@ -107,8 +104,6 @@ class CommentService {
       content: content.trim(),
     });
   }
-
-  // Xóa bình luận
   static async deleteComment(commentId, userId) {
     const comment = await CommentRepository.findCommentById(commentId);
     if (!comment) {
@@ -126,8 +121,6 @@ class CommentService {
 
     return result;
   }
-
-  // Like bình luận
   static async toggleLikeComment(commentId, userId) {
     const comment = await CommentRepository.findCommentById(commentId);
     if (!comment) {
@@ -167,8 +160,6 @@ class CommentService {
       likeCount: updatedComment.likes.length,
     };
   }
-
-  // Lấy các bình luận của một bài viết
   static async getPostComments(postId, page = 1, limit = 20, userId = null) {
     if (page < 1) page = 1;
     if (limit < 1 || limit > 100) limit = 20;
@@ -203,8 +194,6 @@ class CommentService {
       },
     };
   }
-
-  // Lấy các reply của một bình luận
   static async getCommentReplies(commentId, page = 1, limit = 10, userId = null) {
     if (page < 1) page = 1;
     if (limit < 1 || limit > 50) limit = 10;

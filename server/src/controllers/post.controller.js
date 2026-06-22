@@ -1,8 +1,7 @@
-const PostService = require('../services/post.service');
+﻿const PostService = require('../services/post.service');
 const path = require('path');
 
 class PostController {
-  // 4.1 Tạo bài viết
   static async createPost(req, res) {
     try {
       const { content, groupId } = req.body;
@@ -36,8 +35,8 @@ class PostController {
       return res.status(201).json({
         success: true,
         message: post.approvalStatus === 'pending'
-          ? 'Bài viết đã gửi và đang chờ admin duyệt'
-          : 'Đã tạo bài viết',
+          ? 'Post was submitted and is waiting for admin approval'
+          : 'Post created',
         data: post,
       });
     } catch (error) {
@@ -79,7 +78,6 @@ class PostController {
     }
   }
 
-  // 4.2 Chỉnh sửa bài viết
   static async updatePost(req, res) {
     try {
       const { postId } = req.params;
@@ -144,7 +142,6 @@ class PostController {
     }
   }
 
-  // 4.3 Xóa bài viết
   static async deletePost(req, res) {
     try {
       const { postId } = req.params;
@@ -292,7 +289,6 @@ class PostController {
     }
   }
 
-  // 4.5 Xem danh sách like
   static async getPostLikes(req, res) {
     try {
       const { postId } = req.params;
@@ -328,7 +324,6 @@ class PostController {
     }
   }
 
-  // 4.6 Xem danh sách bình luận
   static async getPostComments(req, res) {
     try {
       const { postId } = req.params;
@@ -422,6 +417,136 @@ class PostController {
     }
   }
 
+  static async getUserMedia(req, res) {
+    try {
+      const { authorId } = req.params;
+      const { page = 1, limit = 48, type = 'all' } = req.query;
+      const userId = req.user?.userId;
+
+      const result = await PostService.getUserMedia(authorId, userId, {
+        page,
+        limit,
+        type,
+      });
+
+      return res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      console.error('Error fetching user media:', error);
+      return res.status(400).json({
+        success: false,
+        message: error.message || 'Unable to load media',
+      });
+    }
+  }
+
+  static async getUserAlbums(req, res) {
+    try {
+      const albums = await PostService.getUserAlbums(
+        req.params.authorId,
+        req.user?.userId,
+      );
+
+      return res.status(200).json({
+        success: true,
+        data: albums,
+      });
+    } catch (error) {
+      console.error('Error fetching albums:', error);
+      return res.status(400).json({
+        success: false,
+        message: error.message || 'Unable to load albums',
+      });
+    }
+  }
+
+  static async createAlbum(req, res) {
+    try {
+      const album = await PostService.createAlbum(req.user.userId, req.body);
+
+      return res.status(201).json({
+        success: true,
+        message: 'Album created',
+        data: album,
+      });
+    } catch (error) {
+      console.error('Error creating album:', error);
+      return res.status(400).json({
+        success: false,
+        message: error.message || 'Unable to create album',
+      });
+    }
+  }
+
+  static async updateAlbum(req, res) {
+    try {
+      const album = await PostService.updateAlbum(
+        req.params.albumId,
+        req.user.userId,
+        req.body,
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: 'Album updated',
+        data: album,
+      });
+    } catch (error) {
+      console.error('Error updating album:', error);
+      return res.status(400).json({
+        success: false,
+        message: error.message || 'Unable to update album',
+      });
+    }
+  }
+
+  static async deleteAlbum(req, res) {
+    try {
+      const result = await PostService.deleteAlbum(
+        req.params.albumId,
+        req.user.userId,
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: 'Album deleted',
+        data: result,
+      });
+    } catch (error) {
+      console.error('Error deleting album:', error);
+      return res.status(400).json({
+        success: false,
+        message: error.message || 'Unable to delete album',
+      });
+    }
+  }
+
+  static async downloadMedia(req, res) {
+    try {
+      const { mediaId } = req.params;
+      const { media, item } = await PostService.getDownloadableMedia(
+        mediaId,
+        req.user.userId,
+      );
+
+      if (!media.url.startsWith('/uploads/')) {
+        return res.redirect(media.url);
+      }
+
+      const filename = path.basename(media.url);
+      const filePath = path.join(__dirname, '../../storage/uploads', filename);
+      return res.download(filePath, item.filename);
+    } catch (error) {
+      console.error('Error downloading media:', error);
+      return res.status(403).json({
+        success: false,
+        message: error.message || 'You cannot download this media',
+      });
+    }
+  }
+
   static async getGroupPosts(req, res) {
     try {
       const { groupId } = req.params;
@@ -437,14 +562,14 @@ class PostController {
 
       return res.status(200).json({
         success: true,
-        message: 'Đã tải bài viết trong nhóm',
+        message: 'Group posts loaded',
         data: result,
       });
     } catch (error) {
-      console.error('Lỗi khi tải bài viết trong nhóm:', error);
+      console.error('Error loading group posts:', error);
       return res.status(400).json({
         success: false,
-        message: error.message || 'Không thể tải bài viết trong nhóm',
+        message: error.message || 'Unable to load group posts',
       });
     }
   }
@@ -464,14 +589,14 @@ class PostController {
 
       return res.status(200).json({
         success: true,
-        message: 'Đã tải bài viết chờ duyệt',
+        message: 'Pending posts loaded',
         data: result,
       });
     } catch (error) {
-      console.error('Lỗi khi tải bài viết chờ duyệt:', error);
+      console.error('Error loading pending posts:', error);
       return res.status(400).json({
         success: false,
-        message: error.message || 'Không thể tải bài viết chờ duyệt',
+        message: error.message || 'Unable to load pending posts',
       });
     }
   }
@@ -484,14 +609,14 @@ class PostController {
 
       return res.status(200).json({
         success: true,
-        message: 'Đã duyệt bài viết',
+        message: 'Post approved',
         data: post,
       });
     } catch (error) {
-      console.error('Lỗi khi duyệt bài viết nhóm:', error);
+      console.error('Error approving group post:', error);
       return res.status(400).json({
         success: false,
-        message: error.message || 'Không thể duyệt bài viết',
+        message: error.message || 'Unable to approve post',
       });
     }
   }
@@ -504,14 +629,14 @@ class PostController {
 
       return res.status(200).json({
         success: true,
-        message: 'Đã từ chối bài viết',
+        message: 'Post rejected',
         data: post,
       });
     } catch (error) {
-      console.error('Lỗi khi từ chối bài viết nhóm:', error);
+      console.error('Error rejecting group post:', error);
       return res.status(400).json({
         success: false,
-        message: error.message || 'Không thể từ chối bài viết',
+        message: error.message || 'Unable to reject post',
       });
     }
   }
@@ -545,6 +670,7 @@ class PostController {
 }
 
 module.exports = PostController;
+
 
 
 

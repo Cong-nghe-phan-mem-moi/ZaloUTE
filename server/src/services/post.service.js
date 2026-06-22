@@ -1,10 +1,11 @@
-const PostRepository = require('../repositories/post.repository');
+﻿const PostRepository = require('../repositories/post.repository');
 const Comment = require('../models/comment.model');
 const NotificationService = require('./notification.service');
 const User = require('../models/user.model');
 const Post = require('../models/post.model');
 const Conversation = require('../models/conversation.model');
 const Message = require('../models/message.model');
+const AlbumRepository = require('../repositories/album.repository');
 const GroupRepository = require('../repositories/group.repository');
 const chatRepository = require('../repositories/chat.repository');
 const onlineTracker = require('../utils/onlineTracker');
@@ -181,6 +182,104 @@ const hasBlockedAuthor = (post, blockedAuthorIds = new Set()) => {
 
 const isModerationHidden = (post) => Boolean(post?.moderation?.hidden);
 
+const getMediaItemId = (postId, mediaIndex) => `${postId}:${mediaIndex}`;
+
+const getMediaFileName = (media, fallbackId) => {
+  if (media?.filename) return media.filename;
+  if (media?.name) return media.name;
+  const urlPart = String(media?.url || '').split('/').pop();
+  return urlPart || `media-${fallbackId}`;
+};
+
+const buildMediaItem = (post, media, mediaIndex) => {
+  const postObj = post.toObject ? post.toObject() : post;
+  const postId = String(postObj._id);
+  const author = postObj.author || {};
+
+  return {
+    id: getMediaItemId(postId, mediaIndex),
+    postId,
+    mediaIndex,
+    url: media.url,
+    type: media.type === 'video' ? 'video' : 'image',
+    filename: getMediaFileName(media, `${postId}-${mediaIndex}`),
+    createdAt: postObj.createdAt,
+    postContent: postObj.content || '',
+    privacy: postObj.privacy?.type || 'public',
+    author: {
+      id: String(author._id || author),
+      fullName: author.fullName || 'User',
+      avatar: author.avatar || null,
+    },
+  };
+};
+
+const canViewAlbumShell = async (album, viewerId) => {
+  const ownerId = String(album.owner?._id || album.owner);
+
+  if (ownerId === String(viewerId)) {
+    return true;
+  }
+
+  if (album.privacy === 'only_me') {
+    return false;
+  }
+
+  if (album.privacy === 'public' || album.privacy === 'inherit') {
+    return true;
+  }
+
+  if (album.privacy === 'friends') {
+    const owner = await User.findById(ownerId).select('friends');
+    return (owner?.friends || []).some((friendId) => String(friendId) === String(viewerId));
+  }
+
+  return false;
+};
+
+const buildAlbumResponse = async (album, viewerId) => {
+  if (!album || !(await canViewAlbumShell(album, viewerId))) {
+    return null;
+  }
+
+  const albumObj = album.toObject ? album.toObject() : album;
+  const visibleMedia = [];
+
+  for (const item of albumObj.mediaItems || []) {
+    const post = item.post;
+    if (!post) continue;
+
+    try {
+      await assertCanViewPost(post, viewerId);
+
+      visibleMedia.push({
+        id: getMediaItemId(post._id, item.mediaIndex),
+        postId: String(post._id),
+        mediaIndex: item.mediaIndex,
+        url: item.url,
+        type: item.type,
+        caption: item.caption || '',
+        createdAt: post.createdAt,
+      });
+    } catch {
+      // Hidden by post privacy.
+    }
+  }
+
+  return {
+    id: String(albumObj._id),
+    owner: albumObj.owner,
+    title: albumObj.title,
+    description: albumObj.description || '',
+    privacy: albumObj.privacy,
+    coverUrl: albumObj.coverUrl || visibleMedia[0]?.url || '',
+    mediaItems: visibleMedia,
+    mediaCount: visibleMedia.length,
+    createdAt: albumObj.createdAt,
+    updatedAt: albumObj.updatedAt,
+  };
+};
+
 const assertCanViewPost = async (post, userId) => {
   const { friendIds, blockedAuthorIds } = await getViewerContext(userId);
 
@@ -199,12 +298,12 @@ const includesDocumentId = (values = [], id) =>
 const ensureGroupMember = async (groupId, userId) => {
   const group = await GroupRepository.findGroupById(groupId);
   if (!group) {
-    throw new Error('Không tìm thấy nhóm');
+    throw new Error('Group not found');
   }
 
   const isMember = includesDocumentId(group.members, userId);
   if (!isMember) {
-    throw new Error('Bạn phải là thành viên nhóm để đăng bài');
+    throw new Error('You must be a group member to create a post');
   }
 
   return {
@@ -216,7 +315,7 @@ const ensureGroupMember = async (groupId, userId) => {
 const ensureGroupAdmin = async (groupId, userId) => {
   const { group, isAdmin } = await ensureGroupMember(groupId, userId);
   if (!isAdmin) {
-    throw new Error('Chỉ admin nhóm mới được duyệt bài');
+    throw new Error('Only group admins can approve posts');
   }
 
   return group;
@@ -622,7 +721,6 @@ class PostService {
     };
   }
 
-  // 4.5 Xem danh sách like
   static async getPostLikes(postId, page = 1, limit = 10, userId = null) {
     // Validate pagination
     if (page < 1) page = 1;
@@ -650,7 +748,6 @@ class PostService {
     };
   }
 
-  // 4.6 Xem danh sách bình luận
   static async getPostComments(postId, page = 1, limit = 10, userId = null) {
     // Validate pagination
     if (page < 1) page = 1;
@@ -735,6 +832,181 @@ class PostService {
     };
   }
 
+  static async getUserMedia(authorId, currentUserId = null, options = {}) {
+    const type = ['image', 'video'].includes(options.type) ? options.type : 'all';
+    const page = Math.max(parseInt(options.page, 10) || 1, 1);
+    const limit = Math.min(Math.max(parseInt(options.limit, 10) || 48, 1), 96);
+    const { friendIds, blockedAuthorIds } = await getViewerContext(currentUserId);
+
+    if (blockedAuthorIds.has(String(authorId))) {
+      return {
+        items: [],
+        pagination: { page, limit, total: 0, totalPages: 0 },
+      };
+    }
+
+    const privacyFilter = buildPrivacyMongoFilter(currentUserId, friendIds);
+    const posts = await PostRepository.getPostsByAuthor(authorId, 0, 300, {
+      ...privacyFilter,
+      media: { $exists: true, $ne: [] },
+      "moderation.hidden": { $ne: true },
+    });
+
+    const visiblePosts = posts.filter((post) =>
+      !isModerationHidden(post) &&
+      !hasBlockedAuthor(post, blockedAuthorIds) &&
+      canViewPostWithSharedSource(post, currentUserId, friendIds),
+    );
+
+    const items = visiblePosts.flatMap((post) =>
+      (post.media || [])
+        .map((media, mediaIndex) => buildMediaItem(post, media, mediaIndex))
+        .filter((item) => type === 'all' || item.type === type),
+    );
+    const total = items.length;
+    const skip = (page - 1) * limit;
+
+    return {
+      items: items.slice(skip, skip + limit),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  static async getUserAlbums(authorId, currentUserId = null) {
+    const albums = await AlbumRepository.findByOwner(authorId);
+    const visibleAlbums = await Promise.all(
+      albums.map((album) => buildAlbumResponse(album, currentUserId)),
+    );
+
+    return visibleAlbums.filter(Boolean);
+  }
+
+  static async createAlbum(userId, payload = {}) {
+    const title = payload.title?.trim();
+    if (!title) {
+      throw new Error('Album title is required');
+    }
+
+    const mediaItems = await this.normalizeAlbumMediaItems(
+      userId,
+      payload.mediaItems || [],
+    );
+
+    return buildAlbumResponse(
+      await AlbumRepository.create({
+        owner: userId,
+        title,
+        description: payload.description?.trim() || '',
+        privacy: ['inherit', 'public', 'friends', 'only_me'].includes(payload.privacy)
+          ? payload.privacy
+          : 'inherit',
+        coverUrl: payload.coverUrl || mediaItems[0]?.url || '',
+        mediaItems,
+      }),
+      userId,
+    );
+  }
+
+  static async updateAlbum(albumId, userId, payload = {}) {
+    const album = await AlbumRepository.findById(albumId);
+    if (!album) {
+      throw new Error('Album not found');
+    }
+
+    if (String(album.owner?._id || album.owner) !== String(userId)) {
+      throw new Error('You can only update your own album');
+    }
+
+    const updateData = {};
+    if (payload.title !== undefined) updateData.title = payload.title.trim();
+    if (payload.description !== undefined) updateData.description = payload.description.trim();
+    if (payload.coverUrl !== undefined) updateData.coverUrl = payload.coverUrl;
+    if (['inherit', 'public', 'friends', 'only_me'].includes(payload.privacy)) {
+      updateData.privacy = payload.privacy;
+    }
+    if (Array.isArray(payload.mediaItems)) {
+      updateData.mediaItems = await this.normalizeAlbumMediaItems(userId, payload.mediaItems);
+      updateData.coverUrl = payload.coverUrl || updateData.mediaItems[0]?.url || '';
+    }
+
+    return buildAlbumResponse(await AlbumRepository.update(albumId, updateData), userId);
+  }
+
+  static async deleteAlbum(albumId, userId) {
+    const album = await AlbumRepository.findById(albumId);
+    if (!album) {
+      throw new Error('Album not found');
+    }
+
+    if (String(album.owner?._id || album.owner) !== String(userId)) {
+      throw new Error('You can only delete your own album');
+    }
+
+    await AlbumRepository.delete(albumId);
+    return { albumId };
+  }
+
+  static async normalizeAlbumMediaItems(userId, mediaItems) {
+    const normalized = [];
+
+    for (const item of mediaItems) {
+      const postId = item.postId || item.post;
+      const mediaIndex = Number(item.mediaIndex);
+      if (!postId || Number.isNaN(mediaIndex)) continue;
+
+      const post = await PostRepository.findPostById(postId);
+      if (!post) continue;
+
+      if (String(post.author?._id || post.author) !== String(userId)) {
+        throw new Error('Albums can only include your own media');
+      }
+
+      const media = post.media?.[mediaIndex];
+      if (!media || !['image', 'video'].includes(media.type)) continue;
+
+      normalized.push({
+        post: postId,
+        mediaIndex,
+        url: media.url,
+        type: media.type,
+        caption: item.caption?.trim() || '',
+      });
+    }
+
+    return normalized;
+  }
+
+  static async getDownloadableMedia(mediaId, userId) {
+    const [postId, mediaIndexText] = String(mediaId || '').split(':');
+    const mediaIndex = Number(mediaIndexText);
+
+    if (!postId || Number.isNaN(mediaIndex)) {
+      throw new Error('Invalid media id');
+    }
+
+    const post = await PostRepository.findPostById(postId);
+    if (!post) {
+      throw new Error('Media not found');
+    }
+
+    await assertCanViewPost(post, userId);
+    const media = post.media?.[mediaIndex];
+
+    if (!media || !media.url) {
+      throw new Error('Media not found');
+    }
+
+    return {
+      media,
+      item: buildMediaItem(post, media, mediaIndex),
+    };
+  }
+
   static async getGroupPosts(groupId, userId, page = 1, limit = 10) {
     if (page < 1) page = 1;
     if (limit < 1 || limit > 50) limit = 10;
@@ -780,11 +1052,11 @@ class PostService {
   static async approveGroupPost(postId, userId) {
     const post = await PostRepository.findPostById(postId);
     if (!post) {
-      throw new Error('Không tìm thấy bài viết');
+      throw new Error('Post not found');
     }
 
     if (!post.group) {
-      throw new Error('Đây không phải bài viết trong nhóm');
+      throw new Error('This is not a group post');
     }
 
     await ensureGroupAdmin(getDocumentId(post.group), userId);
@@ -799,11 +1071,11 @@ class PostService {
   static async rejectGroupPost(postId, userId) {
     const post = await PostRepository.findPostById(postId);
     if (!post) {
-      throw new Error('Không tìm thấy bài viết');
+      throw new Error('Post not found');
     }
 
     if (!post.group) {
-      throw new Error('Đây không phải bài viết trong nhóm');
+      throw new Error('This is not a group post');
     }
 
     await ensureGroupAdmin(getDocumentId(post.group), userId);
@@ -830,13 +1102,10 @@ class PostService {
 
     const Post = require('../models/post.model');
     
-    // Lấy context người dùng (bạn bè, danh sách bị block)
     const { friendIds, blockedAuthorIds } = await getViewerContext(userId);
     
-    // Build filter privacy dựa trên mối quan hệ
     const privacyFilter = buildPrivacyMongoFilter(userId, friendIds);
     
-    // TỔNG HỢP TẤT CẢ FILTER
     const searchFilter = {
       content: searchRegex,
       ...privacyFilter,
@@ -879,6 +1148,7 @@ class PostService {
 }
 
 module.exports = PostService;
+
 
 
 

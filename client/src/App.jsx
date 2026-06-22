@@ -7,6 +7,7 @@ import Toast from "./components/common/Toast";
 
 import {
   AdminDashboard,
+  AccountSettings,
   ChatPage,
   ForgotPassword,
   FriendRequests,
@@ -18,6 +19,7 @@ import {
   ProfilePage,
   Register,
   SearchPage,
+  UserMediaPage,
   VerifyOtp,
 } from "./pages";
 
@@ -62,6 +64,10 @@ function App() {
       dispatch(setCurrentPage("search"));
     } else if (path === "/messages") {
       dispatch(setCurrentPage("messages"));
+    } else if (path === "/account/settings") {
+      dispatch(setCurrentPage("account-settings"));
+    } else if (path === "/profile/media" || path.startsWith("/users/media/")) {
+      dispatch(setCurrentPage("media"));
     } else if (path === "/admin/dashboard" || path === "/admin-dashboard") {
       dispatch(setCurrentPage("admin-dashboard"));
     } else if (
@@ -93,9 +99,12 @@ function App() {
         <Route path="/groups/:groupId" element={<ProtectedPage token={token}><GroupDetail /></ProtectedPage>} />
         <Route path="/search" element={<ProtectedPage token={token}><SearchPage /></ProtectedPage>} />
         <Route path="/messages" element={<ProtectedPage token={token}><ChatPage /></ProtectedPage>} />
+        <Route path="/account/settings" element={<ProtectedPage token={token}><AccountSettings /></ProtectedPage>} />
         <Route path="/admin/dashboard" element={<ProtectedPage token={token}><AdminDashboard /></ProtectedPage>} />
         <Route path="/admin-dashboard" element={<Navigate to="/admin/dashboard" replace />} />
         <Route path="/profile" element={<ProtectedPage token={token}><ProfilePage /></ProtectedPage>} />
+        <Route path="/profile/media" element={<ProtectedPage token={token}><UserMediaPage own /></ProtectedPage>} />
+        <Route path="/users/media/:userId" element={<ProtectedPage token={token}><UserMediaPage /></ProtectedPage>} />
         <Route path="/user/profile" element={<ProtectedPage token={token}><ProfilePage /></ProtectedPage>} />
         <Route path="/admin/profile" element={<ProtectedPage token={token}><ProfilePage /></ProtectedPage>} />
         <Route path="/edit-profile" element={<ProtectedPage token={token}><ProfilePage /></ProtectedPage>} />

@@ -71,6 +71,14 @@ async function sendFriendRequest(senderId, receiverId) {
   if (!receiverExists) {
     throw { statusCode: 404, message: "User not found" };
   } else {
+    if (receiverExists.privacySettings?.allowFriendRequests === false) {
+      throw {
+        statusCode: 403,
+        code: "FRIEND_REQUESTS_DISABLED",
+        message: "This user is not accepting friend requests",
+      };
+    }
+
     if (hasFriend(receiverExists, senderId)) {
       throw { statusCode: 400, message: "You are already friends" };
     }

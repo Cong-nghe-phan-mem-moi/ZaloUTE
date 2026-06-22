@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+﻿import { useCallback, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useClickOutside, useUserSearch } from "../../hooks";
 import UserAvatar from "./UserAvatar";
@@ -73,7 +73,7 @@ const UserSearchBox = ({
           ) : null}
 
           {!loading && !error && results.length === 0 ? (
-            <p className="px-2 py-3 text-sm text-[#65676b]">Không có kết quả phù hợp.</p>
+            <p className="px-2 py-3 text-sm text-[#65676b]">No matching results.</p>
           ) : null}
 
           {!loading && !error
@@ -112,14 +112,14 @@ const SearchResultItem = ({ user, avatarSize, avatarVariant }) => {
         <p className="truncate text-[15px] font-semibold">{title}</p>
         <p className="text-xs text-[#65676b]">
           {isGroup
-            ? `${user.members?.length || 0} thành viên`
+            ? `${user.members?.length || 0} members`
             : user.relation === "friend"
-              ? "Bạn bè"
+              ? "Friends"
               : user.relation === "sent_request"
-                ? "Đã gửi lời mời"
+                ? "Request sent"
                 : user.relation === "received_request"
-                  ? "Phản hồi lời mời"
-                  : "Xem trang cá nhân"}
+                  ? "Respond to request"
+                  : "View profile"}
         </p>
       </div>
     </Link>
@@ -127,4 +127,6 @@ const SearchResultItem = ({ user, avatarSize, avatarVariant }) => {
 };
 
 export default UserSearchBox;
+
+
 

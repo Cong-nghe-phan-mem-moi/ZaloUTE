@@ -111,6 +111,60 @@ const userSchema = new mongoose.Schema({
   chatSeenAt: {
     type: Date,
     default: Date.now
+  },
+  notificationSettings: {
+    posts: {
+      type: Boolean,
+      default: true
+    },
+    comments: {
+      type: Boolean,
+      default: true
+    },
+    friendRequests: {
+      type: Boolean,
+      default: true
+    },
+    messages: {
+      type: Boolean,
+      default: true
+    },
+    email: {
+      type: Boolean,
+      default: true
+    }
+  },
+  privacySettings: {
+    profileVisibility: {
+      type: String,
+      enum: ['public', 'friends', 'private'],
+      default: 'public'
+    },
+    showEmail: {
+      type: Boolean,
+      default: false
+    },
+    showPhone: {
+      type: Boolean,
+      default: false
+    },
+    allowFriendRequests: {
+      type: Boolean,
+      default: true
+    },
+    allowMessagesFrom: {
+      type: String,
+      enum: ['everyone', 'friends', 'none'],
+      default: 'friends'
+    },
+    searchableByEmail: {
+      type: Boolean,
+      default: true
+    },
+    searchableByPhone: {
+      type: Boolean,
+      default: true
+    }
   }
 }, { timestamps: true });
 

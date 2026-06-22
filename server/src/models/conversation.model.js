@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+﻿const mongoose = require('mongoose');
 
 const conversationSchema = new mongoose.Schema({
     isGroup: {
@@ -7,7 +7,6 @@ const conversationSchema = new mongoose.Schema({
     },
     name: {
         type: String,
-        // Có thể custom validate: required nếu isGroup là true
     },
     avatar: {
         type: String

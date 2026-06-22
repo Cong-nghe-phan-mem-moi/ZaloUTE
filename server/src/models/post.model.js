@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+﻿const mongoose = require('mongoose');
 const { mediaSchema } = require('./media.model'); // Import media sub-document
 
 const postSchema = new mongoose.Schema({
@@ -30,7 +30,7 @@ const postSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
-    media: [mediaSchema], // Nhúng sub-document Media vào Post
+    media: [mediaSchema],
     likes: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
