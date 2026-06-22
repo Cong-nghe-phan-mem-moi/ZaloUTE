@@ -6,6 +6,7 @@ import {
   updateUserProfile,
 } from "../../redux/slices/userSlice";
 import { userAPI } from "../../services/user.service";
+import { chatAPI } from "../../services/chat.service";
 import Composer from "../../components/home/Composer";
 import HomeHeader from "../../components/home/HomeHeader";
 import ProfileHeader from "../../components/profile/ProfileHeader";
@@ -303,6 +304,27 @@ const ProfilePage = ({ userId }) => {
     }
   };
 
+  const handleMessageUser = async () => {
+    const targetId = getProfileId(otherProfile);
+    if (!targetId) return;
+
+    try {
+      window.dispatchEvent(
+        new CustomEvent("zalo-open-mini-chat", {
+          detail: {
+            id: targetId,
+            _id: targetId,
+            userId: targetId,
+            fullName: otherProfile?.fullName,
+            avatar: otherProfile?.avatar || null,
+          },
+        }),
+      );
+    } catch (err) {
+      setNotice(getActionErrorMessage(err, "Unable to open chat."));
+    }
+  };
+
   const openPreview = (image, title) => {
     if (!image) return;
     setPreviewState({ open: true, image, title });
@@ -392,11 +414,15 @@ const ProfilePage = ({ userId }) => {
           <main className="mx-auto flex min-h-[calc(100vh-80px)] max-w-3xl items-center justify-center px-4 py-10">
             <div className="w-full rounded-2xl border border-[#dddfe2] bg-white p-8 text-center shadow-sm">
               <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-[#eef2ff] text-[#1d4ed8]">
-                <span className="material-symbols-outlined text-[40px]">block</span>
+                <span className="material-symbols-outlined text-[40px]">
+                  block
+                </span>
               </div>
 
               <h1 className="mt-6 text-2xl font-bold text-[#111827]">
-                {isBlocked ? "You blocked this user" : "This profile is unavailable"}
+                {isBlocked
+                  ? "You blocked this user"
+                  : "This profile is unavailable"}
               </h1>
 
               <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-[#6b7280]">
@@ -486,6 +512,7 @@ const ProfilePage = ({ userId }) => {
               isFollowing={displayProfile.isFollowedByMe}
               onToggleFollow={handleToggleFollow}
               followLoading={followLoading}
+              onMessage={handleMessageUser}
               onReportUser={() =>
                 setReportTarget({
                   type: "User",

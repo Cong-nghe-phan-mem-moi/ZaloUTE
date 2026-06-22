@@ -36,6 +36,7 @@ const ProfileHeader = ({
   onToggleFollow,
   followLoading = false,
   onReportUser,
+  onMessage,
 }) => {
   const {
     name,
@@ -71,20 +72,20 @@ const ProfileHeader = ({
             />
             <div className="flex min-w-0 flex-1 flex-wrap items-end justify-between gap-4">
               <div className="min-w-0 pb-2">
-              <h1 className="truncate text-3xl font-bold text-[#111827]">
-                {name}
-              </h1>
-              <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-[#6b7280]">
-                <span className="font-medium">{username}</span>
-                <span className="h-1 w-1 rounded-full bg-[#d1d5db]" />
-                <span
-                  className={
-                    isOnline ? "text-emerald-600" : "text-[#9ca3af]"
-                  }
-                >
-                  {isOnline ? "Active now" : "Offline"}
-                </span>
-              </p>
+                <h1 className="truncate text-3xl font-bold text-[#111827]">
+                  {name}
+                </h1>
+                <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-[#6b7280]">
+                  <span className="font-medium">{username}</span>
+                  <span className="h-1 w-1 rounded-full bg-[#d1d5db]" />
+                  <span
+                    className={
+                      isOnline ? "text-emerald-600" : "text-[#9ca3af]"
+                    }
+                  >
+                    {isOnline ? "Active now" : "Offline"}
+                  </span>
+                </p>
               </div>
 
               <ActionButtons
@@ -110,6 +111,7 @@ const ProfileHeader = ({
                 onToggleFollow={onToggleFollow}
                 followLoading={followLoading}
                 onReportUser={onReportUser}
+                onMessage={onMessage}
               />
             </div>
           </div>
@@ -238,6 +240,7 @@ const ActionButtons = ({
   onToggleFollow,
   followLoading,
   onReportUser,
+  onMessage,
 }) => {
   if (!isOwnProfile) {
     const action = relationLabels[relation] || relationLabels.none;
@@ -344,7 +347,11 @@ const ActionButtons = ({
           Report
         </button>
 
-        <button className="flex items-center gap-1.5 rounded-md bg-[#e5e7eb] px-4 py-2 text-sm font-semibold text-[#111827] transition-colors hover:bg-[#d1d5db]">
+        <button
+          type="button"
+          onClick={onMessage}
+          className="flex items-center gap-1.5 rounded-md bg-[#e5e7eb] px-4 py-2 text-sm font-semibold text-[#111827] transition-colors hover:bg-[#d1d5db]"
+        >
           <span className="material-symbols-outlined text-[16px]">chat</span>
           Message
         </button>
