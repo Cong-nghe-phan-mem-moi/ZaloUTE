@@ -2,6 +2,26 @@ const FriendRequestRepo = require("../repositories/friendRequest.repository");
 const UserRepository = require("../repositories/user.repository");
 const NotificationService = require("./notification.service");
 
+const isBlockedBetweenUsers = async (userAId, userBId) => {
+  const [userA, userB] = await Promise.all([
+    UserRepository.getUserById(userAId),
+    UserRepository.getUserById(userBId),
+  ]);
+
+  if (!userA || !userB) {
+    return false;
+  }
+
+  const userABlocked = (userA.blockedUsers || []).some(
+    (user) => String(user?._id || user) === String(userBId),
+  );
+  const userBBlocked = (userB.blockedUsers || []).some(
+    (user) => String(user?._id || user) === String(userAId),
+  );
+
+  return userABlocked || userBBlocked;
+};
+
 const hasFriend = (user, friendId) =>
   user.friends?.some(
     (id) => (id?._id || id).toString() === friendId.toString(),
@@ -64,6 +84,14 @@ async function sendFriendRequest(senderId, receiverId) {
     throw {
       statusCode: 400,
       message: "You cannot send a friend request to yourself",
+    };
+  }
+
+  if (await isBlockedBetweenUsers(senderId, receiverId)) {
+    throw {
+      statusCode: 403,
+      code: "FRIEND_REQUEST_BLOCKED",
+      message: "You cannot send a friend request to this user",
     };
   }
 
@@ -147,6 +175,14 @@ async function acceptFriendRequest(senderId, receiverId) {
     };
   }
 
+  if (await isBlockedBetweenUsers(senderId, receiverId)) {
+    throw {
+      statusCode: 403,
+      code: "FRIEND_REQUEST_BLOCKED",
+      message: "You cannot accept this friend request",
+    };
+  }
+
   const senderExists = await UserRepository.getUserById(senderId);
   if (!senderExists) {
     throw {
@@ -198,6 +234,18 @@ async function acceptFriendRequest(senderId, receiverId) {
     FriendRequestRepo.updateRequestStatus(request._id, "accepted"),
     UserRepository.addFriend(requesterId, accepterId),
     UserRepository.addFriend(accepterId, requesterId),
+    UserRepository.updateProfile(requesterId, {
+      $addToSet: { following: accepterId },
+    }),
+    UserRepository.updateProfile(accepterId, {
+      $addToSet: { followers: requesterId },
+    }),
+    UserRepository.updateProfile(accepterId, {
+      $addToSet: { following: requesterId },
+    }),
+    UserRepository.updateProfile(requesterId, {
+      $addToSet: { followers: accepterId },
+    }),
   ]);
 
   const notification = await NotificationService.createNotification({
@@ -420,6 +468,8 @@ module.exports = {
   getFriendRelation,
   getPendingRequests,
 };
+
+
 
 
 

@@ -45,8 +45,7 @@ const getNotificationHref = (notification) => {
   }
 
   if (notification.type === "friend_request") {
-    const userId = data.profileId || notification.sender?._id;
-    return userId ? `/users/profile/${userId}` : "/friend-requests";
+    return "/friend-requests";
   }
 
   if (isFriendAcceptNotification(notification)) {

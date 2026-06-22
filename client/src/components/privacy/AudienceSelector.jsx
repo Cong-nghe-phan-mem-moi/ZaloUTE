@@ -1,6 +1,7 @@
 import { getPrivacyOption, PRIVACY_OPTIONS } from "../../utils/privacy";
 
-const getFriendId = (friend) => String(friend?._id || friend?.id || friend?.userId || "");
+const getFriendId = (friend) =>
+  String(friend?._id || friend?.id || friend?.userId || "");
 
 const AudienceSelector = ({
   friends = [],
@@ -40,9 +41,11 @@ const AudienceSelector = ({
 
   return (
     <div className={className}>
-      <label className="mb-1 block text-xs font-bold uppercase text-[#6b7280]">
-        Privacy
-      </label>
+      {compact ? null : (
+        <label className="mb-1 block text-xs font-bold uppercase text-[#6b7280]">
+          Privacy
+        </label>
+      )}
       <div className="relative">
         <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-[#4b5563]">
           {activeOption.icon}
@@ -50,8 +53,8 @@ const AudienceSelector = ({
         <select
           value={activeOption.value}
           onChange={(event) => updateType(event.target.value)}
-          className={`w-full rounded-md border border-[#d1d5db] bg-white pl-10 pr-3 text-sm font-semibold text-[#111827] outline-none focus:border-[#1877f2] ${
-            compact ? "py-1.5" : "py-2"
+          className={`w-full rounded-md border border-[#d1d5db] bg-white pl-10 pr-8 font-semibold text-[#111827] outline-none focus:border-[#1877f2] ${
+            compact ? "py-1 text-xs" : "py-2 text-sm"
           }`}
         >
           {PRIVACY_OPTIONS.map((option) => (
@@ -63,7 +66,9 @@ const AudienceSelector = ({
       </div>
 
       {compact ? null : (
-        <p className="mt-1 text-xs text-[#6b7280]">{activeOption.description}</p>
+        <p className="mt-1 text-xs text-[#6b7280]">
+          {activeOption.description}
+        </p>
       )}
 
       {shouldShowPeoplePicker ? (
