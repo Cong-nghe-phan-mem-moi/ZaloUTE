@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+﻿import { useRef, useState } from "react";
 import { useObjectUrls } from "../../hooks";
 import { useAppDispatch, useAppSelector } from "../../redux/hooks";
 import { createPost } from "../../redux/slices/postSlice";
@@ -53,7 +53,7 @@ const Composer = ({
     const formData = new FormData();
     formData.append("content", content.trim());
     
-    // Gộp logic xử lý FormData: Đăng vào Group hoặc Đăng kèm quyền riêng tư
+    // Shared FormData handling for group posts and posts with privacy.
     if (groupId) {
       formData.append("groupId", groupId);
     } else {
@@ -85,24 +85,24 @@ const Composer = ({
             <p className="text-sm font-bold">
               {profile?.fullName || "Hexa Betania"}
             </p>
-            {/* Gộp logic hiển thị nhãn phụ dưới tên */}
+            {/* Shared helper label under the name. */}
             <p className="flex items-center gap-1 text-xs text-[#6b7280]">
               <span className="material-symbols-outlined text-[14px]">
                 {groupId ? "groups" : privacyOption.icon}
               </span>
-              {groupId ? groupName || "Nhóm" : privacyOption.label}
+              {groupId ? groupName || "Groups" : privacyOption.label}
             </p>
           </div>
         </div>
 
-        {/* Gộp logic hiển thị phần mở rộng:
-          - Nếu ở trong Nhóm: Hiển thị thông báo duyệt bài (nếu cấu hình yêu cầu duyệt).
-          - Nếu ở Trang cá nhân/Newsfeed: Hiển thị thanh chọn đối tượng xem bài (AudienceSelector).
+        {/* Shared expanded section logic:
+          - Inside groups: show approval notice when required.
+          - On profile/newsfeed: show the audience selector.
         */}
         {groupId ? (
           requiresApproval && (
             <div className="mt-4 rounded-md bg-[#fff7ed] px-4 py-3 text-sm font-semibold text-[#c2410c]">
-              Bài viết của thành viên sẽ chờ admin duyệt trước khi hiển thị trong nhóm.
+              Member posts will wait for admin approval before appearing in the group.
             </div>
           )
         ) : (
@@ -162,7 +162,7 @@ const Composer = ({
                 disabled={loading}
                 className="rounded-md bg-[#1877f2] px-5 py-2 text-sm font-semibold text-white hover:bg-[#166fe5] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {loading ? "Đang đăng..." : (groupId && requiresApproval) ? "Gửi duyệt" : "Đăng"}
+                {loading ? "Posting..." : (groupId && requiresApproval) ? "Submit for review" : "Post"}
               </button>
             ) : (
               <span className="material-symbols-outlined text-[#6b7280]">
@@ -299,3 +299,4 @@ const ComposerAction = ({ icon, label, color, type = "button", onClick }) => (
 );
 
 export default Composer;
+

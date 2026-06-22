@@ -1,4 +1,4 @@
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
+﻿import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 import { postAPI } from '../../services/post.service'
 import { userAPI } from '../../services/user.service'
 
@@ -83,7 +83,7 @@ export const getGroupPosts = createAsyncThunk(
       return response.data.data
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || 'Không thể tải bài viết trong nhóm',
+        error.response?.data?.message || 'Unable to load group posts',
       )
     }
   },
@@ -318,8 +318,8 @@ const postSlice = createSlice({
         }
         state.message =
           action.payload?.approvalStatus === 'pending'
-            ? 'Bài viết đang chờ admin nhóm duyệt'
-            : 'Đã tạo bài viết thành công'
+            ? 'Post is waiting for group admin approval'
+            : 'Post created successfully'
       })
       .addCase(createPost.rejected, (state, action) => {
         state.loading = false
@@ -346,7 +346,6 @@ const postSlice = createSlice({
         state.error = action.payload
       })
 
-      // Get Group Posts (Từ nhánh feat/group)
       .addCase(getGroupPosts.pending, (state) => {
         state.loading = true
         state.error = null
@@ -365,7 +364,6 @@ const postSlice = createSlice({
         state.error = action.payload
       })
 
-      // Các Reducer tương tác bài viết (Từ nhánh develop)
       .addCase(hidePost.fulfilled, (state, action) => {
         state.posts = state.posts.filter((post) => post._id !== action.payload.postId)
         state.suggestedPosts = state.suggestedPosts.filter(

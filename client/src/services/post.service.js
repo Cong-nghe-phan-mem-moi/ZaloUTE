@@ -64,6 +64,17 @@ export const postAPI = {
     apiClient.get(`/posts/${postId}/comments`, { params: { page, limit } }),
   getPostsByAuthor: (authorId, page = 1, limit = 10) =>
     apiClient.get(`/posts/author/${authorId}`, { params: { page, limit } }),
+  getUserMedia: (authorId, { page = 1, limit = 48, type = "all" } = {}) =>
+    apiClient.get(`/posts/author/${authorId}/media`, {
+      params: { page, limit, type },
+    }),
+  getUserAlbums: (authorId) => apiClient.get(`/posts/author/${authorId}/albums`),
+  createAlbum: (payload) => apiClient.post("/posts/albums", payload),
+  updateAlbum: (albumId, payload) =>
+    apiClient.put(`/posts/albums/${albumId}`, payload),
+  deleteAlbum: (albumId) => apiClient.delete(`/posts/albums/${albumId}`),
+  getMediaDownloadUrl: (mediaId) =>
+    `/api/posts/media/${encodeURIComponent(mediaId)}/download`,
   getGroupPosts: (groupId, page = 1, limit = 10) =>
     apiClient.get(`/posts/group/${groupId}`, { params: { page, limit } }),
   getPendingGroupPosts: (groupId, page = 1, limit = 10) =>

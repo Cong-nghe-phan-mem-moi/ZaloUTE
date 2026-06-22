@@ -1,8 +1,23 @@
-import { useEffect } from 'react';
+import { useEffect } from "react";
 
-const Toast = ({ message, type = 'success', duration = 3000, onClose }) => {
+const toastStyles = {
+  success: {
+    bg: "bg-green-500",
+    icon: "check_circle",
+  },
+  error: {
+    bg: "bg-red-500",
+    icon: "error",
+  },
+  info: {
+    bg: "bg-blue-500",
+    icon: "info",
+  },
+};
+
+const Toast = ({ message, type = "success", duration = 3000, onClose }) => {
   useEffect(() => {
-    if (!message) return;
+    if (!message) return undefined;
 
     const timer = setTimeout(() => {
       onClose?.();
@@ -13,12 +28,13 @@ const Toast = ({ message, type = 'success', duration = 3000, onClose }) => {
 
   if (!message) return null;
 
-  const bgColor = type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500';
-  const icon = type === 'success' ? '✓' : type === 'error' ? '✕' : 'ℹ';
+  const style = toastStyles[type] || toastStyles.info;
 
   return (
-    <div className={`fixed bottom-4 right-4 ${bgColor} text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 animate-fade-in-up z-[100]`}>
-      <span className="text-lg font-bold">{icon}</span>
+    <div
+      className={`fixed bottom-4 right-4 z-[100] flex items-center gap-3 rounded-lg ${style.bg} px-4 py-3 text-white shadow-lg animate-fade-in-up`}
+    >
+      <span className="material-symbols-outlined text-[20px]">{style.icon}</span>
       <span className="text-sm font-medium">{message}</span>
     </div>
   );

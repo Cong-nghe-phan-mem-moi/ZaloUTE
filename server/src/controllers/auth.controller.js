@@ -193,7 +193,10 @@ const login = async (req, res) => {
       });
     }
 
-    const result = await authService.login(email, password);
+    const result = await authService.login(email, password, {
+      userAgent: req.get("user-agent") || "",
+      ipAddress: req.ip || req.socket?.remoteAddress || "",
+    });
     res.status(200).json({
       success: true,
       message: "Login successful!!!",

@@ -1,4 +1,4 @@
-const UserService = require('../services/user.service');
+ï»¿const UserService = require('../services/user.service');
 const FriendRequestService = require('../services/friendRequest.service');
 async function editProfile(req, res) {
   try {
@@ -220,6 +220,127 @@ async function getMyProfile(req, res) {
   }
 }
 
+async function getAccountSettings(req, res) {
+  try {
+    const result = await UserService.getAccountSettings(
+      req.user.userId,
+      req.user.sessionId,
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: result.data,
+    });
+  } catch (error) {
+    return handleAccountSettingsError(error, res, 'Get Account Settings Error:');
+  }
+}
+
+async function changePassword(req, res) {
+  try {
+    const result = await UserService.changePassword(
+      req.user.userId,
+      req.body.currentPassword,
+      req.body.newPassword,
+    );
+
+    return res.status(200).json(result);
+  } catch (error) {
+    return handleAccountSettingsError(error, res, 'Change Password Error:');
+  }
+}
+
+async function updateContactInfo(req, res) {
+  try {
+    const result = await UserService.updateContactInfo(req.user.userId, {
+      email: req.body.email,
+      phone: req.body.phone,
+      currentPassword: req.body.currentPassword,
+    }, req.user.sessionId);
+
+    return res.status(200).json(result);
+  } catch (error) {
+    return handleAccountSettingsError(error, res, 'Update Contact Info Error:');
+  }
+}
+
+async function updateNotificationSettings(req, res) {
+  try {
+    const result = await UserService.updateNotificationSettings(
+      req.user.userId,
+      req.body,
+      req.user.sessionId,
+    );
+
+    return res.status(200).json(result);
+  } catch (error) {
+    return handleAccountSettingsError(error, res, 'Update Notifications Error:');
+  }
+}
+
+async function updatePrivacySettings(req, res) {
+  try {
+    const result = await UserService.updatePrivacySettings(
+      req.user.userId,
+      req.body,
+      req.user.sessionId,
+    );
+
+    return res.status(200).json(result);
+  } catch (error) {
+    return handleAccountSettingsError(error, res, 'Update Privacy Error:');
+  }
+}
+
+async function revokeSession(req, res) {
+  try {
+    const result = await UserService.revokeSession(
+      req.user.userId,
+      req.params.sessionId,
+      req.user.sessionId,
+    );
+
+    return res.status(200).json(result);
+  } catch (error) {
+    return handleAccountSettingsError(error, res, 'Revoke Session Error:');
+  }
+}
+
+async function revokeOtherSessions(req, res) {
+  try {
+    const result = await UserService.revokeOtherSessions(
+      req.user.userId,
+      req.user.sessionId,
+    );
+
+    return res.status(200).json(result);
+  } catch (error) {
+    return handleAccountSettingsError(error, res, 'Revoke Other Sessions Error:');
+  }
+}
+
+async function deactivateAccount(req, res) {
+  try {
+    const result = await UserService.deactivateAccount(
+      req.user.userId,
+      req.body.currentPassword,
+    );
+
+    return res.status(200).json(result);
+  } catch (error) {
+    return handleAccountSettingsError(error, res, 'Deactivate Account Error:');
+  }
+}
+
+function handleAccountSettingsError(error, res, logLabel) {
+  console.error(logLabel, error);
+
+  return res.status(error.statusCode || 500).json({
+    success: false,
+    code: error.code || 'ACCOUNT_SETTINGS_ERROR',
+    message: error.message || 'Internal server error',
+  });
+}
 async function getMyProfileIsUser(req, res) {
   try {
     const userId = req.user.userId;
@@ -433,7 +554,7 @@ async function getBlockedUsers(req, res) {
 // [POST] /api/users/logout
 async function logout(req, res) {
   try {
-    await UserService.logout(req.user.userId);
+    await UserService.logout(req.user.userId, req.user.sessionId);
     return res.status(200).json({
       success: true,
       message: 'Logged out successfully',
@@ -451,7 +572,7 @@ async function logout(req, res) {
 
 async function handleGlobalSearch(req, res) {
   try {
-    const { q, keyword, type, limit } = req.query;
+    const { q, keyword, type, limit, time, friends, media } = req.query;
     const myId = req.user.userId;
     const searchText = (q || keyword || '').trim();
     const searchType = type || (keyword ? 'user' : 'all');
@@ -459,7 +580,7 @@ async function handleGlobalSearch(req, res) {
     if (!searchText) {
       return res.status(400).json({
         success: false,
-        message: 'Vui lòng nh?p t? khóa d? tìm ki?m!'
+        message: 'Please enter a search keyword.'
       });
     }
 
@@ -467,7 +588,10 @@ async function handleGlobalSearch(req, res) {
       q: searchText,
       type: searchType,
       limit: limit,
-      myId
+      myId,
+      time,
+      friends,
+      media,
     });
 
     return res.status(200).json({
@@ -503,6 +627,14 @@ module.exports = {
   uploadCoverImage,
   handleMulterError,
   getMyProfile,
+  getAccountSettings,
+  changePassword,
+  updateContactInfo,
+  updateNotificationSettings,
+  updatePrivacySettings,
+  revokeSession,
+  revokeOtherSessions,
+  deactivateAccount,
   getMyProfileIsUser,
   getMyProfileIsAdmin,
   searchUsers,
