@@ -16,6 +16,22 @@ const throwError = (statusCode, code, message) => {
 };
 
 const onlineTracker = require("../utils/onlineTracker");
+const areUsersBlockedForDirectChat = async (userAId, userBId) => {
+  const [userA, userB] = await Promise.all([
+    User.findById(userAId).select("blockedUsers"),
+    User.findById(userBId).select("blockedUsers"),
+  ]);
+
+  const userABlocked = (userA?.blockedUsers || []).some(
+    (id) => String(id) === String(userBId),
+  );
+  const userBBlocked = (userB?.blockedUsers || []).some(
+    (id) => String(id) === String(userAId),
+  );
+
+  return userABlocked || userBBlocked;
+};
+
 const sendToUser = (userId, payload) => {
   const userClients = clients.get(userId.toString());
   if (!userClients) return;
@@ -74,6 +90,10 @@ class ChatService {
     const targetUser = await UserRepository.findById(targetUserId);
     if (!targetUser) {
       throwError(404, "USER_NOT_FOUND", "Target user not found");
+    }
+
+    if (await areUsersBlockedForDirectChat(userId, targetUserId)) {
+      throwError(403, "DIRECT_CHAT_BLOCKED", "You cannot message this user");
     }
 
     let conversation = await chatRepository.findDirectConversation(userId, targetUserId);
@@ -572,6 +592,24 @@ class ChatService {
             if (type === "send_message") {
               const { content, messageType, replyTo, mentions } = payload;
               if (!content || String(content).trim() === "") return;
+
+              if (!conversation.isGroup) {
+                const otherParticipant = conversation.participants.find(
+                  (participant) => participant._id.toString() !== ws.userId.toString(),
+                );
+
+                if (
+                  otherParticipant &&
+                  (await areUsersBlockedForDirectChat(ws.userId, otherParticipant._id))
+                ) {
+                  ws.send(JSON.stringify({
+                    type: "error",
+                    conversationId,
+                    message: "You cannot message this user",
+                  }));
+                  return;
+                }
+              }
 
               // Check blocking
               if (conversation.blockedBy && conversation.blockedBy.length > 0) {
