@@ -24,6 +24,54 @@ router.get(
   userController.getBlockedUsers,
 );
 
+router.get(
+  "/account-settings",
+  authMiddleware.authMiddleware,
+  userController.getAccountSettings,
+);
+
+router.put(
+  "/account-settings/password",
+  authMiddleware.authMiddleware,
+  userController.changePassword,
+);
+
+router.put(
+  "/account-settings/contact",
+  authMiddleware.authMiddleware,
+  userController.updateContactInfo,
+);
+
+router.put(
+  "/account-settings/notifications",
+  authMiddleware.authMiddleware,
+  userController.updateNotificationSettings,
+);
+
+router.put(
+  "/account-settings/privacy",
+  authMiddleware.authMiddleware,
+  userController.updatePrivacySettings,
+);
+
+router.delete(
+  "/account-settings/sessions/:sessionId",
+  authMiddleware.authMiddleware,
+  userController.revokeSession,
+);
+
+router.delete(
+  "/account-settings/sessions",
+  authMiddleware.authMiddleware,
+  userController.revokeOtherSessions,
+);
+
+router.delete(
+  "/account-settings",
+  authMiddleware.authMiddleware,
+  userController.deactivateAccount,
+);
+
 router.post(
   "/:id/block",
   authMiddleware.authMiddleware,

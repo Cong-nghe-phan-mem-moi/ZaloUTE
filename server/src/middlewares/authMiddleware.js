@@ -16,7 +16,7 @@ const authMiddleware = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     if (decoded.accountId) {
       const account = await Account.findById(decoded.accountId).select(
-        'status suspendedUntil suspensionReason',
+        'status suspendedUntil suspensionReason loginSessions',
       );
 
       if (!account) {
@@ -47,6 +47,23 @@ const authMiddleware = async (req, res, next) => {
               ? `Account is suspended until ${new Date(account.suspendedUntil).toLocaleString()}`
               : 'Account is not active',
         });
+      }
+
+      if (decoded.sessionId) {
+        const session = (account.loginSessions || []).find(
+          (item) => item.sessionId === decoded.sessionId,
+        );
+
+        if (!session || session.revokedAt) {
+          return res.status(401).json({
+            success: false,
+            code: 'SESSION_REVOKED',
+            message: 'Login session has ended',
+          });
+        }
+
+        session.lastActiveAt = new Date();
+        await account.save();
       }
     }
 

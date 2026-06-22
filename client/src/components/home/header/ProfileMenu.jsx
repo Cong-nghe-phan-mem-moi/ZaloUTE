@@ -18,6 +18,16 @@ const ProfileMenu = ({ profile, isLoggingOut, onLogout }) => (
 
     <div className="my-1 h-px bg-[#e5e7eb]" />
 
+    <Link
+      to="/account/settings"
+      className="flex items-center gap-3 rounded-lg p-3 text-left text-sm font-semibold text-[#111827] hover:bg-[#f2f3f5]"
+    >
+      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#f1f3f5]">
+        <span className="material-symbols-outlined text-[20px]">settings</span>
+      </span>
+      Account settings
+    </Link>
+
     <button
       type="button"
       onClick={onLogout}
@@ -33,4 +43,3 @@ const ProfileMenu = ({ profile, isLoggingOut, onLogout }) => (
 );
 
 export default ProfileMenu;
-

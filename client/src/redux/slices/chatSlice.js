@@ -1,4 +1,4 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+﻿import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { chatAPI } from "../../services/chat.service";
 
 const initialState = {
@@ -226,7 +226,6 @@ const chatSlice = createSlice({
         state.activeConversation &&
         state.activeConversation._id === message.conversationId
       ) {
-        // Tránh trùng lặp tin nhắn
         const exists = state.messages.some((m) => m._id === message._id);
         if (!exists) {
           state.messages.push(message);
@@ -260,7 +259,6 @@ const chatSlice = createSlice({
         };
       }
       
-      // Sắp xếp lại danh sách hội thoại theo updatedAt giảm dần
       state.conversations.sort(
         (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
       );

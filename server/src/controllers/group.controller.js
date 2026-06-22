@@ -1,4 +1,4 @@
-const GroupService = require('../services/group.service');
+﻿const GroupService = require('../services/group.service');
 
 function getAuthUserId(req) {
   return req.user.userId || req.user.id;
@@ -12,6 +12,27 @@ function sendError(res, error, fallbackCode, fallbackMessage) {
   });
 }
 
+function parseJsonField(value, fallback) {
+  if (value === undefined || value === null || value === '') return fallback;
+  if (Array.isArray(value)) return value;
+
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+}
+
+function parseBooleanField(value) {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') return value === 'true';
+  return !!value;
+}
+
+function getUploadedAvatar(req) {
+  return req.file ? `/uploads/${req.file.filename}` : undefined;
+}
+
 async function createGroup(req, res) {
   try {
     const creatorId = getAuthUserId(req);
@@ -20,20 +41,20 @@ async function createGroup(req, res) {
     const newGroup = await GroupService.createNewGroup(creatorId, {
       name,
       description,
-      avatar,
-      isPrivate,
-      invitedUserIds,
+      avatar: getUploadedAvatar(req) || avatar,
+      isPrivate: parseBooleanField(isPrivate),
+      invitedUserIds: parseJsonField(invitedUserIds, invitedUserIds),
     });
 
     return res.status(201).json({
       success: true,
-      message: 'Tạo nhóm thành công',
+      message: 'Group created successfully',
       code: 'CREATE_GROUP_SUCCESS',
       data: newGroup,
     });
   } catch (error) {
-    console.error('Lỗi khi tạo nhóm:', error);
-    return sendError(res, error, 'CREATE_GROUP_ERROR', 'Đã xảy ra lỗi khi tạo nhóm');
+    console.error('Error creating group:', error);
+    return sendError(res, error, 'CREATE_GROUP_ERROR', 'An error occurred while creating the group');
   }
 }
 
@@ -47,8 +68,8 @@ async function getGroups(req, res) {
       data: result,
     });
   } catch (error) {
-    console.error('Lỗi khi lấy danh sách nhóm:', error);
-    return sendError(res, error, 'GET_GROUP_ERROR', 'Đã xảy ra lỗi khi lấy danh sách nhóm');
+    console.error('Error loading groups:', error);
+    return sendError(res, error, 'GET_GROUP_ERROR', 'An error occurred while loading groups');
   }
 }
 
@@ -62,8 +83,8 @@ async function getGroupInvitations(req, res) {
       data: result,
     });
   } catch (error) {
-    console.error('Lỗi khi lấy lời mời vào nhóm:', error);
-    return sendError(res, error, 'GET_GROUP_INVITATIONS_ERROR', 'Đã xảy ra lỗi khi lấy lời mời vào nhóm');
+    console.error('Error loading group invitations:', error);
+    return sendError(res, error, 'GET_GROUP_INVITATIONS_ERROR', 'An error occurred while loading group invitations');
   }
 }
 
@@ -78,8 +99,8 @@ async function getGroupDetail(req, res) {
       data: result,
     });
   } catch (error) {
-    console.error('Lỗi khi lấy chi tiết nhóm:', error);
-    return sendError(res, error, 'GET_GROUP_DETAIL_ERROR', 'Đã xảy ra lỗi khi lấy chi tiết nhóm');
+    console.error('Error loading group details:', error);
+    return sendError(res, error, 'GET_GROUP_DETAIL_ERROR', 'An error occurred while loading group details');
   }
 }
 
@@ -87,18 +108,30 @@ async function handleUpdateGroupInfo(req, res) {
   try {
     const userId = getAuthUserId(req);
     const { groupId } = req.params;
+    const updateData = {
+      ...req.body,
+    };
 
-    const updatedGroup = await GroupService.updateGroupInfo(userId, groupId, req.body);
+    if (req.body.isPrivate !== undefined) {
+      updateData.isPrivate = parseBooleanField(req.body.isPrivate);
+    }
+
+    const uploadedAvatar = getUploadedAvatar(req);
+    if (uploadedAvatar) {
+      updateData.avatar = uploadedAvatar;
+    }
+
+    const updatedGroup = await GroupService.updateGroupInfo(userId, groupId, updateData);
 
     return res.status(200).json({
       success: true,
       code: 'UPDATE_GROUP_SUCCESS',
-      message: 'Cập nhật thông tin nhóm thành công',
+      message: 'Group information updated successfully',
       data: updatedGroup,
     });
   } catch (error) {
-    console.error('Lỗi khi cập nhật thông tin nhóm:', error);
-    return sendError(res, error, 'UPDATE_GROUP_ERROR', 'Đã xảy ra lỗi khi cập nhật nhóm');
+    console.error('Error updating group information:', error);
+    return sendError(res, error, 'UPDATE_GROUP_ERROR', 'An error occurred while updating the group');
   }
 }
 
@@ -113,11 +146,11 @@ async function handleInviteToGroup(req, res) {
     return res.status(200).json({
       success: true,
       code: 'INVITE_USERS_SUCCESS',
-      message: 'Đã gửi lời mời tham gia nhóm thành công',
+      message: 'Group invitation sent successfully',
     });
   } catch (error) {
-    console.error('Lỗi khi mời người dùng vào nhóm:', error);
-    return sendError(res, error, 'INVITE_USERS_ERROR', 'Đã xảy ra lỗi khi mời vào nhóm');
+    console.error('Error inviting users to group:', error);
+    return sendError(res, error, 'INVITE_USERS_ERROR', 'An error occurred while inviting users to the group');
   }
 }
 
@@ -131,11 +164,11 @@ async function handleAcceptGroupInvitation(req, res) {
     return res.status(200).json({
       success: true,
       code: 'ACCEPT_INVITATION_SUCCESS',
-      message: 'Chấp nhận lời mời tham gia nhóm thành công',
+      message: 'Group invitation accepted successfully',
     });
   } catch (error) {
-    console.error('Lỗi khi chấp nhận lời mời tham gia nhóm:', error);
-    return sendError(res, error, 'ACCEPT_INVITATION_ERROR', 'Đã xảy ra lỗi khi chấp nhận lời mời');
+    console.error('Error accepting group invitation:', error);
+    return sendError(res, error, 'ACCEPT_INVITATION_ERROR', 'An error occurred while accepting the invitation');
   }
 }
 
@@ -149,11 +182,11 @@ async function handleRejectGroupInvitation(req, res) {
     return res.status(200).json({
       success: true,
       code: 'REJECT_INVITATION_SUCCESS',
-      message: 'Đã từ chối lời mời tham gia nhóm',
+      message: 'Group invitation rejected',
     });
   } catch (error) {
-    console.error('Lỗi khi từ chối lời mời tham gia nhóm:', error);
-    return sendError(res, error, 'REJECT_INVITATION_ERROR', 'Đã xảy ra lỗi khi từ chối lời mời');
+    console.error('Error rejecting group invitation:', error);
+    return sendError(res, error, 'REJECT_INVITATION_ERROR', 'An error occurred while rejecting the invitation');
   }
 }
 
@@ -167,11 +200,11 @@ async function handleRequestJoinGroup(req, res) {
     return res.status(200).json({
       success: true,
       code: 'REQUEST_JOIN_GROUP_SUCCESS',
-      message: 'Đã gửi yêu cầu tham gia nhóm, vui lòng chờ admin duyệt',
+      message: 'Join request sent. Please wait for admin approval',
     });
   } catch (error) {
-    console.error('Lỗi khi gửi yêu cầu tham gia nhóm:', error);
-    return sendError(res, error, 'REQUEST_JOIN_GROUP_ERROR', 'Đã xảy ra lỗi khi gửi yêu cầu tham gia nhóm');
+    console.error('Error sending join request:', error);
+    return sendError(res, error, 'REQUEST_JOIN_GROUP_ERROR', 'An error occurred while sending the join request');
   }
 }
 
@@ -190,11 +223,11 @@ async function handleCancelGroupInvitation(req, res) {
     return res.status(200).json({
       success: true,
       code: 'CANCEL_INVITATION_SUCCESS',
-      message: 'Đã xóa lời mời tham gia nhóm',
+      message: 'Group invitation cancelled',
     });
   } catch (error) {
-    console.error('Lỗi khi xóa lời mời tham gia nhóm:', error);
-    return sendError(res, error, 'CANCEL_INVITATION_ERROR', 'Đã xảy ra lỗi khi xóa lời mời');
+    console.error('Error cancelling group invitation:', error);
+    return sendError(res, error, 'CANCEL_INVITATION_ERROR', 'An error occurred while cancelling the invitation');
   }
 }
 
@@ -213,11 +246,11 @@ async function handleApproveJoinRequest(req, res) {
     return res.status(200).json({
       success: true,
       code: 'APPROVE_REQUEST_SUCCESS',
-      message: 'Duyệt thành viên vào nhóm thành công',
+      message: 'Join request approved successfully',
     });
   } catch (error) {
-    console.error('Lỗi khi duyệt yêu cầu tham gia nhóm:', error);
-    return sendError(res, error, 'APPROVE_REQUEST_ERROR', 'Đã xảy ra lỗi khi duyệt thành viên');
+    console.error('Error approving join request:', error);
+    return sendError(res, error, 'APPROVE_REQUEST_ERROR', 'An error occurred while approving the member');
   }
 }
 
@@ -232,11 +265,11 @@ async function handleAssignAdmin(req, res) {
     return res.status(200).json({
       success: true,
       code: 'ASSIGN_ADMIN_SUCCESS',
-      message: 'Bổ nhiệm Admin mới thành công',
+      message: 'New admin assigned successfully',
     });
   } catch (error) {
-    console.error('Lỗi khi bổ nhiệm Admin nhóm:', error);
-    return sendError(res, error, 'ASSIGN_ADMIN_ERROR', 'Đã xảy ra lỗi khi bổ nhiệm admin');
+    console.error('Error assigning group admin:', error);
+    return sendError(res, error, 'ASSIGN_ADMIN_ERROR', 'An error occurred while assigning admin');
   }
 }
 
@@ -255,11 +288,11 @@ async function handleRemoveMember(req, res) {
     return res.status(200).json({
       success: true,
       code: 'REMOVE_MEMBER_SUCCESS',
-      message: 'Đã xóa thành viên khỏi nhóm',
+      message: 'Member removed from group',
     });
   } catch (error) {
-    console.error('Lỗi khi xóa thành viên khỏi nhóm:', error);
-    return sendError(res, error, 'REMOVE_MEMBER_ERROR', 'Đã xảy ra lỗi khi xóa thành viên');
+    console.error('Error removing member from group:', error);
+    return sendError(res, error, 'REMOVE_MEMBER_ERROR', 'An error occurred while removing the member');
   }
 }
 
@@ -278,3 +311,4 @@ module.exports = {
   handleAssignAdmin,
   handleRemoveMember,
 };
+

@@ -1,4 +1,4 @@
-const chatRepository = require("../repositories/chat.repository");
+﻿const chatRepository = require("../repositories/chat.repository");
 const UserRepository = require("../repositories/user.repository");
 const Message = require("../models/message.model");
 const Conversation = require("../models/conversation.model");
@@ -16,8 +16,6 @@ const throwError = (statusCode, code, message) => {
 };
 
 const onlineTracker = require("../utils/onlineTracker");
-
-// Gửi payload dạng JSON tới người dùng cụ thể
 const sendToUser = (userId, payload) => {
   const userClients = clients.get(userId.toString());
   if (!userClients) return;
@@ -73,8 +71,6 @@ class ChatService {
     if (userId.toString() === targetUserId.toString()) {
       throwError(400, "INVALID_TARGET", "Cannot chat with yourself");
     }
-
-    // Kiểm tra xem targetUser có tồn tại không
     const targetUser = await UserRepository.findById(targetUserId);
     if (!targetUser) {
       throwError(404, "USER_NOT_FOUND", "Target user not found");
@@ -88,8 +84,6 @@ class ChatService {
         participants: [userId, targetUserId],
       });
     }
-
-    // Lấy thông tin chi tiết cuộc trò chuyện đầy đủ
     const populated = await chatRepository.getConversationById(conversation._id);
     return {
       success: true,
@@ -102,8 +96,6 @@ class ChatService {
     if (!conversation) {
       throwError(404, "CONVERSATION_NOT_FOUND", "Conversation not found");
     }
-
-    // Kiểm tra xem user có nằm trong cuộc trò chuyện này không
     const isParticipant = conversation.participants.some(
       (p) => p._id.toString() === userId.toString()
     );
@@ -113,8 +105,6 @@ class ChatService {
 
     const skip = (page - 1) * limit;
     const messages = await chatRepository.getMessagesByConversationId(conversationId, skip, limit);
-    
-    // Đảo ngược lại để sắp xếp tin nhắn theo thứ tự thời gian tăng dần trước khi gửi về client
     const chronologicalMessages = messages.reverse();
 
     return {
@@ -186,8 +176,6 @@ class ChatService {
     if (!Array.isArray(participantIds)) {
       throwError(400, "INVALID_PARTICIPANTS", "Invalid list of members");
     }
-
-    // Đảm bảo có creatorId trong danh sách và loại bỏ trùng lặp
     const uniqueParticipants = Array.from(
       new Set([creatorId.toString(), ...participantIds.map(p => p.toString())])
     );
@@ -195,8 +183,6 @@ class ChatService {
     if (uniqueParticipants.length < 3) {
       throwError(400, "MIN_MEMBERS", "A group must have at least 3 members");
     }
-
-    // Tạo nhóm
     const conversation = await chatRepository.createConversation({
       isGroup: true,
       name: name.trim(),
@@ -205,8 +191,6 @@ class ChatService {
     });
 
     const creator = await UserRepository.findById(creatorId);
-
-    // Tạo tin nhắn hệ thống báo tạo nhóm
     const savedMessage = await chatRepository.saveMessage({
       conversationId: conversation._id,
       senderId: creatorId,
@@ -216,11 +200,7 @@ class ChatService {
     });
 
     await chatRepository.updateConversationLastMessage(conversation._id, savedMessage._id);
-
-    // Lấy thông tin chi tiết cuộc trò chuyện đầy đủ
     const populated = await chatRepository.getConversationById(conversation._id);
-
-    // Gửi cập nhật qua WS cho tất cả các thành viên
     uniqueParticipants.forEach((pId) => {
       sendToUser(pId, {
         type: "conversation_update",
@@ -262,14 +242,10 @@ class ChatService {
     if (adminId.toString() === targetUserId.toString()) {
       throwError(400, "CANNOT_REMOVE_SELF", "Group admin cannot remove themselves. Please use the leave group feature.");
     }
-
-    // Xóa thành viên
     const updatedConv = await chatRepository.removeParticipant(conversationId, targetUserId);
 
     const adminUser = await UserRepository.findById(adminId);
     const targetUser = await UserRepository.findById(targetUserId);
-
-    // Lưu tin nhắn hệ thống
     const savedMessage = await chatRepository.saveMessage({
       conversationId,
       senderId: adminId,
@@ -279,11 +255,7 @@ class ChatService {
     });
 
     await chatRepository.updateConversationLastMessage(conversationId, savedMessage._id);
-
-    // Lấy lại hội thoại chi tiết sau khi cập nhật lastMessage
     const finalPopulated = await chatRepository.getConversationById(conversationId);
-
-    // Gửi WS đến các thành viên còn lại
     finalPopulated.participants.forEach((p) => {
       const pId = p._id.toString();
       sendToUser(pId, {
@@ -295,8 +267,6 @@ class ChatService {
         data: savedMessage,
       });
     });
-
-    // Gửi WS thông báo xóa hội thoại cho người bị xóa
     sendToUser(targetUserId, {
       type: "conversation_remove",
       conversationId: conversationId,
@@ -324,26 +294,19 @@ class ChatService {
     if (!isParticipant) {
       throwError(400, "NOT_PARTICIPANT", "You are not a member of this group");
     }
-
-    // Xóa thành viên khỏi cuộc trò chuyện
     let updatedConv = await chatRepository.removeParticipant(conversationId, userId);
 
     const leavingUser = await UserRepository.findById(userId);
     let systemMsgContent = `${leavingUser.fullName} left the group`;
-
-    // Nếu người rời đi là admin
     if (conversation.admin?._id.toString() === userId.toString()) {
       const remainingParticipants = updatedConv.participants;
       if (remainingParticipants.length > 0) {
-        // Chỉ định người tiếp theo làm admin
         const newAdminId = remainingParticipants[0]._id;
         updatedConv = await chatRepository.updateConversationAdmin(conversationId, newAdminId);
         const newAdminUser = await UserRepository.findById(newAdminId);
         systemMsgContent = `${leavingUser.fullName} left the group and transferred group admin privileges to ${newAdminUser.fullName}`;
       }
     }
-
-    // Lưu tin nhắn hệ thống (chỉ cần nếu vẫn còn người trong nhóm)
     let savedMessage = null;
     if (updatedConv.participants.length > 0) {
       savedMessage = await chatRepository.saveMessage({
@@ -354,11 +317,7 @@ class ChatService {
         readBy: [userId],
       });
       await chatRepository.updateConversationLastMessage(conversationId, savedMessage._id);
-      
-      // Lấy thông tin cập nhật cuối cùng
       const finalPopulated = await chatRepository.getConversationById(conversationId);
-
-      // Gửi WS đến các thành viên còn lại
       finalPopulated.participants.forEach((p) => {
         const pId = p._id.toString();
         sendToUser(pId, {
@@ -371,8 +330,6 @@ class ChatService {
         });
       });
     }
-
-    // Gửi WS thông báo xóa hội thoại cho người rời nhóm
     sendToUser(userId, {
       type: "conversation_remove",
       conversationId: conversationId,
@@ -411,20 +368,14 @@ class ChatService {
     if (newMembersToAdd.length === 0) {
       throwError(400, "NO_NEW_MEMBERS", "All selected users are already members of this group");
     }
-
-    // Thêm thành viên
     const updatedConv = await chatRepository.addParticipants(conversationId, newMembersToAdd);
 
     const adderUser = await UserRepository.findById(userId);
-    
-    // Lấy tên các thành viên để ghi vào tin nhắn hệ thống
     const addedUsers = await Promise.all(
       newMembersToAdd.map(id => UserRepository.findById(id))
     );
     const addedNames = addedUsers.map(u => u.fullName).join(", ");
     const systemMsgText = `${adderUser.fullName} added ${addedNames} to the group`;
-
-    // Lưu tin nhắn hệ thống
     const savedMessage = await chatRepository.saveMessage({
       conversationId,
       senderId: userId,
@@ -436,8 +387,6 @@ class ChatService {
     await chatRepository.updateConversationLastMessage(conversationId, savedMessage._id);
 
     const finalPopulated = await chatRepository.getConversationById(conversationId);
-
-    // Gửi WebSocket cho tất cả thành viên trong nhóm (bao gồm các thành viên mới)
     finalPopulated.participants.forEach((p) => {
       const pId = p._id.toString();
       sendToUser(pId, {
@@ -579,7 +528,7 @@ class ChatService {
     server.on("upgrade", (request, socket, head) => {
       const url = new URL(request.url, `http://${request.headers.host}`);
       if (url.pathname !== "/api/chats/ws") {
-        return; // Nhường cho listener khác xử lý (ví dụ: notification ws)
+        return;
       }
 
       const token = url.searchParams.get("token");
@@ -606,16 +555,12 @@ class ChatService {
         addClient(decoded.userId, ws);
         
         ws.send(JSON.stringify({ type: "connected" }));
-
-        // Lắng nghe các sự kiện nhận được từ client qua WebSocket
         ws.on("message", async (rawMessage) => {
           try {
             const payload = JSON.parse(rawMessage);
             const { type, conversationId } = payload;
 
             if (!conversationId) return;
-
-            // Kiểm tra xem cuộc hội thoại có tồn tại và người dùng có phải thành viên không
             const conversation = await chatRepository.getConversationById(conversationId);
             if (!conversation) return;
 
@@ -659,8 +604,6 @@ class ChatService {
                   .filter((id) => id !== ws.userId.toString());
                 finalMentions = Array.from(new Set([...finalMentions, ...allParticipantIds]));
               }
-
-              // 1. Lưu tin nhắn vào CSDL
               const savedMessage = await chatRepository.saveMessage({
                 conversationId,
                 senderId: ws.userId,
@@ -695,26 +638,17 @@ class ChatService {
                   }
                 });
               }
-
-              // 2. Cập nhật tin nhắn cuối trong cuộc hội thoại
               await chatRepository.updateConversationLastMessage(conversationId, savedMessage._id);
-
-              // Lấy thông tin hội thoại cập nhật để gửi cho các client cập nhật sidebar
               const updatedConversation = await chatRepository.getConversationsByUserId(ws.userId);
               const conversationForThisId = updatedConversation.find(
                 (c) => c._id.toString() === conversationId.toString()
               );
-
-              // 3. Truyền tải tin nhắn mới đến tất cả người dùng trong phòng chat
               conversation.participants.forEach((participant) => {
                 const participantIdStr = participant._id.toString();
-                // Gửi tin nhắn mới
                 sendToUser(participantIdStr, {
                   type: "message",
                   data: savedMessage,
                 });
-
-                // Gửi hội thoại được cập nhật để cập nhật danh sách hội thoại của họ
                 sendToUser(participantIdStr, {
                   type: "conversation_update",
                   data: conversationForThisId || conversation,
@@ -775,7 +709,6 @@ class ChatService {
 
             } else if (type === "typing") {
               const { isTyping } = payload;
-              // Gửi trạng thái đang gõ tới tất cả các thành viên khác trong phòng chat
               conversation.participants.forEach((participant) => {
                 const participantIdStr = participant._id.toString();
                 if (participantIdStr !== ws.userId.toString()) {
@@ -789,10 +722,7 @@ class ChatService {
               });
 
             } else if (type === "read_receipt") {
-              // Cập nhật CSDL đánh dấu đã đọc
               await chatRepository.markMessagesAsRead(conversationId, ws.userId);
-              
-              // Lấy thông tin hội thoại mới nhất sau khi đã đánh dấu đọc để gửi về cho chính mình để xóa chấm xanh thông báo
               const updatedConversation = await chatRepository.getConversationsByUserId(ws.userId);
               const conversationForThisId = updatedConversation.find(
                 (c) => c._id.toString() === conversationId.toString()
@@ -803,8 +733,6 @@ class ChatService {
                   data: conversationForThisId,
                 });
               }
-
-              // Gửi trạng thái đã đọc tới các thành viên khác
               conversation.participants.forEach((participant) => {
                 const participantIdStr = participant._id.toString();
                 if (participantIdStr !== ws.userId.toString()) {

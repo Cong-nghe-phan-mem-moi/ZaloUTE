@@ -48,6 +48,78 @@ const updateAccountEmail = async (accountId, email) => {
   );
 };
 
+const updateAccountFields = async (accountId, updateData) => {
+  return Account.findByIdAndUpdate(accountId, updateData, {
+    returnDocument: "after",
+    runValidators: true,
+  });
+};
+
+const addLoginSession = async (accountId, session) => {
+  return Account.findByIdAndUpdate(
+    accountId,
+    { $push: { loginSessions: session } },
+    { returnDocument: "after", runValidators: true },
+  );
+};
+
+const touchLoginSession = async (accountId, sessionId) => {
+  return Account.updateOne(
+    {
+      _id: accountId,
+      "loginSessions.sessionId": sessionId,
+      "loginSessions.revokedAt": null,
+    },
+    { $set: { "loginSessions.$.lastActiveAt": new Date() } },
+  );
+};
+
+const revokeLoginSession = async (accountId, sessionId) => {
+  return Account.updateOne(
+    {
+      _id: accountId,
+      "loginSessions.sessionId": sessionId,
+      "loginSessions.revokedAt": null,
+    },
+    { $set: { "loginSessions.$.revokedAt": new Date() } },
+  );
+};
+
+const revokeOtherLoginSessions = async (accountId, currentSessionId) => {
+  return Account.updateOne(
+    { _id: accountId },
+    {
+      $set: {
+        "loginSessions.$[session].revokedAt": new Date(),
+      },
+    },
+    {
+      arrayFilters: [
+        {
+          "session.sessionId": { $ne: currentSessionId },
+          "session.revokedAt": null,
+        },
+      ],
+      runValidators: true,
+    },
+  );
+};
+
+const revokeAllLoginSessions = async (accountId) => {
+  return Account.updateOne(
+    { _id: accountId },
+    {
+      $set: {
+        "loginSessions.$[session].revokedAt": new Date(),
+      },
+    },
+    {
+      arrayFilters: [{ "session.revokedAt": null }],
+      runValidators: true,
+    },
+  );
+};
+
 module.exports = {
   createAccount,
   deleteAccountByEmail,
@@ -56,4 +128,10 @@ module.exports = {
   updatePasswordHash,
   updateAccountStatus,
   updateAccountEmail,
+  updateAccountFields,
+  addLoginSession,
+  touchLoginSession,
+  revokeLoginSession,
+  revokeOtherLoginSessions,
+  revokeAllLoginSessions,
 };

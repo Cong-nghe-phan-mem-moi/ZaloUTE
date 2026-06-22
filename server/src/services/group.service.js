@@ -1,4 +1,4 @@
-const GroupRepository = require('../repositories/group.repository');
+﻿const GroupRepository = require('../repositories/group.repository');
 
 function throwCustomError(statusCode, message, code) {
   const error = new Error(message);
@@ -17,11 +17,11 @@ function includesUserId(values = [], userId) {
 
 async function getAdminGroup(adminId, groupId) {
   const group = await GroupRepository.findGroupById(groupId);
-  if (!group) throwCustomError(404, 'Không tìm thấy nhóm', 'GROUP_NOT_FOUND');
+  if (!group) throwCustomError(404, 'Group not found', 'GROUP_NOT_FOUND');
 
   const isAdmin = includesUserId(group.admins, adminId);
   if (!isAdmin) {
-    throwCustomError(403, 'Bạn không có quyền admin trong nhóm này', 'FORBIDDEN');
+    throwCustomError(403, 'You do not have admin permission in this group', 'FORBIDDEN');
   }
 
   return group;
@@ -32,7 +32,7 @@ async function createNewGroup(
   { name, description, avatar, isPrivate, invitedUserIds },
 ) {
   if (typeof name !== 'string' || name.trim() === '') {
-    throwCustomError(400, 'Tên nhóm không được để trống', 'VALIDATION_ERROR');
+    throwCustomError(400, 'Group name cannot be empty', 'VALIDATION_ERROR');
   }
 
   const groupData = {
@@ -60,7 +60,7 @@ async function getGroupInvitations(userId) {
 
 async function getGroupDetail(userId, groupId) {
   const group = await GroupRepository.findGroupDetailById(groupId);
-  if (!group) throwCustomError(404, 'Không tìm thấy nhóm', 'GROUP_NOT_FOUND');
+  if (!group) throwCustomError(404, 'Group not found', 'GROUP_NOT_FOUND');
 
   const isCurrentUserMember = includesUserId(group.members, userId);
   const isCurrentUserAdmin = includesUserId(group.admins, userId);
@@ -68,7 +68,7 @@ async function getGroupDetail(userId, groupId) {
   const hasPendingRequest = includesUserId(group.pendingRequests, userId);
 
   if (group.isPrivate && !isCurrentUserMember && !isCurrentUserAdmin && !hasPendingInvite) {
-    throwCustomError(403, 'Bạn không có quyền xem nhóm riêng tư này', 'FORBIDDEN');
+    throwCustomError(403, 'You do not have permission to view this private group', 'FORBIDDEN');
   }
 
   return {
@@ -82,18 +82,18 @@ async function getGroupDetail(userId, groupId) {
 
 async function updateGroupInfo(userId, groupId, updateData) {
   const group = await GroupRepository.findGroupById(groupId);
-  if (!group) throwCustomError(404, 'Không tìm thấy nhóm', 'GROUP_NOT_FOUND');
+  if (!group) throwCustomError(404, 'Group not found', 'GROUP_NOT_FOUND');
 
   const isAdmin = group.admins.some((id) => id.toString() === userId.toString());
   if (!isAdmin) {
-    throwCustomError(403, 'Bạn không có quyền chỉnh sửa nhóm này', 'FORBIDDEN');
+    throwCustomError(403, 'You do not have permission to edit this group', 'FORBIDDEN');
   }
 
   if (
     updateData.name !== undefined
     && (typeof updateData.name !== 'string' || updateData.name.trim() === '')
   ) {
-    throwCustomError(400, 'Tên nhóm không được để trống', 'VALIDATION_ERROR');
+    throwCustomError(400, 'Group name cannot be empty', 'VALIDATION_ERROR');
   }
 
   const allowedFields = ['name', 'description', 'avatar', 'isPrivate'];
@@ -114,17 +114,17 @@ async function inviteToGroup(userId, groupId, targetUserIds) {
   if (!Array.isArray(targetUserIds) || targetUserIds.length === 0) {
     throwCustomError(
       400,
-      'Danh sách người được mời phải là một mảng hợp lệ',
+      'Invited users must be a valid array',
       'VALIDATION_ERROR',
     );
   }
 
   const group = await GroupRepository.findGroupById(groupId);
-  if (!group) throwCustomError(404, 'Không tìm thấy nhóm', 'GROUP_NOT_FOUND');
+  if (!group) throwCustomError(404, 'Group not found', 'GROUP_NOT_FOUND');
 
   const isAdmin = group.admins.some((id) => id.toString() === userId.toString());
   if (!isAdmin) {
-    throwCustomError(403, 'Bạn không có quyền Admin để mời người khác vào nhóm này', 'FORBIDDEN');
+    throwCustomError(403, 'You need admin permission to invite users to this group', 'FORBIDDEN');
   }
 
   const validInvites = targetUserIds.filter(
@@ -134,7 +134,7 @@ async function inviteToGroup(userId, groupId, targetUserIds) {
   if (validInvites.length === 0) {
     throwCustomError(
       400,
-      'Tất cả người dùng được chọn đều đã là thành viên của nhóm',
+      'All selected users are already group members',
       'VALIDATION_ERROR',
     );
   }
@@ -144,16 +144,16 @@ async function inviteToGroup(userId, groupId, targetUserIds) {
 
 async function acceptGroupInvitation(userId, groupId) {
   const group = await GroupRepository.findGroupById(groupId);
-  if (!group) throwCustomError(404, 'Không tìm thấy nhóm', 'GROUP_NOT_FOUND');
+  if (!group) throwCustomError(404, 'Group not found', 'GROUP_NOT_FOUND');
 
   const hasInvite = group.pendingInvites.some((id) => id.toString() === userId.toString());
   if (!hasInvite) {
-    throwCustomError(400, 'Bạn không có lời mời tham gia nhóm này', 'INVITE_NOT_FOUND');
+    throwCustomError(400, 'You do not have an invitation to this group', 'INVITE_NOT_FOUND');
   }
 
   const result = await GroupRepository.removeInviteAndAddMember(groupId, userId);
   if (!result.modifiedCount) {
-    throwCustomError(409, 'Không thể cập nhật lời mời, vui lòng tải lại nhóm và thử lại', 'INVITE_UPDATE_FAILED');
+    throwCustomError(409, 'Unable to update invitation. Please reload the group and try again', 'INVITE_UPDATE_FAILED');
   }
 
   return result;
@@ -161,16 +161,16 @@ async function acceptGroupInvitation(userId, groupId) {
 
 async function rejectGroupInvitation(userId, groupId) {
   const group = await GroupRepository.findGroupById(groupId);
-  if (!group) throwCustomError(404, 'Không tìm thấy nhóm', 'GROUP_NOT_FOUND');
+  if (!group) throwCustomError(404, 'Group not found', 'GROUP_NOT_FOUND');
 
   const hasInvite = group.pendingInvites.some((id) => id.toString() === userId.toString());
   if (!hasInvite) {
-    throwCustomError(400, 'Bạn không có lời mời tham gia nhóm này', 'INVITE_NOT_FOUND');
+    throwCustomError(400, 'You do not have an invitation to this group', 'INVITE_NOT_FOUND');
   }
 
   const result = await GroupRepository.removePendingInvite(groupId, userId);
   if (!result.modifiedCount) {
-    throwCustomError(409, 'Không thể từ chối lời mời, vui lòng tải lại nhóm và thử lại', 'INVITE_REJECT_FAILED');
+    throwCustomError(409, 'Unable to reject invitation. Please reload the group and try again', 'INVITE_REJECT_FAILED');
   }
 
   return result;
@@ -178,23 +178,23 @@ async function rejectGroupInvitation(userId, groupId) {
 
 async function requestJoinGroup(userId, groupId) {
   const group = await GroupRepository.findGroupById(groupId);
-  if (!group) throwCustomError(404, 'Không tìm thấy nhóm', 'GROUP_NOT_FOUND');
+  if (!group) throwCustomError(404, 'Group not found', 'GROUP_NOT_FOUND');
 
   if (includesUserId(group.members, userId) || includesUserId(group.admins, userId)) {
-    throwCustomError(409, 'Bạn đã là thành viên nhóm này', 'ALREADY_MEMBER');
+    throwCustomError(409, 'You are already a member of this group', 'ALREADY_MEMBER');
   }
 
   if (includesUserId(group.pendingRequests, userId)) {
-    throwCustomError(409, 'Yêu cầu tham gia nhóm đang chờ admin duyệt', 'REQUEST_ALREADY_PENDING');
+    throwCustomError(409, 'Your join request is waiting for admin approval', 'REQUEST_ALREADY_PENDING');
   }
 
   if (includesUserId(group.pendingInvites, userId)) {
-    throwCustomError(409, 'Bạn đã có lời mời tham gia nhóm này, hãy chấp nhận lời mời', 'INVITE_ALREADY_PENDING');
+    throwCustomError(409, 'You already have an invitation to this group. Please accept it', 'INVITE_ALREADY_PENDING');
   }
 
   const result = await GroupRepository.addPendingRequest(groupId, userId);
   if (!result.modifiedCount) {
-    throwCustomError(409, 'Không thể gửi yêu cầu tham gia nhóm, vui lòng tải lại và thử lại', 'REQUEST_JOIN_FAILED');
+    throwCustomError(409, 'Unable to send join request. Please reload and try again', 'REQUEST_JOIN_FAILED');
   }
 
   return result;
@@ -202,18 +202,18 @@ async function requestJoinGroup(userId, groupId) {
 
 async function cancelGroupInvitation(adminId, groupId, targetUserId) {
   if (!targetUserId) {
-    throwCustomError(400, 'Thiếu người dùng cần xóa lời mời', 'VALIDATION_ERROR');
+    throwCustomError(400, 'Missing user to cancel invitation', 'VALIDATION_ERROR');
   }
 
   const group = await getAdminGroup(adminId, groupId);
   const hasInvite = includesUserId(group.pendingInvites, targetUserId);
   if (!hasInvite) {
-    throwCustomError(400, 'Người dùng này không nằm trong danh sách lời mời chờ', 'INVITE_NOT_FOUND');
+    throwCustomError(400, 'This user is not in the pending invitation list', 'INVITE_NOT_FOUND');
   }
 
   const result = await GroupRepository.removePendingInvite(groupId, targetUserId);
   if (!result.modifiedCount) {
-    throwCustomError(409, 'Không thể xóa lời mời, vui lòng tải lại nhóm và thử lại', 'INVITE_CANCEL_FAILED');
+    throwCustomError(409, 'Unable to cancel invitation. Please reload the group and try again', 'INVITE_CANCEL_FAILED');
   }
 
   return result;
@@ -221,25 +221,25 @@ async function cancelGroupInvitation(adminId, groupId, targetUserId) {
  
 async function approveJoinRequest(adminId, groupId, targetUserId) {
   if (!targetUserId) {
-    throwCustomError(400, 'Thiếu người dùng cần duyệt vào nhóm', 'VALIDATION_ERROR');
+    throwCustomError(400, 'Missing user to approve into the group', 'VALIDATION_ERROR');
   }
 
   const group = await GroupRepository.findGroupById(groupId);
-  if (!group) throwCustomError(404, 'Không tìm thấy nhóm', 'GROUP_NOT_FOUND');
+  if (!group) throwCustomError(404, 'Group not found', 'GROUP_NOT_FOUND');
 
   const isAdmin = group.admins.some((id) => id.toString() === adminId.toString());
   if (!isAdmin) {
-    throwCustomError(403, 'Chỉ có Admin mới có quyền duyệt thành viên', 'FORBIDDEN');
+    throwCustomError(403, 'Only admins can approve members', 'FORBIDDEN');
   }
 
   const hasRequest = group.pendingRequests.some((id) => id.toString() === targetUserId.toString());
   if (!hasRequest) {
-    throwCustomError(400, 'Người dùng này không nằm trong danh sách xin vào nhóm', 'REQUEST_NOT_FOUND');
+    throwCustomError(400, 'This user is not in the join request list', 'REQUEST_NOT_FOUND');
   }
 
   const result = await GroupRepository.removeRequestAndAddMember(groupId, targetUserId);
   if (!result.modifiedCount) {
-    throwCustomError(409, 'Không thể xóa yêu cầu chờ, vui lòng tải lại nhóm và thử lại', 'REQUEST_UPDATE_FAILED');
+    throwCustomError(409, 'Unable to update pending request. Please reload the group and try again', 'REQUEST_UPDATE_FAILED');
   }
 
   return result;
@@ -247,21 +247,21 @@ async function approveJoinRequest(adminId, groupId, targetUserId) {
 
 async function assignAdmin(adminId, groupId, targetUserId) {
   const group = await GroupRepository.findGroupById(groupId);
-  if (!group) throwCustomError(404, 'Không tìm thấy nhóm', 'GROUP_NOT_FOUND');
+  if (!group) throwCustomError(404, 'Group not found', 'GROUP_NOT_FOUND');
 
   const isAdmin = group.admins.some((id) => id.toString() === adminId.toString());
   if (!isAdmin) {
-    throwCustomError(403, 'Chỉ có Admin mới có quyền bổ nhiệm Admin mới', 'FORBIDDEN');
+    throwCustomError(403, 'Only admins can assign new admins', 'FORBIDDEN');
   }
 
   const isMember = group.members.some((id) => id.toString() === targetUserId.toString());
   if (!isMember) {
-    throwCustomError(400, 'Người này phải là thành viên nhóm trước khi lên làm Admin', 'VALIDATION_ERROR');
+    throwCustomError(400, 'This user must be a group member before becoming an admin', 'VALIDATION_ERROR');
   }
 
   const isAlreadyAdmin = group.admins.some((id) => id.toString() === targetUserId.toString());
   if (isAlreadyAdmin) {
-    throwCustomError(400, 'Người này đã là Admin từ trước rồi', 'VALIDATION_ERROR');
+    throwCustomError(400, 'This user is already an admin', 'VALIDATION_ERROR');
   }
 
   return await GroupRepository.addAdmin(groupId, targetUserId);
@@ -269,25 +269,25 @@ async function assignAdmin(adminId, groupId, targetUserId) {
 
 async function removeMember(adminId, groupId, targetUserId) {
   if (!targetUserId) {
-    throwCustomError(400, 'Thiếu thành viên cần xóa khỏi nhóm', 'VALIDATION_ERROR');
+    throwCustomError(400, 'Missing member to remove from group', 'VALIDATION_ERROR');
   }
 
   const group = await getAdminGroup(adminId, groupId);
   if (!includesUserId(group.members, targetUserId)) {
-    throwCustomError(400, 'Người dùng này không phải thành viên nhóm', 'MEMBER_NOT_FOUND');
+    throwCustomError(400, 'This user is not a group member', 'MEMBER_NOT_FOUND');
   }
 
   if (targetUserId.toString() === adminId.toString()) {
-    throwCustomError(400, 'Admin không thể tự xóa mình khỏi nhóm', 'CANNOT_REMOVE_SELF');
+    throwCustomError(400, 'Admins cannot remove themselves from the group', 'CANNOT_REMOVE_SELF');
   }
 
   if (getDocumentId(group.creator)?.toString() === targetUserId.toString()) {
-    throwCustomError(400, 'Không thể xóa người tạo nhóm', 'CANNOT_REMOVE_CREATOR');
+    throwCustomError(400, 'Cannot remove the group creator', 'CANNOT_REMOVE_CREATOR');
   }
 
   const result = await GroupRepository.removeMember(groupId, targetUserId);
   if (!result.modifiedCount) {
-    throwCustomError(409, 'Không thể xóa thành viên, vui lòng tải lại nhóm và thử lại', 'MEMBER_REMOVE_FAILED');
+    throwCustomError(409, 'Unable to remove member. Please reload the group and try again', 'MEMBER_REMOVE_FAILED');
   }
 
   return result;
@@ -308,3 +308,4 @@ module.exports = {
   assignAdmin,
   removeMember,
 };
+

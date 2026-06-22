@@ -1,4 +1,4 @@
-const express = require('express');
+﻿const express = require('express');
 const router = express.Router();
 const PostController = require('../controllers/post.controller');
 const { authMiddleware } = require('../middlewares/authMiddleware');
@@ -6,8 +6,6 @@ const upload = require('../middlewares/uploadMiddleware');
 
 // All post routes require authentication
 router.use(authMiddleware);
-
-// 4.1 Tạo bài viết (with file upload)
 router.post(
   '/',
   upload.postMedia,
@@ -26,6 +24,14 @@ router.get('/search', PostController.searchPosts);
 
 // Get posts by author
 router.get('/author/:authorId', PostController.getPostsByAuthor);
+router.get('/author/:authorId/media', PostController.getUserMedia);
+router.get('/author/:authorId/albums', PostController.getUserAlbums);
+
+// Albums
+router.post('/albums', PostController.createAlbum);
+router.put('/albums/:albumId', PostController.updateAlbum);
+router.delete('/albums/:albumId', PostController.deleteAlbum);
+router.get('/media/:mediaId/download', PostController.downloadMedia);
 
 // Group posts
 router.get('/group/:groupId', PostController.getGroupPosts);
@@ -43,25 +49,17 @@ router.post('/:postId/save', PostController.toggleSavePost);
 
 // Get single post (must be after /feed, /search, /author)
 router.get('/:postId', PostController.getPost);
-
-// 4.2 Chỉnh sửa bài viết (with file upload)
 router.put(
   '/:postId',
   upload.postMedia,
   upload.handleUploadError,
   PostController.updatePost,
 );
-
-// 4.3 Xóa bài viết
 router.delete('/:postId', PostController.deletePost);
 
 // Like/Unlike post
 router.post('/:postId/like', PostController.toggleLike);
-
-// 4.5 Xem danh sách like
 router.get('/:postId/likes', PostController.getPostLikes);
-
-// 4.6 Xem danh sách bình luận
 router.get('/:postId/comments', PostController.getPostComments);
 
 module.exports = router;

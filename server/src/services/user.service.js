@@ -1,3 +1,4 @@
+﻿const bcrypt = require("bcrypt");
 const UserRepository = require("../repositories/user.repository");
 const AuthRepository = require("../repositories/auth.repository");
 const GroupRepository = require("../repositories/group.repository");
@@ -9,8 +10,6 @@ const {
     canViewPostWithSharedSource,
     getFriendIdSet,
 } = require("../utils/privacy");
-
-// Hàm Helper tạo lỗi chuẩn Node.js (Giữ được Stack Trace để dễ debug sau này)
 const throwError = (statusCode, code, message) => {
     const error = new Error(message);
     error.statusCode = statusCode;
@@ -90,18 +89,95 @@ const hasBlockedPostAuthor = (post, blockedAuthorIds = new Set()) => {
   );
 };
 
+const normalizeEmail = (email) => email.trim().toLowerCase();
+
+const defaultNotificationSettings = {
+  posts: true,
+  comments: true,
+  friendRequests: true,
+  messages: true,
+  email: true,
+};
+
+const defaultPrivacySettings = {
+  profileVisibility: "public",
+  showEmail: false,
+  showPhone: false,
+  allowFriendRequests: true,
+  allowMessagesFrom: "friends",
+  searchableByEmail: true,
+  searchableByPhone: true,
+};
+
+const pickBooleanSettings = (input = {}, allowedKeys) =>
+  allowedKeys.reduce((result, key) => {
+    if (typeof input[key] === "boolean") {
+      result[key] = input[key];
+    }
+
+    return result;
+  }, {});
+
+const buildAccountSettingsResponse = (user, currentSessionId) => ({
+  contact: {
+    email: user.account?.email || "",
+    phone: user.phone || "",
+  },
+  notificationSettings: {
+    ...defaultNotificationSettings,
+    ...(user.notificationSettings?.toObject?.() || user.notificationSettings || {}),
+  },
+  privacySettings: {
+    ...defaultPrivacySettings,
+    ...(user.privacySettings?.toObject?.() || user.privacySettings || {}),
+  },
+  accountStatus: user.account?.status || "active",
+  sessions: (user.account?.loginSessions || [])
+    .filter((session) => !session.revokedAt)
+    .map((session) => ({
+      sessionId: session.sessionId,
+      userAgent: session.userAgent,
+      ipAddress: session.ipAddress,
+      createdAt: session.createdAt,
+      lastActiveAt: session.lastActiveAt,
+      isCurrent: session.sessionId === currentSessionId,
+    }))
+    .sort((a, b) => new Date(b.lastActiveAt) - new Date(a.lastActiveAt)),
+});
+
+const assertCurrentPassword = async (accountId, currentPassword) => {
+  if (!currentPassword) {
+    throwError(400, "CURRENT_PASSWORD_REQUIRED", "Current password is required");
+  }
+
+  const account = await AuthRepository.findAccountById(accountId);
+  if (!account) {
+    throwError(404, "ACCOUNT_NOT_FOUND", "Account not found");
+  }
+
+  const accountWithPassword = await AuthRepository.findAccountByEmail(account.email, {
+    includePassword: true,
+  });
+  const passwordMatches = await bcrypt.compare(
+    currentPassword,
+    accountWithPassword.passwordHash,
+  );
+
+  if (!passwordMatches) {
+    throwError(400, "INVALID_CURRENT_PASSWORD", "Current password is incorrect");
+  }
+
+  return accountWithPassword;
+};
+
 async function editProfile(userId, updateData) {
     const user = await UserRepository.getUserById(userId);
     if (!user) throwError(404, "USER_NOT_FOUND", "User not found");
-
-    // Xử lý cập nhật Email (Nằm ở collection Account)
     if (updateData.email) {
         if (!user.account)
             throwError(400, "ACCOUNT_NOT_FOUND", "Account not found");
 
         const normalizedEmail = updateData.email.trim().toLowerCase();
-
-        // TỐI ƯU LOGIC: Chỉ query DB check trùng lặp nếu người dùng THỰC SỰ nhập email mới
         if (normalizedEmail !== user.account.email) {
             const existingAccount =
                 await AuthRepository.findAccountByEmail(normalizedEmail);
@@ -113,24 +189,16 @@ async function editProfile(userId, updateData) {
                     "Email is already in use by another user",
                 );
             }
-
-            // Nếu không trùng với ai, tiến hành update
             await AuthRepository.updateAccountEmail(
                 user.account._id,
                 normalizedEmail,
             );
         }
-
-        // Phải xóa email khỏi updateData để không bị ném nhầm sang update bên bảng User
         delete updateData.email;
     }
-
-    // Xử lý cập nhật các trường còn lại (Nằm ở collection User)
     if (Object.keys(updateData).length > 0) {
         await UserRepository.updateProfile(userId, updateData);
     }
-
-    // Lấy lại User sau khi update để có data mới nhất (Bao gồm cả account email mới nếu có)
     const updatedUser = await UserRepository.getUserById(userId);
     if (!updatedUser)
         throwError(500, "UPDATE_FAILED", "Failed to update user profile");
@@ -207,11 +275,215 @@ async function getOtherUserProfile(userId, myId) {
     userObj,
     myId,
   );
+
+  const visibility = userObj.privacySettings?.profileVisibility || "public";
+  const isFriend = userObj.relation === "friend";
+
+  if (visibility === "private" || (visibility === "friends" && !isFriend)) {
+    throwError(403, "PROFILE_PRIVATE", "This profile is private");
+  }
+
+  if (!userObj.privacySettings?.showPhone) {
+    delete userObj.phone;
+  }
+
   userObj.isFollowedByMe = (myUser.following || []).some(
     (followedUser) => String(followedUser?._id || followedUser) === String(userId),
   );
 
     return userObj;
+}
+
+async function getAccountSettings(userId, currentSessionId) {
+  const user = await UserRepository.getUserById(userId);
+  if (!user) throwError(404, "USER_NOT_FOUND", "User not found");
+
+  return {
+    success: true,
+    data: buildAccountSettingsResponse(user, currentSessionId),
+  };
+}
+
+async function changePassword(userId, currentPassword, newPassword) {
+  if (!newPassword || newPassword.length < 6) {
+    throwError(400, "INVALID_PASSWORD", "Password must be at least 6 characters");
+  }
+
+  const user = await UserRepository.getUserById(userId);
+  if (!user?.account?._id) throwError(404, "ACCOUNT_NOT_FOUND", "Account not found");
+
+  const account = await assertCurrentPassword(user.account._id, currentPassword);
+  const samePassword = await bcrypt.compare(newPassword, account.passwordHash);
+
+  if (samePassword) {
+    throwError(400, "PASSWORD_UNCHANGED", "New password must be different");
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, 10);
+  await AuthRepository.updatePasswordHash(user.account._id, passwordHash);
+
+  return {
+    success: true,
+    message: "Password changed successfully",
+  };
+}
+
+async function updateContactInfo(userId, { email, phone, currentPassword }, currentSessionId) {
+  const user = await UserRepository.getUserById(userId);
+  if (!user?.account?._id) throwError(404, "ACCOUNT_NOT_FOUND", "Account not found");
+
+  const updateData = {};
+
+  if (email !== undefined) {
+    const normalizedEmail = normalizeEmail(email);
+
+    if (normalizedEmail !== user.account.email) {
+      await assertCurrentPassword(user.account._id, currentPassword);
+      const existingAccount = await AuthRepository.findAccountByEmail(normalizedEmail);
+
+      if (existingAccount) {
+        throwError(400, "EMAIL_ALREADY_IN_USE", "Email is already in use");
+      }
+
+      await AuthRepository.updateAccountEmail(user.account._id, normalizedEmail);
+    }
+  }
+
+  if (phone !== undefined) {
+    const normalizedPhone = String(phone || "").trim();
+
+    if (normalizedPhone && !/^\d{10}$/.test(normalizedPhone)) {
+      throwError(400, "INVALID_PHONE", "Phone number must contain 10 digits");
+    }
+
+    updateData.phone = normalizedPhone || null;
+  }
+
+  if (Object.keys(updateData).length > 0) {
+    await UserRepository.updateProfile(userId, updateData);
+  }
+
+  const updatedUser = await UserRepository.getUserById(userId);
+
+  return {
+    success: true,
+    message: "Contact information updated successfully",
+    data: buildAccountSettingsResponse(updatedUser, currentSessionId),
+  };
+}
+
+async function updateNotificationSettings(userId, settings, currentSessionId) {
+  const updateData = pickBooleanSettings(settings, Object.keys(defaultNotificationSettings));
+
+  if (Object.keys(updateData).length === 0) {
+    throwError(400, "NO_UPDATE_DATA", "No notification settings provided");
+  }
+
+  await UserRepository.updateProfile(userId, {
+    $set: Object.entries(updateData).reduce((fields, [key, value]) => {
+      fields[`notificationSettings.${key}`] = value;
+      return fields;
+    }, {}),
+  });
+
+  const updatedUser = await UserRepository.getUserById(userId);
+
+  return {
+    success: true,
+    message: "Notification settings updated successfully",
+    data: buildAccountSettingsResponse(updatedUser, currentSessionId),
+  };
+}
+
+async function updatePrivacySettings(userId, settings, currentSessionId) {
+  const updateData = pickBooleanSettings(settings, [
+    "showEmail",
+    "showPhone",
+    "allowFriendRequests",
+    "searchableByEmail",
+    "searchableByPhone",
+  ]);
+
+  if (["public", "friends", "private"].includes(settings.profileVisibility)) {
+    updateData.profileVisibility = settings.profileVisibility;
+  }
+
+  if (["everyone", "friends", "none"].includes(settings.allowMessagesFrom)) {
+    updateData.allowMessagesFrom = settings.allowMessagesFrom;
+  }
+
+  if (Object.keys(updateData).length === 0) {
+    throwError(400, "NO_UPDATE_DATA", "No privacy settings provided");
+  }
+
+  await UserRepository.updateProfile(userId, {
+    $set: Object.entries(updateData).reduce((fields, [key, value]) => {
+      fields[`privacySettings.${key}`] = value;
+      return fields;
+    }, {}),
+  });
+
+  const updatedUser = await UserRepository.getUserById(userId);
+
+  return {
+    success: true,
+    message: "Privacy settings updated successfully",
+    data: buildAccountSettingsResponse(updatedUser, currentSessionId),
+  };
+}
+
+async function revokeSession(userId, sessionId, currentSessionId) {
+  if (!sessionId) {
+    throwError(400, "SESSION_ID_REQUIRED", "Session ID is required");
+  }
+
+  const user = await UserRepository.getUserById(userId);
+  if (!user?.account?._id) throwError(404, "ACCOUNT_NOT_FOUND", "Account not found");
+
+  if (sessionId === currentSessionId) {
+    throwError(400, "CANNOT_REVOKE_CURRENT_SESSION", "Use logout to end current session");
+  }
+
+  await AuthRepository.revokeLoginSession(user.account._id, sessionId);
+  const updatedUser = await UserRepository.getUserById(userId);
+
+  return {
+    success: true,
+    message: "Session revoked successfully",
+    data: buildAccountSettingsResponse(updatedUser, currentSessionId),
+  };
+}
+
+async function revokeOtherSessions(userId, currentSessionId) {
+  const user = await UserRepository.getUserById(userId);
+  if (!user?.account?._id) throwError(404, "ACCOUNT_NOT_FOUND", "Account not found");
+
+  await AuthRepository.revokeOtherLoginSessions(user.account._id, currentSessionId);
+  const updatedUser = await UserRepository.getUserById(userId);
+
+  return {
+    success: true,
+    message: "Other sessions revoked successfully",
+    data: buildAccountSettingsResponse(updatedUser, currentSessionId),
+  };
+}
+
+async function deactivateAccount(userId, currentPassword) {
+  const user = await UserRepository.getUserById(userId);
+  if (!user?.account?._id) throwError(404, "ACCOUNT_NOT_FOUND", "Account not found");
+
+  await assertCurrentPassword(user.account._id, currentPassword);
+  await AuthRepository.updateAccountFields(user.account._id, { status: "inactive" });
+  await AuthRepository.revokeAllLoginSessions(user.account._id);
+  await UserRepository.setUserOffline(userId, {
+    isOnline: false,
+    lastActive: new Date(),
+  });
+
+  return {
+    success: true,
+    message: "Account deactivated successfully",
+  };
 }
 
 async function toggleFollowUser(userId, targetUserId) {
@@ -314,7 +586,6 @@ async function getBlockedUsers(userId) {
 }
 
 async function searchUsers(keyword, page, limit, myId) {
-  // 1. Kiểm tra keyword là sđt hay tên
   let queryCondition = { _id: { $ne: myId } };
   const isPhone = /^\d{10, 11}$/.test(keyword);
 
@@ -325,16 +596,10 @@ async function searchUsers(keyword, page, limit, myId) {
   }
 
   console.log(`searchUsers - queryCondition:`, queryCondition);
-
-  //2. Phân trang
   const skip = (page - 1) * limit;
-
-  // 3. Lấy data
   const users = await UserRepository.findUsers(queryCondition, skip, limit);
   const total = await UserRepository.countUsers(queryCondition);
   // console.log(`searchUsers - keyword: ${keyword}, isPhone: ${isPhone}, total found: ${total}`);
-
-  // 4. Quan hệ
   const usersWithRelation = await Promise.all(
     users.map(async (user) => {
       const relation = await FriendRequestService.getFriendRelation(user, myId);
@@ -370,7 +635,14 @@ async function searchUsers(keyword, page, limit, myId) {
   };
 }
 
-async function logout(userId) {
+async function logout(userId, sessionId) {
+    if (sessionId) {
+        const user = await UserRepository.getUserById(userId);
+        if (user?.account?._id) {
+            await AuthRepository.revokeLoginSession(user.account._id, sessionId);
+        }
+    }
+
     await UserRepository.setUserOffline(userId, {
         isOnline: false,
         lastActive: new Date(),
@@ -438,7 +710,80 @@ async function getUsersWithRelationStatus(myId, rawUsers) {
     return mappedUsers;
 }
 
-async function globalSearch({ q, type = "all", limit = 10, myId }) {
+function buildSearchPostFilter({ time, friends, media, myId, viewerFriendIds }) {
+    const filter = {};
+
+    if (time && time !== "any") {
+        const now = new Date();
+        const daysByTime = {
+            day: 1,
+            week: 7,
+            month: 30,
+            year: 365,
+        };
+        const days = daysByTime[time];
+
+        if (days) {
+            filter.createdAt = {
+                $gte: new Date(now.getTime() - days * 24 * 60 * 60 * 1000),
+            };
+        }
+    }
+
+    if (friends === "friends" && myId) {
+        filter.author = { $in: viewerFriendIds };
+    }
+
+    if (media === "photo") {
+        filter.media = { $elemMatch: { type: "image" } };
+    } else if (media === "video") {
+        filter.media = { $elemMatch: { type: "video" } };
+    } else if (media === "any_media") {
+        filter["media.0"] = { $exists: true };
+    }
+
+    return filter;
+}
+
+function extractHashtags(posts, q, limit) {
+    const normalizedQuery = q.replace(/^#/, "").toLowerCase();
+    const tagMap = new Map();
+
+    posts.forEach((post) => {
+        const matches = String(post.content || "").match(/#[\p{L}\p{N}_]+/gu) || [];
+
+        matches.forEach((tag) => {
+            const cleanTag = tag.slice(1);
+            if (!cleanTag.toLowerCase().includes(normalizedQuery)) return;
+
+            const key = cleanTag.toLowerCase();
+            const current = tagMap.get(key) || {
+                id: key,
+                tag: cleanTag,
+                count: 0,
+            };
+
+            tagMap.set(key, {
+                ...current,
+                count: current.count + 1,
+            });
+        });
+    });
+
+    return [...tagMap.values()]
+        .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag))
+        .slice(0, limit);
+}
+
+async function globalSearch({
+    q,
+    type = "all",
+    limit = 10,
+    myId,
+    time = "any",
+    friends = "all",
+    media = "all",
+}) {
     const currentLimit = parseInt(limit, 10) || 10;
     const keyword = removeVietnameseTones(q).toLowerCase();
     const viewer = myId ? await UserRepository.findById(myId) : null;
@@ -451,10 +796,20 @@ async function globalSearch({ q, type = "all", limit = 10, myId }) {
         ...usersBlockingViewer.map((user) => String(user?._id || user)),
     ]);
     const privacyFilter = buildPrivacyMongoFilter(myId, viewerFriendIds);
+    const searchPostFilter = buildSearchPostFilter({ time, friends, media, myId, viewerFriendIds });
     const postFilter = {
         ...privacyFilter,
+        ...searchPostFilter,
         author: { $nin: [...blockedAuthorIds] },
     };
+
+    if (searchPostFilter.author?.$in) {
+        postFilter.author = {
+            $in: searchPostFilter.author.$in.filter(
+                (friendId) => !blockedAuthorIds.has(String(friendId)),
+            ),
+        };
+    }
 
     if (type === "all") {
         const [rawUsers, groups, posts] = await Promise.all([
@@ -476,6 +831,7 @@ async function globalSearch({ q, type = "all", limit = 10, myId }) {
                 users: mappedUsers,
                 groups,
                 posts: visiblePosts,
+                hashtags: extractHashtags(visiblePosts, q, currentLimit),
             },
             nextLimit: currentLimit + 10
         };
@@ -505,8 +861,22 @@ async function globalSearch({ q, type = "all", limit = 10, myId }) {
             break;
         }
 
+        case 'hashtag': {
+            const rawPosts = await PostRepository.searchPosts({
+                keyword: q.replace(/^#/, ""),
+                limit: Math.max(currentLimit * 3, 30),
+                filter: postFilter,
+            });
+            const visiblePosts = rawPosts.filter((post) =>
+                !hasBlockedPostAuthor(post, blockedAuthorIds) &&
+                canViewPostWithSharedSource(post, myId, viewerFriendIds),
+            );
+            resultData = extractHashtags(visiblePosts, q, currentLimit);
+            break;
+        }
+
         default: {
-            const error = new Error('Loại tìm kiếm không hợp lệ!');
+            const error = new Error('Invalid search type.');
             error.statusCode = 400;
             throw error;
         }
@@ -524,6 +894,14 @@ async function globalSearch({ q, type = "all", limit = 10, myId }) {
 module.exports = {
   editProfile,
   getMyProfile,
+  getAccountSettings,
+  changePassword,
+  updateContactInfo,
+  updateNotificationSettings,
+  updatePrivacySettings,
+  revokeSession,
+  revokeOtherSessions,
+  deactivateAccount,
   updateProfileImage,
   globalSearch,
   getMyProfileByRole,

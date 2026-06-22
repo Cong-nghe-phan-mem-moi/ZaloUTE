@@ -1,4 +1,5 @@
 const bcrypt = require("bcrypt");
+const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 const AuthRepository = require("../repositories/auth.repository");
 const UserRepository = require("../repositories/user.repository");
@@ -179,7 +180,7 @@ const verifyOTP = async (email, otp) => {
   };
 };
 
-const login = async (email, password) => {
+const login = async (email, password, sessionMeta = {}) => {
   const normalizedEmail = normalizeEmail(email);
   const account = await AuthRepository.findAccountByEmail(normalizedEmail, {
     includePassword: true,
@@ -252,17 +253,27 @@ const login = async (email, password) => {
 
   const accountId = account._id.toString();
   const userId = account.user._id ? account.user._id.toString() : account.user.toString();
+  const sessionId = crypto.randomUUID();
   const payload = {
     id: userId,
     accountId,
     userId,
     email: account.email,
     role: account.role,
+    sessionId,
   };
 
   const token = jwt.sign(payload, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRE || "1h",
   });
+  await AuthRepository.addLoginSession(accountId, {
+    sessionId,
+    userAgent: sessionMeta.userAgent || "",
+    ipAddress: sessionMeta.ipAddress || "",
+    createdAt: new Date(),
+    lastActiveAt: new Date(),
+  });
+
   const redirectUrl =
     account.role === "admin" ? "/admin/dashboard" : "/user/profile";
 

@@ -475,7 +475,10 @@ const ProfilePage = ({ userId }) => {
             ) : null}
 
             {activeTab === "media" ? (
-              <ProfileMediaTab posts={profilePosts} />
+              <ProfileMediaTab
+                profile={currentProfile}
+                isOwnProfile={isOwnProfile}
+              />
             ) : null}
 
             {activeTab === "friends" ? (

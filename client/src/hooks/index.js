@@ -3,6 +3,7 @@ export { useCreateStoryForm } from "./stories/useCreateStoryForm";
 export { useHeaderChat } from "./header/useHeaderChat";
 export { useHeaderNotifications } from "./header/useHeaderNotifications";
 export { useHomeSidebar } from "./home/useHomeSidebar";
+export { useProfileFriends } from "./groups/useProfileFriends";
 export { useLogout } from "./useLogout";
 export { useObjectUrls } from "./useObjectUrls";
 export { useStories } from "./stories/useStories";

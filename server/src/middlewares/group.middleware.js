@@ -1,4 +1,4 @@
-const Group = require('../models/group.model');
+﻿const Group = require('../models/group.model');
 
 async function isGroupAdmin(req, res, next) {
   try {
@@ -10,7 +10,7 @@ async function isGroupAdmin(req, res, next) {
       return res.status(404).json({
         success: false,
         code: 'GROUP_NOT_FOUND',
-        message: 'Không tìm thấy nhóm',
+        message: 'Group not found',
       });
     }
 
@@ -19,7 +19,7 @@ async function isGroupAdmin(req, res, next) {
       return res.status(403).json({
         success: false,
         code: 'FORBIDDEN',
-        message: 'Bạn không có quyền admin trong nhóm này',
+        message: 'You do not have admin permission in this group',
       });
     }
 
@@ -33,3 +33,4 @@ async function isGroupAdmin(req, res, next) {
 module.exports = {
   isGroupAdmin,
 };
+

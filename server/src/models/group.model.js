@@ -1,12 +1,12 @@
-const mongoose = require('mongoose');
+﻿const mongoose = require('mongoose');
 const { removeVietnameseTones } = require("../utils/stringUtil");
 
 const groupSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: [true, 'Tên nhóm không được để trống'],
+    required: [true, 'Group name cannot be empty'],
     trim: true,
-    maxLength: [100, 'Tên nhóm không được vượt quá 100 ký tự']
+    maxLength: [100, 'Group name cannot exceed 100 characters']
   },
   searchName: {
     type: String,
@@ -20,7 +20,7 @@ const groupSchema = new mongoose.Schema({
   description: {
     type: String,
     trim: true,
-    maxLength: [200, 'Mô tả nhóm không được vượt quá 200 ký tự']
+    maxLength: [200, 'Group description cannot exceed 200 characters']
   },
   creator: {
     type: mongoose.Schema.Types.ObjectId,

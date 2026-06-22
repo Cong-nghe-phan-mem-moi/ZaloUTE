@@ -45,41 +45,45 @@ class PostRepository {
     return await Post.countDocuments();
   }
 
-  static async getPostsByAuthors(authorIds, skip, limit) {
+  static async getPostsByAuthors(authorIds, skip, limit, filter = {}, sort = { createdAt: -1 }) {
     return await populatePostQuery(Post.find({
       author: { $in: authorIds },
       group: null,
       approvalStatus: 'approved',
+      ...filter,
     }))
-      .sort({ createdAt: -1 })
+      .sort(sort)
       .skip(skip)
       .limit(limit);
   }
 
-  static async getPostsByAuthorsCount(authorIds) {
+  static async getPostsByAuthorsCount(authorIds, filter = {}) {
     return await Post.countDocuments({
       author: { $in: authorIds },
       group: null,
       approvalStatus: 'approved',
+      ...filter,
     });
   }
 
-  static async getPostsByAuthor(authorId, skip, limit) {
+  static async getPostsByAuthor(authorId, skip, limit, filter = {}) {
     return await populatePostQuery(Post.find({
       author: authorId,
       group: null,
       approvalStatus: 'approved',
+      ...filter,
     }))
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
   }
 
-  static async getPostsByAuthorCount(authorId) {
+  static async getPostsByAuthorCount(authorId, filter = {}) {
     return await Post.countDocuments({
       author: authorId,
       group: null,
       approvalStatus: 'approved',
+      ...filter,
     });
   }
 
@@ -221,11 +225,12 @@ class PostRepository {
   }
 }
 
-async function searchPosts({keyword, limit = 10, filter = {}}){
+async function searchPosts({ keyword, limit = 10, filter = {} }) {
   return await Post.find({
     $text: { $search: keyword },
     group: null,
     approvalStatus: 'approved',
+    ...filter,
   })
   .populate('author', '_id fullName avatar')
   .populate({
@@ -236,6 +241,7 @@ async function searchPosts({keyword, limit = 10, filter = {}}){
       { path: 'reactions.user', select: 'fullName avatar email' },
     ],
   })
+  .sort({ createdAt: -1 })
   .limit(limit)
   .lean()
 }

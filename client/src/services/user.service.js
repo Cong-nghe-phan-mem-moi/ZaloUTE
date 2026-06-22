@@ -17,9 +17,9 @@ export const userAPI = {
     apiClient.get("/users/search", {
       params: { keyword, page, limit },
     }),
-  globalSearch: (q, type = "all", limit = 10) =>
+  globalSearch: (q, type = "all", limit = 10, filters = {}) =>
     apiClient.get("/users/search", {
-      params: { q, type, limit },
+      params: { q, type, limit, ...filters },
     }),
   getOtherProfile: (id) => apiClient.get(`/users/profile/${id}`),
   sendFriendRequest: (receiverId) =>
@@ -40,5 +40,19 @@ export const userAPI = {
   unblockUser: (userId) => apiClient.post(`/users/${userId}/unblock`),
   toggleFollowUser: (userId) => apiClient.post(`/users/${userId}/follow`),
   getBlockedUsers: () => apiClient.get("/users/blocked"),
+  getAccountSettings: () => apiClient.get("/users/account-settings"),
+  changePassword: (data) =>
+    apiClient.put("/users/account-settings/password", data),
+  updateContactInfo: (data) =>
+    apiClient.put("/users/account-settings/contact", data),
+  updateNotificationSettings: (data) =>
+    apiClient.put("/users/account-settings/notifications", data),
+  updatePrivacySettings: (data) =>
+    apiClient.put("/users/account-settings/privacy", data),
+  revokeSession: (sessionId) =>
+    apiClient.delete(`/users/account-settings/sessions/${sessionId}`),
+  revokeOtherSessions: () => apiClient.delete("/users/account-settings/sessions"),
+  deactivateAccount: (data) =>
+    apiClient.delete("/users/account-settings", { data }),
   logout: () => apiClient.post("/users/logout"),
 };
