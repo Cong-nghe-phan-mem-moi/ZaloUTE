@@ -32,21 +32,27 @@ const HomeHeader = ({ profile, activePage = "home" }) => {
     miniMessages,
     miniLoading,
     miniLoadingOlder,
+    miniActiveStickerPack,
     miniHasMoreMessages,
     miniMessageText,
     miniMinimized,
     miniHasUnread,
+    miniStickerPacks,
+    miniStickersOpen,
     miniMessagesListRef,
     miniMessagesEndRef,
     closeMessages,
     handleMiniMinimize,
     handleMiniRestore,
+    handleMiniSendSticker,
     handleMiniSendMessage,
     handleToggleMessages,
     loadOlderMiniMessages,
     openMiniConversation,
     closeMiniConversation,
     setMiniMessageText,
+    setMiniActiveStickerPack,
+    setMiniStickersOpen,
   } = useHeaderChat(profile);
 
   const {
@@ -71,7 +77,7 @@ const HomeHeader = ({ profile, activePage = "home" }) => {
   useClickOutside(profileMenuRef, closeProfileMenu);
 
   return (
-    <header className="flex h-20 items-center justify-between gap-4 bg-white px-6 lg:px-12">
+    <header className="sticky top-0 z-40 flex h-20 items-center justify-between gap-4 border-b border-[#e5e7eb] bg-white px-6 shadow-sm lg:px-12">
       <div className="flex items-center gap-5">
         <AppLogo />
         <UserSearchBox />
@@ -83,8 +89,8 @@ const HomeHeader = ({ profile, activePage = "home" }) => {
         <HeaderTab icon="smart_display" />
         <HeaderTab
           icon="groups"
-          href="/friends"
-          active={activePage === "friends"}
+          href="/groups"
+          active={activePage === "groups"}
         />
       </nav>
 
@@ -175,13 +181,19 @@ const HomeHeader = ({ profile, activePage = "home" }) => {
           messagesEndRef={miniMessagesEndRef}
           messagesListRef={miniMessagesListRef}
           profile={profile}
+          activeStickerPack={miniActiveStickerPack}
           hasMoreMessages={miniHasMoreMessages}
           loadingOlder={miniLoadingOlder}
+          stickerPacks={miniStickerPacks}
+          stickersOpen={miniStickersOpen}
           onChangeMessage={setMiniMessageText}
           onClose={closeMiniConversation}
           onLoadOlder={loadOlderMiniMessages}
           onMinimize={handleMiniMinimize}
           onRestore={handleMiniRestore}
+          onSelectStickerPack={setMiniActiveStickerPack}
+          onSendSticker={handleMiniSendSticker}
+          onToggleStickers={() => setMiniStickersOpen((open) => !open)}
           onOpenFull={() =>
             navigate(`/messages?conversationId=${miniConversation._id}`)
           }

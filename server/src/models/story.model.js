@@ -76,6 +76,22 @@ const storySchema = new mongoose.Schema({
     required: true,
     index: true,
   },
+  privacy: {
+    type: {
+      type: String,
+      enum: ['public', 'friends', 'only_me', 'custom', 'hide_some'],
+      default: 'friends',
+      index: true,
+    },
+    allowedViewers: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    }],
+    hiddenViewers: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    }],
+  },
 }, { timestamps: true });
 
 storySchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });

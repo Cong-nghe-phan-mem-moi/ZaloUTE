@@ -3,6 +3,12 @@ const { Story, STORY_REACTIONS } = require('../models/story.model');
 const NotificationService = require('./notification.service');
 const chatRepository = require('../repositories/chat.repository');
 const onlineTracker = require('../utils/onlineTracker');
+const {
+  buildPrivacyMongoFilter,
+  canViewByPrivacy,
+  getFriendIdSet,
+  normalizePrivacyFromPayload,
+} = require('../utils/privacy');
 
 const STORY_LIFETIME_MS = 24 * 60 * 60 * 1000;
 
@@ -52,6 +58,26 @@ const buildStoryResponse = (story, currentUserId = null) => {
   return storyObj;
 };
 
+const getViewerContext = async (userId) => {
+  if (!userId) {
+    return { user: null, friendIds: [] };
+  }
+
+  const user = await User.findById(userId).select('friends blockedUsers');
+  return {
+    user,
+    friendIds: [...getFriendIdSet(user)],
+  };
+};
+
+const assertCanViewStory = async (story, userId) => {
+  const { friendIds } = await getViewerContext(userId);
+
+  if (!canViewByPrivacy(story, userId, friendIds)) {
+    throw new Error('Story not found');
+  }
+};
+
 class StoryService {
   static async createStory(userId, payload, media = null) {
     const text = payload.text?.trim() || '';
@@ -62,6 +88,10 @@ class StoryService {
     }
 
     const type = media?.type || 'text';
+    const privacy =
+      payload.privacy || payload.privacyType
+        ? normalizePrivacyFromPayload(payload)
+        : { type: 'friends', allowedViewers: [], hiddenViewers: [] };
     const story = await Story.create({
       author: userId,
       type,
@@ -72,18 +102,21 @@ class StoryService {
       reactions: [],
       replies: [],
       expiresAt: new Date(Date.now() + STORY_LIFETIME_MS),
+      privacy,
     });
 
     return await Story.findById(story._id).populate('author', 'fullName avatar email');
   }
 
   static async getActiveStories(userId) {
-    const user = await User.findById(userId).select('friends');
-    const authorIds = [userId, ...(user?.friends || [])];
+    const { friendIds } = await getViewerContext(userId);
+    const authorIds = [userId, ...friendIds];
+    const privacyFilter = buildPrivacyMongoFilter(userId, friendIds);
 
     const stories = await Story.find({
       author: { $in: authorIds },
       expiresAt: { $gt: new Date() },
+      ...privacyFilter,
     })
       .populate('author', 'fullName avatar email')
       .populate('viewers.user', 'fullName avatar email')
@@ -107,6 +140,7 @@ class StoryService {
     if (!story) {
       throw new Error('Story not found');
     }
+    await assertCanViewStory(story, userId);
 
     return buildStoryResponse(story, userId);
   }
@@ -120,6 +154,7 @@ class StoryService {
     if (!story) {
       throw new Error('Story not found');
     }
+    await assertCanViewStory(story, userId);
 
     await Story.updateOne(
       {
@@ -153,6 +188,7 @@ class StoryService {
     if (!story) {
       throw new Error('Story not found');
     }
+    await assertCanViewStory(story, userId);
 
     const existingReaction = story.reactions.find(
       (reaction) => normalizeUserId(reaction.user) === String(userId),
@@ -207,6 +243,7 @@ class StoryService {
     if (!story) {
       throw new Error('Story not found');
     }
+    await assertCanViewStory(story, userId);
 
     const authorId = normalizeUserId(story.author);
     if (authorId === String(userId)) {
@@ -270,6 +307,19 @@ class StoryService {
     }
 
     return getUniqueViewers(story.viewers, userId);
+  }
+
+  static async deleteStory(storyId, userId) {
+    const story = await Story.findOneAndDelete({
+      _id: storyId,
+      author: userId,
+    });
+
+    if (!story) {
+      throw new Error('Story not found');
+    }
+
+    return story;
   }
 }
 

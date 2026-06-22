@@ -17,6 +17,10 @@ export const userAPI = {
     apiClient.get("/users/search", {
       params: { keyword, page, limit },
     }),
+  globalSearch: (q, type = "all", limit = 10) =>
+    apiClient.get("/users/search", {
+      params: { q, type, limit },
+    }),
   getOtherProfile: (id) => apiClient.get(`/users/profile/${id}`),
   sendFriendRequest: (receiverId) =>
     apiClient.post("/users/friend-request", { receiverId }),
@@ -34,7 +38,7 @@ export const userAPI = {
     apiClient.delete("/users/friend-request/unfriend", { data: { friendId } }),
   blockUser: (userId) => apiClient.post(`/users/${userId}/block`),
   unblockUser: (userId) => apiClient.post(`/users/${userId}/unblock`),
+  toggleFollowUser: (userId) => apiClient.post(`/users/${userId}/follow`),
   getBlockedUsers: () => apiClient.get("/users/blocked"),
   logout: () => apiClient.post("/users/logout"),
 };
-

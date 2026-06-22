@@ -9,20 +9,34 @@ const createPostFormData = (content, media = []) => {
   return formData;
 };
 
+const appendOptionalFields = (formData, fields = {}) => {
+  Object.entries(fields).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== "") {
+      formData.append(key, value);
+    }
+  });
+
+  return formData;
+};
+
 export const postAPI = {
-  createPost: (formDataOrContent, media = []) => {
+  createPost: (formDataOrContent, media = [], options = {}) => {
     if (formDataOrContent instanceof FormData) {
+      appendOptionalFields(formDataOrContent, options);
       return apiClient.post("/posts", formDataOrContent);
     }
 
     return apiClient.post(
       "/posts",
-      createPostFormData(formDataOrContent, media),
+      appendOptionalFields(createPostFormData(formDataOrContent, media), options),
     );
   },
 
-  getNewsFeed: (page = 1, limit = 10) =>
-    apiClient.get("/posts/feed", { params: { page, limit } }),
+  getNewsFeed: (page = 1, limit = 10, sortBy = "newest") =>
+    apiClient.get("/posts/feed", { params: { page, limit, sortBy } }),
+
+  getSuggestedPosts: (limit = 3) =>
+    apiClient.get("/posts/suggested", { params: { limit } }),
 
   getPost: (postId) => apiClient.get(`/posts/${postId}`),
 
@@ -38,6 +52,8 @@ export const postAPI = {
   },
 
   deletePost: (postId) => apiClient.delete(`/posts/${postId}`),
+  hidePost: (postId) => apiClient.post(`/posts/${postId}/hide`),
+  toggleSavePost: (postId) => apiClient.post(`/posts/${postId}/save`),
   toggleLike: (postId, reactionType = "like") =>
     apiClient.post(`/posts/${postId}/like`, { reactionType }),
   sharePost: (postId, payload) =>
@@ -48,7 +64,12 @@ export const postAPI = {
     apiClient.get(`/posts/${postId}/comments`, { params: { page, limit } }),
   getPostsByAuthor: (authorId, page = 1, limit = 10) =>
     apiClient.get(`/posts/author/${authorId}`, { params: { page, limit } }),
+  getGroupPosts: (groupId, page = 1, limit = 10) =>
+    apiClient.get(`/posts/group/${groupId}`, { params: { page, limit } }),
+  getPendingGroupPosts: (groupId, page = 1, limit = 10) =>
+    apiClient.get(`/posts/group/${groupId}/pending`, { params: { page, limit } }),
+  approveGroupPost: (postId) => apiClient.post(`/posts/${postId}/approve`),
+  rejectGroupPost: (postId) => apiClient.post(`/posts/${postId}/reject`),
   searchPosts: (keyword, page = 1, limit = 10) =>
     apiClient.get("/posts/search", { params: { keyword, page, limit } }),
 };
-

@@ -17,15 +17,21 @@ const MiniChatWindow = ({
   messagesEndRef,
   messagesListRef,
   profile,
+  activeStickerPack,
   hasMoreMessages,
   loadingOlder,
+  stickerPacks,
+  stickersOpen,
   onChangeMessage,
   onClose,
   onLoadOlder,
   onMinimize,
   onRestore,
   onOpenFull,
+  onSelectStickerPack,
   onSendMessage,
+  onSendSticker,
+  onToggleStickers,
 }) => {
   const profileId = String(getProfileId(profile) || "");
   const title = getConversationTitle(conversation, profile);
@@ -141,40 +147,115 @@ const MiniChatWindow = ({
               key={message._id}
               className={`flex ${isMe ? "justify-end" : "justify-start"}`}
             >
-              <div
-                className={`max-w-[78%] rounded-2xl px-3 py-2 text-sm leading-5 ${
-                  isMe
-                    ? "rounded-br-sm bg-[#1877f2] text-white"
-                    : "rounded-bl-sm bg-white text-[#111827] shadow-sm"
-                }`}
-              >
-                {content}
-              </div>
+              {message.messageType === "sticker" ? (
+                <img
+                  src={message.content}
+                  alt="Sticker"
+                  className="h-24 w-24 rounded-xl object-contain"
+                />
+              ) : (
+                <div
+                  className={`max-w-[78%] rounded-2xl px-3 py-2 text-sm leading-5 ${
+                    isMe
+                      ? "rounded-br-sm bg-[#1877f2] text-white"
+                      : "rounded-bl-sm bg-white text-[#111827] shadow-sm"
+                  }`}
+                >
+                  {content}
+                </div>
+              )}
             </div>
           );
         })}
         <div ref={messagesEndRef} />
       </div>
 
-      <form
-        onSubmit={onSendMessage}
-        className="flex items-center gap-2 border-t border-[#e5e7eb] bg-white px-3 py-2"
-      >
-        <input
-          value={messageText}
-          onChange={(event) => onChangeMessage(event.target.value)}
-          className="min-w-0 flex-1 rounded-full bg-[#f2f3f5] px-4 py-2 text-sm text-[#111827] outline-none focus:ring-2 focus:ring-[#bfdbfe]"
-          placeholder="Aa"
-        />
-        <button
-          type="submit"
-          disabled={!messageText.trim()}
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-[#1877f2] text-white disabled:bg-[#cbd5e1]"
-          aria-label="Send message"
-        >
-          <span className="material-symbols-outlined text-[18px]">send</span>
-        </button>
-      </form>
+      <div className="relative border-t border-[#e5e7eb] bg-white">
+        {stickersOpen ? (
+          <div className="absolute bottom-full left-2 right-2 mb-2 rounded-xl border border-[#e5e7eb] bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-[#e5e7eb] px-2 py-2">
+              <div className="flex max-w-[230px] gap-1 overflow-x-auto">
+                {stickerPacks.length === 0 ? (
+                  <span className="px-2 py-1 text-xs font-semibold text-[#6b7280]">
+                    No sticker packs
+                  </span>
+                ) : (
+                  stickerPacks.map((pack, index) => (
+                    <button
+                      key={pack.name}
+                      type="button"
+                      onClick={() => onSelectStickerPack?.(index)}
+                      className={`shrink-0 rounded-full px-2 py-1 text-xs font-bold ${
+                        activeStickerPack === index
+                          ? "bg-[#1877f2] text-white"
+                          : "bg-[#f2f3f5] text-[#6b7280]"
+                      }`}
+                    >
+                      {pack.name}
+                    </button>
+                  ))
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={onToggleStickers}
+                className="rounded-full p-1 text-[#6b7280] hover:bg-[#f2f3f5]"
+              >
+                <span className="material-symbols-outlined text-[18px]">close</span>
+              </button>
+            </div>
+
+            <div className="grid max-h-48 grid-cols-4 gap-2 overflow-y-auto p-2">
+              {(stickerPacks[activeStickerPack]?.stickers || []).map((sticker) => (
+                <button
+                  key={sticker._id}
+                  type="button"
+                  onClick={() => onSendSticker?.(sticker)}
+                  className="rounded-lg p-1 hover:bg-[#f2f3f5]"
+                  title={sticker.name}
+                >
+                  <img
+                    src={sticker.imageUrl}
+                    alt={sticker.name}
+                    className="h-12 w-12 object-contain"
+                  />
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        <form onSubmit={onSendMessage} className="flex items-center gap-2 px-3 py-2">
+          <button
+            type="button"
+            onClick={onToggleStickers}
+            className={`flex h-9 w-9 items-center justify-center rounded-full ${
+              stickersOpen
+                ? "bg-[#e7f3ff] text-[#1877f2]"
+                : "text-[#4b5563] hover:bg-[#f2f3f5]"
+            }`}
+            aria-label="Open stickers"
+          >
+            <span className="material-symbols-outlined text-[18px]">
+              sticky_note_2
+            </span>
+          </button>
+          <input
+            value={messageText}
+            onChange={(event) => onChangeMessage(event.target.value)}
+            className="min-w-0 flex-1 rounded-full bg-[#f2f3f5] px-4 py-2 text-sm text-[#111827] outline-none focus:ring-2 focus:ring-[#bfdbfe]"
+            placeholder="Aa"
+          />
+          <button
+            type="submit"
+            disabled={!messageText.trim()}
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-[#1877f2] text-white disabled:bg-[#cbd5e1]"
+            aria-label="Send message"
+          >
+            <span className="material-symbols-outlined text-[18px]">send</span>
+          </button>
+        </form>
+      </div>
     </section>
   );
 };

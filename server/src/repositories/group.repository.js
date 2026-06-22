@@ -40,6 +40,26 @@ async function getGroupsByUserId(userId) {
         .lean();
 }
 
+async function getInvitationsByUserId(userId) {
+    const userIds = getIdVariants(userId);
+    const rawGroups = await Group.collection
+        .find({
+            pendingInvites: { $in: userIds },
+            members: { $nin: userIds }
+        })
+        .project({ _id: 1 })
+        .toArray();
+
+    return await Group.find({
+        _id: { $in: rawGroups.map((group) => group._id) }
+    })
+        .select('name avatar description members admins isPrivate creator pendingInvites')
+        .populate('creator', 'fullName avatar')
+        .populate('members', 'fullName avatar isOnline lastActive')
+        .populate('admins', 'fullName avatar isOnline lastActive')
+        .lean();
+}
+
 async function updateGroupInfo(groupId, updateData) {
     return await Group.findByIdAndUpdate(
         groupId,
@@ -59,6 +79,23 @@ async function addPendingInvites(groupId, targetUserIds) {
     );
 }
 
+async function addPendingRequest(groupId, userId) {
+    return await Group.updateOne(
+        {
+            _id: groupId,
+            members: { $nin: getIdVariants(userId) },
+            admins: { $nin: getIdVariants(userId) },
+            pendingInvites: { $nin: getIdVariants(userId) },
+            pendingRequests: { $nin: getIdVariants(userId) }
+        },
+        {
+            $addToSet: {
+                pendingRequests: toObjectId(userId)
+            }
+        }
+    );
+}
+
 async function removeInviteAndAddMember(groupId, userId) {
     const memberId = toObjectId(userId);
     const memberIds = getIdVariants(userId);
@@ -73,6 +110,33 @@ async function removeInviteAndAddMember(groupId, userId) {
         }
     );
 } 
+
+async function removePendingInvite(groupId, userId) {
+    const memberIds = getIdVariants(userId);
+    return await Group.collection.updateOne(
+        { _id: toObjectId(groupId) },
+        {
+            $pull: {
+                pendingInvites: { $in: memberIds }
+            }
+        }
+    );
+}
+
+async function removeMember(groupId, userId) {
+    const memberIds = getIdVariants(userId);
+    return await Group.collection.updateOne(
+        { _id: toObjectId(groupId) },
+        {
+            $pull: {
+                members: { $in: memberIds },
+                admins: { $in: memberIds },
+                pendingInvites: { $in: memberIds },
+                pendingRequests: { $in: memberIds }
+            }
+        }
+    );
+}
 
 async function removeRequestAndAddMember(groupId, userId) {
     const memberId = toObjectId(userId);
@@ -116,9 +180,13 @@ module.exports = {
     findGroupById,
     findGroupDetailById,
     getGroupsByUserId,
+    getInvitationsByUserId,
     updateGroupInfo,
     addPendingInvites,
+    addPendingRequest,
     removeInviteAndAddMember,
+    removePendingInvite,
+    removeMember,
     removeRequestAndAddMember,
     addAdmin,
     searchGroups,

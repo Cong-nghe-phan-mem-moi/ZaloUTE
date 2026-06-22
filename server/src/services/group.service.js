@@ -15,6 +15,18 @@ function includesUserId(values = [], userId) {
   return values.some((value) => getDocumentId(value)?.toString() === userId.toString());
 }
 
+async function getAdminGroup(adminId, groupId) {
+  const group = await GroupRepository.findGroupById(groupId);
+  if (!group) throwCustomError(404, 'Không tìm thấy nhóm', 'GROUP_NOT_FOUND');
+
+  const isAdmin = includesUserId(group.admins, adminId);
+  if (!isAdmin) {
+    throwCustomError(403, 'Bạn không có quyền admin trong nhóm này', 'FORBIDDEN');
+  }
+
+  return group;
+}
+
 async function createNewGroup(
   creatorId,
   { name, description, avatar, isPrivate, invitedUserIds },
@@ -40,6 +52,10 @@ async function createNewGroup(
 
 async function getGroups(userId) {
   return await GroupRepository.getGroupsByUserId(userId);
+}
+
+async function getGroupInvitations(userId) {
+  return await GroupRepository.getInvitationsByUserId(userId);
 }
 
 async function getGroupDetail(userId, groupId) {
@@ -142,6 +158,66 @@ async function acceptGroupInvitation(userId, groupId) {
 
   return result;
 }
+
+async function rejectGroupInvitation(userId, groupId) {
+  const group = await GroupRepository.findGroupById(groupId);
+  if (!group) throwCustomError(404, 'Không tìm thấy nhóm', 'GROUP_NOT_FOUND');
+
+  const hasInvite = group.pendingInvites.some((id) => id.toString() === userId.toString());
+  if (!hasInvite) {
+    throwCustomError(400, 'Bạn không có lời mời tham gia nhóm này', 'INVITE_NOT_FOUND');
+  }
+
+  const result = await GroupRepository.removePendingInvite(groupId, userId);
+  if (!result.modifiedCount) {
+    throwCustomError(409, 'Không thể từ chối lời mời, vui lòng tải lại nhóm và thử lại', 'INVITE_REJECT_FAILED');
+  }
+
+  return result;
+}
+
+async function requestJoinGroup(userId, groupId) {
+  const group = await GroupRepository.findGroupById(groupId);
+  if (!group) throwCustomError(404, 'Không tìm thấy nhóm', 'GROUP_NOT_FOUND');
+
+  if (includesUserId(group.members, userId) || includesUserId(group.admins, userId)) {
+    throwCustomError(409, 'Bạn đã là thành viên nhóm này', 'ALREADY_MEMBER');
+  }
+
+  if (includesUserId(group.pendingRequests, userId)) {
+    throwCustomError(409, 'Yêu cầu tham gia nhóm đang chờ admin duyệt', 'REQUEST_ALREADY_PENDING');
+  }
+
+  if (includesUserId(group.pendingInvites, userId)) {
+    throwCustomError(409, 'Bạn đã có lời mời tham gia nhóm này, hãy chấp nhận lời mời', 'INVITE_ALREADY_PENDING');
+  }
+
+  const result = await GroupRepository.addPendingRequest(groupId, userId);
+  if (!result.modifiedCount) {
+    throwCustomError(409, 'Không thể gửi yêu cầu tham gia nhóm, vui lòng tải lại và thử lại', 'REQUEST_JOIN_FAILED');
+  }
+
+  return result;
+}
+
+async function cancelGroupInvitation(adminId, groupId, targetUserId) {
+  if (!targetUserId) {
+    throwCustomError(400, 'Thiếu người dùng cần xóa lời mời', 'VALIDATION_ERROR');
+  }
+
+  const group = await getAdminGroup(adminId, groupId);
+  const hasInvite = includesUserId(group.pendingInvites, targetUserId);
+  if (!hasInvite) {
+    throwCustomError(400, 'Người dùng này không nằm trong danh sách lời mời chờ', 'INVITE_NOT_FOUND');
+  }
+
+  const result = await GroupRepository.removePendingInvite(groupId, targetUserId);
+  if (!result.modifiedCount) {
+    throwCustomError(409, 'Không thể xóa lời mời, vui lòng tải lại nhóm và thử lại', 'INVITE_CANCEL_FAILED');
+  }
+
+  return result;
+}
  
 async function approveJoinRequest(adminId, groupId, targetUserId) {
   if (!targetUserId) {
@@ -191,13 +267,44 @@ async function assignAdmin(adminId, groupId, targetUserId) {
   return await GroupRepository.addAdmin(groupId, targetUserId);
 }
 
+async function removeMember(adminId, groupId, targetUserId) {
+  if (!targetUserId) {
+    throwCustomError(400, 'Thiếu thành viên cần xóa khỏi nhóm', 'VALIDATION_ERROR');
+  }
+
+  const group = await getAdminGroup(adminId, groupId);
+  if (!includesUserId(group.members, targetUserId)) {
+    throwCustomError(400, 'Người dùng này không phải thành viên nhóm', 'MEMBER_NOT_FOUND');
+  }
+
+  if (targetUserId.toString() === adminId.toString()) {
+    throwCustomError(400, 'Admin không thể tự xóa mình khỏi nhóm', 'CANNOT_REMOVE_SELF');
+  }
+
+  if (getDocumentId(group.creator)?.toString() === targetUserId.toString()) {
+    throwCustomError(400, 'Không thể xóa người tạo nhóm', 'CANNOT_REMOVE_CREATOR');
+  }
+
+  const result = await GroupRepository.removeMember(groupId, targetUserId);
+  if (!result.modifiedCount) {
+    throwCustomError(409, 'Không thể xóa thành viên, vui lòng tải lại nhóm và thử lại', 'MEMBER_REMOVE_FAILED');
+  }
+
+  return result;
+}
+
 module.exports = {
   createNewGroup,
   getGroups,
+  getGroupInvitations,
   getGroupDetail,
   updateGroupInfo,
   inviteToGroup,
   acceptGroupInvitation,
+  rejectGroupInvitation,
+  requestJoinGroup,
+  cancelGroupInvitation,
   approveJoinRequest,
   assignAdmin,
+  removeMember,
 };

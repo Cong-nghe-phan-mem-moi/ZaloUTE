@@ -4,6 +4,11 @@ const GroupRepository = require("../repositories/group.repository");
 const PostRepository = require("../repositories/post.repository");
 const FriendRequestService = require("./friendRequest.service");
 const { removeVietnameseTones } = require("../utils/stringUtil");
+const {
+    buildPrivacyMongoFilter,
+    canViewPostWithSharedSource,
+    getFriendIdSet,
+} = require("../utils/privacy");
 
 // Hàm Helper tạo lỗi chuẩn Node.js (Giữ được Stack Trace để dễ debug sau này)
 const throwError = (statusCode, code, message) => {
@@ -34,6 +39,8 @@ const buildProfileResponse = (user) => ({
   isOnline: user.isOnline,
   lastActive: user.lastActive,
   friendsCount: user.friends?.length || 0,
+  followingCount: user.following?.length || 0,
+  followersCount: user.followers?.length || 0,
   friends: (user.friends || []).map((friend) => {
     const friendId = friend?._id || friend?.id || friend;
 
@@ -45,6 +52,20 @@ const buildProfileResponse = (user) => ({
       lastActive: friend.lastActive || null,
     };
   }),
+  following: (user.following || []).map((followedUser) => ({
+    id: followedUser?._id?.toString?.() || followedUser?.toString?.() || followedUser,
+    fullName: followedUser?.fullName || "Unknown",
+    avatar: followedUser?.avatar || null,
+    isOnline: followedUser?.isOnline || false,
+    lastActive: followedUser?.lastActive || null,
+  })),
+  followers: (user.followers || []).map((follower) => ({
+    id: follower?._id?.toString?.() || follower?.toString?.() || follower,
+    fullName: follower?.fullName || "Unknown",
+    avatar: follower?.avatar || null,
+    isOnline: follower?.isOnline || false,
+    lastActive: follower?.lastActive || null,
+  })),
   blockedUsers: (user.blockedUsers || []).map((blockedUser) => ({
     id: blockedUser?._id?.toString?.() || blockedUser?.toString?.() || blockedUser,
     fullName: blockedUser?.fullName || "Unknown",
@@ -58,6 +79,16 @@ const isUserBlocked = (user, targetUserId) =>
   (user?.blockedUsers || []).some(
     (blockedUser) => String(blockedUser?._id || blockedUser) === String(targetUserId),
   );
+
+const hasBlockedPostAuthor = (post, blockedAuthorIds = new Set()) => {
+  const authorId = String(post?.author?._id || post?.author || "");
+  const sharedAuthorId = String(post?.sharedFrom?.author?._id || post?.sharedFrom?.author || "");
+
+  return (
+    (authorId && blockedAuthorIds.has(authorId)) ||
+    (sharedAuthorId && blockedAuthorIds.has(sharedAuthorId))
+  );
+};
 
 async function editProfile(userId, updateData) {
     const user = await UserRepository.getUserById(userId);
@@ -176,8 +207,54 @@ async function getOtherUserProfile(userId, myId) {
     userObj,
     myId,
   );
+  userObj.isFollowedByMe = (myUser.following || []).some(
+    (followedUser) => String(followedUser?._id || followedUser) === String(userId),
+  );
 
     return userObj;
+}
+
+async function toggleFollowUser(userId, targetUserId) {
+  if (String(userId) === String(targetUserId)) {
+    throwError(400, "INVALID_FOLLOW_TARGET", "You cannot follow yourself");
+  }
+
+  const [user, targetUser] = await Promise.all([
+    UserRepository.getUserById(userId),
+    UserRepository.getUserById(targetUserId),
+  ]);
+
+  if (!user || !targetUser) {
+    throwError(404, "USER_NOT_FOUND", "User not found");
+  }
+
+  if (isUserBlocked(user, targetUserId) || isUserBlocked(targetUser, userId)) {
+    throwError(403, "PROFILE_BLOCKED", "You cannot follow this user");
+  }
+
+  const isFollowing = (user.following || []).some(
+    (followedUser) => String(followedUser?._id || followedUser) === String(targetUserId),
+  );
+
+  await Promise.all([
+    UserRepository.updateProfile(
+      userId,
+      isFollowing
+        ? { $pull: { following: targetUserId } }
+        : { $addToSet: { following: targetUserId } },
+    ),
+    UserRepository.updateProfile(
+      targetUserId,
+      isFollowing
+        ? { $pull: { followers: userId } }
+        : { $addToSet: { followers: userId } },
+    ),
+  ]);
+
+  return {
+    isFollowing: !isFollowing,
+    userId: targetUserId,
+  };
 }
 
 async function blockUser(userId, blockedUserId) {
@@ -364,15 +441,33 @@ async function getUsersWithRelationStatus(myId, rawUsers) {
 async function globalSearch({ q, type = "all", limit = 10, myId }) {
     const currentLimit = parseInt(limit, 10) || 10;
     const keyword = removeVietnameseTones(q).toLowerCase();
+    const viewer = myId ? await UserRepository.findById(myId) : null;
+    const viewerFriendIds = [...getFriendIdSet(viewer)];
+    const usersBlockingViewer = myId
+        ? await UserRepository.findUsersBlocking(myId)
+        : [];
+    const blockedAuthorIds = new Set([
+        ...(viewer?.blockedUsers || []).map((user) => String(user?._id || user)),
+        ...usersBlockingViewer.map((user) => String(user?._id || user)),
+    ]);
+    const privacyFilter = buildPrivacyMongoFilter(myId, viewerFriendIds);
+    const postFilter = {
+        ...privacyFilter,
+        author: { $nin: [...blockedAuthorIds] },
+    };
 
     if (type === "all") {
         const [rawUsers, groups, posts] = await Promise.all([
             UserRepository.searchUsers({ keyword, limit: currentLimit, myId }),
             GroupRepository.searchGroups({ keyword, limit: currentLimit }),
-            PostRepository.searchPosts({ keyword: q, limit: currentLimit }),
+            PostRepository.searchPosts({ keyword: q, limit: currentLimit, filter: postFilter }),
         ])
 
         const mappedUsers = await getUsersWithRelationStatus(myId, rawUsers);
+        const visiblePosts = posts.filter((post) =>
+            !hasBlockedPostAuthor(post, blockedAuthorIds) &&
+            canViewPostWithSharedSource(post, myId, viewerFriendIds),
+        );
 
         return {
             success: true,
@@ -380,7 +475,7 @@ async function globalSearch({ q, type = "all", limit = 10, myId }) {
             data: {
                 users: mappedUsers,
                 groups,
-                posts,
+                posts: visiblePosts,
             },
             nextLimit: currentLimit + 10
         };
@@ -402,8 +497,11 @@ async function globalSearch({ q, type = "all", limit = 10, myId }) {
         }
 
         case 'post': {
-            const rawPosts = await PostRepository.searchPosts({ keyword: q, limit: currentLimit });
-            resultData = rawPosts;
+            const rawPosts = await PostRepository.searchPosts({ keyword: q, limit: currentLimit, filter: postFilter });
+            resultData = rawPosts.filter((post) =>
+                !hasBlockedPostAuthor(post, blockedAuthorIds) &&
+                canViewPostWithSharedSource(post, myId, viewerFriendIds),
+            );
             break;
         }
 
@@ -435,4 +533,5 @@ module.exports = {
   blockUser,
   unblockUser,
   getBlockedUsers,
+  toggleFollowUser,
 };

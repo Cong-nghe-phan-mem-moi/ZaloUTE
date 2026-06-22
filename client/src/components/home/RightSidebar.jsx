@@ -18,7 +18,7 @@ const RightSidebar = ({
   const [activeTab, setActiveTab] = useState("contacts");
 
   return (
-    <aside className="hidden bg-white px-6 py-6 lg:block h-full overflow-y-auto min-h-0">
+    <aside className="sticky top-20 hidden h-[calc(100vh-80px)] min-h-0 overflow-y-auto bg-white px-6 py-6 lg:block">
       <PanelTitle title="News Update" action="See All" />
       <div className="space-y-4">
         {newsItems.map((item) => (

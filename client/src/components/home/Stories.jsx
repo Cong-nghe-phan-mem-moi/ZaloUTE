@@ -77,6 +77,7 @@ const Stories = ({ profile, initialStoryId = null }) => {
 
       {createOpen ? (
         <CreateStoryModal
+          profile={profile}
           onClose={() => setCreateOpen(false)}
           onCreated={() => {
             setCreateOpen(false);
@@ -92,6 +93,10 @@ const Stories = ({ profile, initialStoryId = null }) => {
           currentUserId={currentUserId}
           onChange={setViewerState}
           onClose={() => setViewerState(null)}
+          onDeleted={() => {
+            setViewerState(null);
+            loadStories();
+          }}
           onFinished={finishStories}
           onStoryUpdated={updateStoryInList}
         />

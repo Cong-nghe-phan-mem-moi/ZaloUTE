@@ -11,6 +11,7 @@ export {
 } from "./auth.service";
 export { chatAPI } from "./chat.service";
 export { commentAPI } from "./comment.service";
+export { groupAPI } from "./group.service";
 export { notificationAPI } from "./notification.service";
 export { postAPI } from "./post.service";
 export { storyAPI } from "./story.service";
