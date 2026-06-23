@@ -35,6 +35,7 @@ import {
   deleteConversation,
   updateParticipantStatus,
 } from "../../redux/slices/chatSlice";
+import { chatAPI } from "../../services/chat.service";
 import { stickerAPI } from "../../services/sticker.service";
 import { getConversationPreview } from "../../utils/chatUtils";
 
@@ -128,9 +129,11 @@ const ChatPage = () => {
   const [stickerPacks, setStickerPacks] = useState([]);
   const [stickersOpen, setStickersOpen] = useState(false);
   const [activeStickerPack, setActiveStickerPack] = useState(0);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const typingTimeoutRef = useRef(null);
   const messageEndRef = useRef(null);
   const inputRef = useRef(null);
+  const imageInputRef = useRef(null);
 
   const [replyingMessage, setReplyingMessage] = useState(null);
   const [activeMenuMessageId, setActiveMenuMessageId] = useState(null);
@@ -517,6 +520,53 @@ const ChatPage = () => {
     setStickersOpen(false);
   };
 
+  const handleSendImage = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file || !activeConversation || !socket || socket.readyState !== WebSocket.OPEN) {
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      alert("Please choose an image file.");
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      alert("Image must be 10MB or smaller.");
+      return;
+    }
+
+    try {
+      setIsUploadingImage(true);
+      const response = await chatAPI.uploadConversationImage(activeConversation._id, file);
+      const imageUrl = response.data?.data?.url;
+
+      if (!imageUrl) {
+        throw new Error("Upload completed without an image URL");
+      }
+
+      const payload = {
+        type: "send_message",
+        conversationId: activeConversation._id,
+        content: imageUrl,
+        messageType: "image",
+      };
+
+      if (replyingMessage) {
+        payload.replyTo = replyingMessage._id;
+      }
+
+      socket.send(JSON.stringify(payload));
+      setReplyingMessage(null);
+    } catch (error) {
+      alert(error.response?.data?.message || error.message || "Unable to upload image");
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
   const handleRevokeMessage = (msg) => {
     if (!socket || socket.readyState !== WebSocket.OPEN || !activeConversation) return;
 
@@ -650,6 +700,16 @@ const ChatPage = () => {
 
       return part;
     });
+  };
+
+  const getMessagePreviewText = (message) => {
+    if (!message) return "";
+    if (message.isRevoked) return "Message has been unsent";
+    if (message.messageType === "image") return "Sent an image";
+    if (message.messageType === "sticker") return "Sent a sticker";
+    if (message.messageType === "post_share") return "Shared a post";
+    if (message.messageType === "story_reply") return "Replied to a story";
+    return message.content || "Message";
   };
 
   const filteredFriends = searchQuery.trim()
@@ -1179,6 +1239,36 @@ const ChatPage = () => {
                                   alt="Sticker"
                                   className="h-28 w-28 rounded-xl object-contain"
                                 />
+                              ) : msg.messageType === "image" ? (
+                                <div className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}>
+                                  {msg.replyTo && (
+                                    <div className={`mb-2 rounded-lg p-2 text-xs flex flex-col gap-0.5 max-w-[280px] border-l-[3px] ${isMe
+                                        ? "bg-[#1877f2]/10 border-[#1877f2]/50 text-gray-700"
+                                        : "bg-white border-gray-200 text-gray-700 shadow-sm"
+                                      }`}>
+                                      <span className="font-bold text-gray-800 truncate">
+                                        {msg.replyTo.senderId?._id === (profile?.id || profile?.userId)
+                                          ? "You"
+                                          : msg.replyTo.senderId?.fullName || "User"}
+                                      </span>
+                                      <span className="truncate text-gray-500">
+                                        {getMessagePreviewText(msg.replyTo)}
+                                      </span>
+                                    </div>
+                                  )}
+                                  <a
+                                    href={getImageUrl(msg.content)}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="block"
+                                  >
+                                    <img
+                                      src={getImageUrl(msg.content)}
+                                      alt="Chat attachment"
+                                      className="max-h-80 max-w-xs rounded-2xl object-cover shadow-sm"
+                                    />
+                                  </a>
+                                </div>
                               ) : msg.messageType === "post_share" ? (
                                 <div
                                   className={`max-w-sm rounded-2xl p-2 shadow-sm text-sm ${
@@ -1230,7 +1320,7 @@ const ChatPage = () => {
                                           : msg.replyTo.senderId?.fullName || "User"}
                                       </span>
                                       <span className={`truncate ${isMe ? "text-white/80" : "text-gray-500"}`}>
-                                        {msg.replyTo.isRevoked ? "Message has been unsent" : renderMessageContent(msg.replyTo.content, msg.replyTo.mentions, isMe)}
+                                        {msg.replyTo.isRevoked ? "Message has been unsent" : getMessagePreviewText(msg.replyTo)}
                                       </span>
                                     </div>
                                   )}
@@ -1334,7 +1424,7 @@ const ChatPage = () => {
                             : replyingMessage.senderId?.fullName || "user"}
                         </span>
                         <span className="text-xs text-gray-500 truncate max-w-[500px]">
-                          {replyingMessage.isRevoked ? "Message has been unsent" : replyingMessage.content}
+                          {getMessagePreviewText(replyingMessage)}
                         </span>
                       </div>
                     </div>
@@ -1470,8 +1560,23 @@ const ChatPage = () => {
                   <button type="button" className="p-2 hover:bg-gray-100 rounded-full text-gray-500 transition">
                     <span className="material-symbols-outlined">add_circle</span>
                   </button>
-                  <button type="button" className="p-2 hover:bg-gray-100 rounded-full text-gray-500 transition">
-                    <span className="material-symbols-outlined">image</span>
+                  <input
+                    ref={imageInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleSendImage}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => imageInputRef.current?.click()}
+                    disabled={isUploadingImage || !activeConversation || !socket || socket.readyState !== WebSocket.OPEN}
+                    className="p-2 hover:bg-gray-100 rounded-full text-gray-500 transition disabled:cursor-not-allowed disabled:text-gray-300"
+                    title={isUploadingImage ? "Uploading image..." : "Send image"}
+                  >
+                    <span className="material-symbols-outlined">
+                      {isUploadingImage ? "hourglass_empty" : "image"}
+                    </span>
                   </button>
                   <button
                     type="button"

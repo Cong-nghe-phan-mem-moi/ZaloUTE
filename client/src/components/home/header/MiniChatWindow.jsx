@@ -6,6 +6,7 @@ import {
   getMiniMessageContent,
   getProfileId,
 } from "../../../utils/chatUtils";
+import getImageUrl from "../../../utils/imageUrl";
 
 const MiniChatWindow = ({
   conversation,
@@ -153,6 +154,19 @@ const MiniChatWindow = ({
                   alt="Sticker"
                   className="h-24 w-24 rounded-xl object-contain"
                 />
+              ) : message.messageType === "image" ? (
+                <a
+                  href={getImageUrl(message.content)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="block max-w-[78%]"
+                >
+                  <img
+                    src={getImageUrl(message.content)}
+                    alt="Chat attachment"
+                    className="max-h-48 rounded-2xl object-cover shadow-sm"
+                  />
+                </a>
               ) : (
                 <div
                   className={`max-w-[78%] rounded-2xl px-3 py-2 text-sm leading-5 ${

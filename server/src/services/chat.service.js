@@ -3,6 +3,7 @@ const UserRepository = require("../repositories/user.repository");
 const Message = require("../models/message.model");
 const Conversation = require("../models/conversation.model");
 const User = require("../models/user.model");
+const googleDriveService = require("./googleDrive.service");
 const jwt = require("jsonwebtoken");
 const { WebSocketServer, WebSocket } = require("ws");
 
@@ -16,6 +17,8 @@ const throwError = (statusCode, code, message) => {
 };
 
 const onlineTracker = require("../utils/onlineTracker");
+const websocketMessageTypes = new Set(["text", "image", "sticker"]);
+
 const areUsersBlockedForDirectChat = async (userAId, userBId) => {
   const [userA, userB] = await Promise.all([
     User.findById(userAId).select("blockedUsers"),
@@ -75,6 +78,67 @@ const addClient = (userId, socket) => {
 };
 
 class ChatService {
+  static async ensureUserCanUseConversation(userId, conversationId) {
+    const conversation = await chatRepository.getConversationById(conversationId);
+    if (!conversation) {
+      throwError(404, "CONVERSATION_NOT_FOUND", "Conversation not found");
+    }
+
+    const isParticipant = conversation.participants.some(
+      (p) => p._id.toString() === userId.toString()
+    );
+    if (!isParticipant) {
+      throwError(403, "FORBIDDEN", "You are not a participant in this conversation");
+    }
+
+    if (!conversation.isGroup) {
+      const otherParticipant = conversation.participants.find(
+        (participant) => participant._id.toString() !== userId.toString(),
+      );
+
+      if (
+        otherParticipant &&
+        (await areUsersBlockedForDirectChat(userId, otherParticipant._id))
+      ) {
+        throwError(403, "DIRECT_CHAT_BLOCKED", "You cannot message this user");
+      }
+    }
+
+    if (conversation.blockedBy && conversation.blockedBy.length > 0) {
+      const isBlockedByOther = conversation.blockedBy.some(
+        (id) => id.toString() !== userId.toString()
+      );
+      const hasBlockedOther = conversation.blockedBy.some(
+        (id) => id.toString() === userId.toString()
+      );
+
+      let message = "The conversation is blocked";
+      if (isBlockedByOther) {
+        message = "You have been blocked by this user";
+      } else if (hasBlockedOther) {
+        message = "You have blocked this user. Please unblock to continue messaging.";
+      }
+
+      throwError(403, "CONVERSATION_BLOCKED", message);
+    }
+
+    return conversation;
+  }
+
+  static async uploadConversationImage(userId, conversationId, file) {
+    if (!file) {
+      throwError(400, "MISSING_IMAGE", "Image file is required");
+    }
+
+    await this.ensureUserCanUseConversation(userId, conversationId);
+    const uploaded = await googleDriveService.uploadPublicImage(file);
+
+    return {
+      success: true,
+      data: uploaded,
+    };
+  }
+
   static async getUserConversations(userId) {
     const conversations = await chatRepository.getConversationsByUserId(userId);
     return {
@@ -591,7 +655,10 @@ class ChatService {
 
             if (type === "send_message") {
               const { content, messageType, replyTo, mentions } = payload;
-              if (!content || String(content).trim() === "") return;
+              const normalizedContent = String(content || "").trim();
+              const normalizedMessageType = messageType || "text";
+              if (!normalizedContent) return;
+              if (!websocketMessageTypes.has(normalizedMessageType)) return;
 
               if (!conversation.isGroup) {
                 const otherParticipant = conversation.participants.find(
@@ -636,7 +703,7 @@ class ChatService {
               }
 
               let finalMentions = mentions || [];
-              if (content.includes("@All") && conversation.isGroup) {
+              if (normalizedMessageType === "text" && normalizedContent.includes("@All") && conversation.isGroup) {
                 const allParticipantIds = conversation.participants
                   .map((p) => (p._id || p).toString())
                   .filter((id) => id !== ws.userId.toString());
@@ -645,8 +712,8 @@ class ChatService {
               const savedMessage = await chatRepository.saveMessage({
                 conversationId,
                 senderId: ws.userId,
-                content: content.trim(),
-                messageType: messageType || "text",
+                content: normalizedContent,
+                messageType: normalizedMessageType,
                 readBy: [ws.userId],
                 replyTo: replyTo || null,
                 mentions: finalMentions,
@@ -663,7 +730,7 @@ class ChatService {
                       sender: ws.userId,
                       type: "mention",
                       content: `${savedMessage.senderId.fullName} mentioned you in the group ${conversation.name || "chat"}`,
-                      preview: content.trim(),
+                      preview: normalizedContent,
                       relatedId: conversationId,
                       relatedType: null,
                       data: {
