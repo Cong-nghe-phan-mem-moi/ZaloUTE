@@ -6,7 +6,7 @@ import HomeHeader from "../../components/home/HomeHeader";
 import RightSidebar from "../../components/home/RightSidebar";
 import UserAvatar from "../../components/common/UserAvatar";
 import SharedPostPreview from "../../components/post/SharedPostPreview";
-import getImageUrl from "../../utils/imageUrl";
+import getImageUrl, { getImageFallbackUrl } from "../../utils/imageUrl";
 import {
   AddMembersModal,
   ConfirmModal,
@@ -44,9 +44,7 @@ const getChatWsUrl = (token) => {
   const isSecure = window.location.protocol === "https:";
 
   if (import.meta.env.DEV) {
-    const apiOrigin =
-      import.meta.env.VITE_API_ORIGIN ||
-      `${window.location.protocol}//${window.location.hostname}:5000`;
+    const apiOrigin = import.meta.env.VITE_API_ORIGIN || window.location.origin;
     const wsOrigin = apiOrigin.replace(/^http/, isSecure ? "wss" : "ws");
 
     return `${wsOrigin}/api/chats/ws?token=${encodedToken}`;
@@ -415,8 +413,12 @@ const ChatPage = () => {
         }
       };
 
-      ws.onclose = () => {
-        console.log("Chat websocket disconnected");
+      ws.onclose = (event) => {
+        console.log("Chat websocket disconnected", {
+          code: event.code,
+          reason: event.reason,
+          wasClean: event.wasClean,
+        });
         if (shouldReconnect) {
           reconnectTimer = window.setTimeout(connect, 3000);
         }
@@ -520,10 +522,7 @@ const ChatPage = () => {
     setStickersOpen(false);
   };
 
-  const handleSendImage = async (event) => {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-
+  const uploadAndSendImage = async (file) => {
     if (!file || !activeConversation || !socket || socket.readyState !== WebSocket.OPEN) {
       return;
     }
@@ -565,6 +564,28 @@ const ChatPage = () => {
     } finally {
       setIsUploadingImage(false);
     }
+  };
+
+  const handleSendImage = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    await uploadAndSendImage(file);
+  };
+
+  const handlePasteImage = async (event) => {
+    if (isUploadingImage) return;
+
+    const imageItem = Array.from(event.clipboardData?.items || []).find((item) =>
+      item.type.startsWith("image/"),
+    );
+
+    if (!imageItem) return;
+
+    const file = imageItem.getAsFile();
+    if (!file) return;
+
+    event.preventDefault();
+    await uploadAndSendImage(file);
   };
 
   const handleRevokeMessage = (msg) => {
@@ -1266,6 +1287,12 @@ const ChatPage = () => {
                                       src={getImageUrl(msg.content)}
                                       alt="Chat attachment"
                                       className="max-h-80 max-w-xs rounded-2xl object-cover shadow-sm"
+                                      onError={(event) => {
+                                        const fallbackUrl = getImageFallbackUrl(msg.content);
+                                        if (fallbackUrl && event.currentTarget.src !== fallbackUrl) {
+                                          event.currentTarget.src = fallbackUrl;
+                                        }
+                                      }}
                                     />
                                   </a>
                                 </div>
@@ -1594,6 +1621,7 @@ const ChatPage = () => {
                     value={messageText}
                     onChange={handleInputChange}
                     onKeyDown={handleKeyDown}
+                    onPaste={handlePasteImage}
                     className="flex-1 bg-[#f0f2f5] px-4 py-2.5 text-sm rounded-full outline-none placeholder:text-gray-500 focus:bg-white focus:ring-1 focus:ring-[#1877f2]"
                   />
                   <button

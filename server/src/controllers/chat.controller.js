@@ -1,4 +1,5 @@
 const ChatService = require("../services/chat.service");
+const googleDriveService = require("../services/googleDrive.service");
 const fs = require("fs/promises");
 
 const cleanupUploadedFile = async (file) => {
@@ -97,6 +98,26 @@ async function uploadConversationImage(req, res) {
     });
   } finally {
     await cleanupUploadedFile(req.file);
+  }
+}
+
+async function proxyConversationImage(req, res) {
+  try {
+    const { fileId } = req.params;
+    const imageResponse = await googleDriveService.fetchPublicImage(fileId);
+
+    res.setHeader("Content-Type", imageResponse.headers.get("content-type") || "image/jpeg");
+    res.setHeader("Cache-Control", "public, max-age=86400");
+
+    const buffer = Buffer.from(await imageResponse.arrayBuffer());
+    return res.status(200).send(buffer);
+  } catch (error) {
+    console.error("Proxy Conversation Image Error:", error);
+    return res.status(error.statusCode || 500).json({
+      success: false,
+      code: error.code || "IMAGE_PROXY_ERROR",
+      message: error.message || "Unable to load image",
+    });
   }
 }
 
@@ -295,6 +316,7 @@ module.exports = {
   getOrCreateConversation,
   getMessages,
   uploadConversationImage,
+  proxyConversationImage,
   markConversationsAsSeen,
   createGroup,
   removeMember,

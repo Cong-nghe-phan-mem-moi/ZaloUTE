@@ -6,7 +6,7 @@ import {
   getMiniMessageContent,
   getProfileId,
 } from "../../../utils/chatUtils";
-import getImageUrl from "../../../utils/imageUrl";
+import getImageUrl, { getImageFallbackUrl } from "../../../utils/imageUrl";
 
 const MiniChatWindow = ({
   conversation,
@@ -165,6 +165,12 @@ const MiniChatWindow = ({
                     src={getImageUrl(message.content)}
                     alt="Chat attachment"
                     className="max-h-48 rounded-2xl object-cover shadow-sm"
+                    onError={(event) => {
+                      const fallbackUrl = getImageFallbackUrl(message.content);
+                      if (fallbackUrl && event.currentTarget.src !== fallbackUrl) {
+                        event.currentTarget.src = fallbackUrl;
+                      }
+                    }}
                   />
                 </a>
               ) : (

@@ -3,6 +3,8 @@ const router = express.Router();
 const chatController = require("../controllers/chat.controller");
 const { authMiddleware } = require("../middlewares/authMiddleware");
 const upload = require("../middlewares/uploadMiddleware");
+router.get("/images/:fileId", chatController.proxyConversationImage);
+
 router.use(authMiddleware);
 router.get("/conversations", chatController.getConversations);
 router.get("/conversations/badge", chatController.getConversationBadge);
