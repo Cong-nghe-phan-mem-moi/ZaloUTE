@@ -128,10 +128,12 @@ const ChatPage = () => {
   const [stickersOpen, setStickersOpen] = useState(false);
   const [activeStickerPack, setActiveStickerPack] = useState(0);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [pendingImages, setPendingImages] = useState([]);
   const typingTimeoutRef = useRef(null);
   const messageEndRef = useRef(null);
   const inputRef = useRef(null);
   const imageInputRef = useRef(null);
+  const pendingImagesRef = useRef([]);
 
   const [replyingMessage, setReplyingMessage] = useState(null);
   const [activeMenuMessageId, setActiveMenuMessageId] = useState(null);
@@ -175,6 +177,16 @@ const ChatPage = () => {
     confirmBtnText: "",
     isDanger: false,
   });
+
+  useEffect(() => {
+    pendingImagesRef.current = pendingImages;
+  }, [pendingImages]);
+
+  useEffect(() => {
+    return () => {
+      pendingImagesRef.current.forEach((image) => URL.revokeObjectURL(image.previewUrl));
+    };
+  }, []);
 
   const handleCreateGroup = (name, participantIds) => {
     dispatch(createGroup({ name, participantIds }))
@@ -351,6 +363,10 @@ const ChatPage = () => {
   }, [messages]);
 
   useEffect(() => {
+    clearPendingImages();
+  }, [activeConversationId]);
+
+  useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) return undefined;
 
@@ -457,15 +473,158 @@ const ChatPage = () => {
     }
   }, [activeConversationId, socket, messages.length]);
 
-  const handleSendMessage = (e) => {
+  const handleSendMessage = async (e) => {
     e.preventDefault();
+
+    if (pendingImages.length > 0) {
+      if (messageText.trim()) {
+        sendTextMessage();
+      }
+
+      const failedImages = [];
+
+      for (const image of pendingImages) {
+        const sent = await uploadAndSendImage(image.file);
+        if (sent) {
+          URL.revokeObjectURL(image.previewUrl);
+        } else {
+          failedImages.push(image);
+        }
+      }
+
+      setPendingImages(failedImages);
+      return;
+    }
+
+    sendTextMessage();
+  };
+
+  const handleSendSticker = (sticker) => {
+    if (
+      !sticker?.imageUrl ||
+      !activeConversation ||
+      !socket ||
+      socket.readyState !== WebSocket.OPEN
+    ) {
+      return;
+    }
+
+    socket.send(
+      JSON.stringify({
+        type: "send_message",
+        conversationId: activeConversation._id,
+        content: sticker.imageUrl,
+        messageType: "sticker",
+      }),
+    );
+    setStickersOpen(false);
+  };
+
+  const uploadAndSendImage = async (file) => {
+    if (!file || !activeConversation || !socket || socket.readyState !== WebSocket.OPEN) {
+      return false;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      alert("Please choose an image file.");
+      return false;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      alert("Image must be 10MB or smaller.");
+      return false;
+    }
+
+    try {
+      setIsUploadingImage(true);
+      const response = await chatAPI.uploadConversationImage(activeConversation._id, file);
+      const imageUrl = response.data?.data?.url;
+
+      if (!imageUrl) {
+        throw new Error("Upload completed without an image URL");
+      }
+
+      const payload = {
+        type: "send_message",
+        conversationId: activeConversation._id,
+        content: imageUrl,
+        messageType: "image",
+      };
+
+      if (replyingMessage) {
+        payload.replyTo = replyingMessage._id;
+      }
+
+      socket.send(JSON.stringify(payload));
+      setReplyingMessage(null);
+      return true;
+    } catch (error) {
+      alert(error.response?.data?.message || error.message || "Unable to upload image");
+      return false;
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  const addPendingImageFiles = (files) => {
+    const selectedFiles = Array.from(files || []);
+    if (selectedFiles.length === 0) return;
+
+    const validImages = [];
+
+    selectedFiles.forEach((file) => {
+      if (!file.type.startsWith("image/")) {
+        alert("Please choose image files only.");
+        return;
+      }
+
+      if (file.size > 10 * 1024 * 1024) {
+        alert(`${file.name || "Image"} must be 10MB or smaller.`);
+        return;
+      }
+
+      validImages.push({
+        id: `${file.name}-${file.size}-${file.lastModified}-${crypto.randomUUID()}`,
+        file,
+        previewUrl: URL.createObjectURL(file),
+      });
+    });
+
+    if (validImages.length === 0) return;
+
+    setPendingImages((currentImages) => [...currentImages, ...validImages]);
+    setStickersOpen(false);
+  };
+
+  const handleSendImage = (event) => {
+    const files = event.target.files;
+    event.target.value = "";
+    addPendingImageFiles(files);
+  };
+
+  const handlePasteImage = (event) => {
+    if (isUploadingImage) return;
+
+    const imageFiles = Array.from(event.clipboardData?.items || [])
+      .filter((item) => item.type.startsWith("image/"))
+      .map((item) => item.getAsFile())
+      .filter(Boolean);
+
+    if (imageFiles.length === 0) return;
+
+    event.preventDefault();
+    addPendingImageFiles(imageFiles);
+  };
+
+  const sendTextMessage = () => {
     if (
       !messageText.trim() ||
       !activeConversation ||
       !socket ||
       socket.readyState !== WebSocket.OPEN
-    )
-      return;
+    ) {
+      return false;
+    }
 
     const activeMentions = mentionedUsers.filter((u) =>
       messageText.includes(`@${u.fullName}`)
@@ -499,93 +658,24 @@ const ChatPage = () => {
       );
       setTypingState(false);
     }
+
+    return true;
   };
 
-  const handleSendSticker = (sticker) => {
-    if (
-      !sticker?.imageUrl ||
-      !activeConversation ||
-      !socket ||
-      socket.readyState !== WebSocket.OPEN
-    ) {
-      return;
-    }
-
-    socket.send(
-      JSON.stringify({
-        type: "send_message",
-        conversationId: activeConversation._id,
-        content: sticker.imageUrl,
-        messageType: "sticker",
-      }),
-    );
-    setStickersOpen(false);
-  };
-
-  const uploadAndSendImage = async (file) => {
-    if (!file || !activeConversation || !socket || socket.readyState !== WebSocket.OPEN) {
-      return;
-    }
-
-    if (!file.type.startsWith("image/")) {
-      alert("Please choose an image file.");
-      return;
-    }
-
-    if (file.size > 10 * 1024 * 1024) {
-      alert("Image must be 10MB or smaller.");
-      return;
-    }
-
-    try {
-      setIsUploadingImage(true);
-      const response = await chatAPI.uploadConversationImage(activeConversation._id, file);
-      const imageUrl = response.data?.data?.url;
-
-      if (!imageUrl) {
-        throw new Error("Upload completed without an image URL");
+  const removePendingImage = (imageId) => {
+    setPendingImages((currentImages) => {
+      const imageToRemove = currentImages.find((image) => image.id === imageId);
+      if (imageToRemove) {
+        URL.revokeObjectURL(imageToRemove.previewUrl);
       }
 
-      const payload = {
-        type: "send_message",
-        conversationId: activeConversation._id,
-        content: imageUrl,
-        messageType: "image",
-      };
-
-      if (replyingMessage) {
-        payload.replyTo = replyingMessage._id;
-      }
-
-      socket.send(JSON.stringify(payload));
-      setReplyingMessage(null);
-    } catch (error) {
-      alert(error.response?.data?.message || error.message || "Unable to upload image");
-    } finally {
-      setIsUploadingImage(false);
-    }
+      return currentImages.filter((image) => image.id !== imageId);
+    });
   };
 
-  const handleSendImage = async (event) => {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    await uploadAndSendImage(file);
-  };
-
-  const handlePasteImage = async (event) => {
-    if (isUploadingImage) return;
-
-    const imageItem = Array.from(event.clipboardData?.items || []).find((item) =>
-      item.type.startsWith("image/"),
-    );
-
-    if (!imageItem) return;
-
-    const file = imageItem.getAsFile();
-    if (!file) return;
-
-    event.preventDefault();
-    await uploadAndSendImage(file);
+  const clearPendingImages = () => {
+    pendingImagesRef.current.forEach((image) => URL.revokeObjectURL(image.previewUrl));
+    setPendingImages([]);
   };
 
   const handleRevokeMessage = (msg) => {
@@ -1582,55 +1672,113 @@ const ChatPage = () => {
 
                 <form
                   onSubmit={handleSendMessage}
-                  className="bg-white border-t border-gray-200 p-4 flex items-center gap-3 shrink-0"
+                  className="bg-white border-t border-gray-200 p-4 flex flex-col gap-3 shrink-0"
                 >
-                  <button type="button" className="p-2 hover:bg-gray-100 rounded-full text-gray-500 transition">
-                    <span className="material-symbols-outlined">add_circle</span>
-                  </button>
-                  <input
-                    ref={imageInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleSendImage}
-                    className="hidden"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => imageInputRef.current?.click()}
-                    disabled={isUploadingImage || !activeConversation || !socket || socket.readyState !== WebSocket.OPEN}
-                    className="p-2 hover:bg-gray-100 rounded-full text-gray-500 transition disabled:cursor-not-allowed disabled:text-gray-300"
-                    title={isUploadingImage ? "Uploading image..." : "Send image"}
-                  >
-                    <span className="material-symbols-outlined">
-                      {isUploadingImage ? "hourglass_empty" : "image"}
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setStickersOpen((open) => !open)}
-                    className={`p-2 hover:bg-gray-100 rounded-full transition ${
-                      stickersOpen ? "text-[#1877f2] bg-blue-50" : "text-gray-500"
-                    }`}
-                  >
-                    <span className="material-symbols-outlined">sticky_note_2</span>
-                  </button>
-                  <input
-                    ref={inputRef}
-                    type="text"
-                    placeholder="Type a message..."
-                    value={messageText}
-                    onChange={handleInputChange}
-                    onKeyDown={handleKeyDown}
-                    onPaste={handlePasteImage}
-                    className="flex-1 bg-[#f0f2f5] px-4 py-2.5 text-sm rounded-full outline-none placeholder:text-gray-500 focus:bg-white focus:ring-1 focus:ring-[#1877f2]"
-                  />
-                  <button
-                    type="submit"
-                    disabled={!messageText.trim()}
-                    className="p-2.5 bg-[#1877f2] hover:bg-[#166fe5] text-white rounded-full shadow-md transition disabled:bg-gray-300 disabled:cursor-not-allowed"
-                  >
-                    <span className="material-symbols-outlined text-[20px] block">send</span>
-                  </button>
+                  {pendingImages.length > 0 ? (
+                    <div className="border-t border-gray-100 pt-2">
+                      <div className="mb-2 flex items-center justify-between text-sm">
+                        <span className="font-semibold text-gray-700">
+                          {pendingImages.length} ảnh
+                        </span>
+                        <button
+                          type="button"
+                          onClick={clearPendingImages}
+                          disabled={isUploadingImage}
+                          className="font-medium text-gray-500 hover:text-[#1877f2] disabled:cursor-not-allowed disabled:text-gray-300"
+                        >
+                          Xóa tất cả
+                        </button>
+                      </div>
+                      <div className="flex gap-2 overflow-x-auto pb-1">
+                        {pendingImages.map((image) => (
+                          <div
+                            key={image.id}
+                            className="group relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded border border-gray-200 bg-gray-100"
+                          >
+                            <img
+                              src={image.previewUrl}
+                              alt={image.file.name || "Selected attachment preview"}
+                              className="h-full w-full object-cover"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => removePendingImage(image.id)}
+                              disabled={isUploadingImage}
+                              className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white opacity-100 transition hover:bg-black/75 disabled:cursor-not-allowed disabled:bg-gray-400"
+                              aria-label="Remove selected image"
+                              title="Remove selected image"
+                            >
+                              <span className="material-symbols-outlined text-[14px]">close</span>
+                            </button>
+                          </div>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => imageInputRef.current?.click()}
+                          disabled={isUploadingImage || !activeConversation}
+                          className="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded border border-dashed border-gray-300 bg-gray-50 text-gray-500 hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-300"
+                          aria-label="Add more images"
+                          title="Add more images"
+                        >
+                          <span className="material-symbols-outlined text-[28px]">add</span>
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  <div className="flex items-center gap-3">
+                    <button type="button" className="p-2 hover:bg-gray-100 rounded-full text-gray-500 transition">
+                      <span className="material-symbols-outlined">add_circle</span>
+                    </button>
+                    <input
+                      ref={imageInputRef}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleSendImage}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => imageInputRef.current?.click()}
+                      disabled={isUploadingImage || !activeConversation}
+                      className="p-2 hover:bg-gray-100 rounded-full text-gray-500 transition disabled:cursor-not-allowed disabled:text-gray-300"
+                      title={isUploadingImage ? "Uploading image..." : "Choose image"}
+                    >
+                      <span className="material-symbols-outlined">
+                        {isUploadingImage ? "hourglass_empty" : "image"}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setStickersOpen((open) => !open)}
+                      className={`p-2 hover:bg-gray-100 rounded-full transition ${
+                        stickersOpen ? "text-[#1877f2] bg-blue-50" : "text-gray-500"
+                      }`}
+                    >
+                      <span className="material-symbols-outlined">sticky_note_2</span>
+                    </button>
+                    <input
+                      ref={inputRef}
+                      type="text"
+                      placeholder={pendingImages.length > 0 ? "Press send to share images..." : "Type a message..."}
+                      value={messageText}
+                      onChange={handleInputChange}
+                      onKeyDown={handleKeyDown}
+                      onPaste={handlePasteImage}
+                      disabled={isUploadingImage}
+                      className="flex-1 bg-[#f0f2f5] px-4 py-2.5 text-sm rounded-full outline-none placeholder:text-gray-500 focus:bg-white focus:ring-1 focus:ring-[#1877f2] disabled:text-gray-400"
+                    />
+                    <button
+                      type="submit"
+                      disabled={isUploadingImage || (!messageText.trim() && pendingImages.length === 0)}
+                      className="p-2.5 bg-[#1877f2] hover:bg-[#166fe5] text-white rounded-full shadow-md transition disabled:bg-gray-300 disabled:cursor-not-allowed"
+                    >
+                      <span className="material-symbols-outlined text-[20px] block">
+                        {isUploadingImage ? "hourglass_empty" : "send"}
+                      </span>
+                    </button>
+                  </div>
                 </form>
               </div>
               </>
