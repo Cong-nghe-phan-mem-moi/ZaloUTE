@@ -18,6 +18,7 @@ const throwError = (statusCode, code, message) => {
 
 const onlineTracker = require("../utils/onlineTracker");
 const websocketMessageTypes = new Set(["text", "image", "sticker"]);
+const messageReactionEmojis = new Set(["👍", "❤️", "😂", "😮", "😢", "😡"]);
 
 const areUsersBlockedForDirectChat = async (userAId, userBId) => {
   const [userA, userB] = await Promise.all([
@@ -780,15 +781,7 @@ class ChatService {
               message.messageType = "text";
               await message.save();
 
-              const populatedMessage = await Message.findById(message._id)
-                .populate("senderId", "fullName avatar")
-                .populate({
-                  path: "replyTo",
-                  populate: {
-                    path: "senderId",
-                    select: "fullName avatar",
-                  },
-                });
+              const populatedMessage = await chatRepository.getMessageById(message._id);
 
               // Fetch updated conversation to send for sidebar updates
               const updatedConversation = await chatRepository.getConversationsByUserId(ws.userId);
@@ -809,6 +802,38 @@ class ChatService {
                 sendToUser(participantIdStr, {
                   type: "conversation_update",
                   data: conversationForThisId || conversation,
+                });
+              });
+
+            } else if (type === "react_message") {
+              const { messageId, emoji } = payload;
+              if (!messageId || !messageReactionEmojis.has(emoji)) return;
+
+              const message = await Message.findById(messageId);
+              if (!message || message.isRevoked) return;
+              if (message.conversationId.toString() !== conversationId.toString()) return;
+
+              const existingReaction = (message.reactions || []).find(
+                (reaction) => reaction.user?.toString() === ws.userId.toString()
+              );
+
+              if (existingReaction?.emoji === emoji) {
+                message.reactions = message.reactions.filter(
+                  (reaction) => reaction.user?.toString() !== ws.userId.toString()
+                );
+              } else if (existingReaction) {
+                existingReaction.emoji = emoji;
+              } else {
+                message.reactions.push({ emoji, user: ws.userId });
+              }
+
+              await message.save();
+              const populatedMessage = await chatRepository.getMessageById(message._id);
+
+              conversation.participants.forEach((participant) => {
+                sendToUser(participant._id.toString(), {
+                  type: "message_update",
+                  data: populatedMessage,
                 });
               });
 

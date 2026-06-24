@@ -8,6 +8,17 @@ import {
 } from "../../../utils/chatUtils";
 import getImageUrl, { getImageFallbackUrl } from "../../../utils/imageUrl";
 
+const getReactionSummary = (message) => {
+  const grouped = new Map();
+
+  (message.reactions || []).forEach((reaction) => {
+    if (!reaction?.emoji) return;
+    grouped.set(reaction.emoji, (grouped.get(reaction.emoji) || 0) + 1);
+  });
+
+  return Array.from(grouped.entries());
+};
+
 const MiniChatWindow = ({
   conversation,
   messages,
@@ -142,48 +153,61 @@ const MiniChatWindow = ({
         {messages.map((message) => {
           const isMe = String(getId(message.senderId)) === profileId;
           const content = getMiniMessageContent(message);
+          const reactionSummary = getReactionSummary(message);
 
           return (
             <div
               key={message._id}
-              className={`flex ${isMe ? "justify-end" : "justify-start"}`}
+              className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}
             >
-              {message.messageType === "sticker" ? (
-                <img
-                  src={message.content}
-                  alt="Sticker"
-                  className="h-24 w-24 rounded-xl object-contain"
-                />
-              ) : message.messageType === "image" ? (
-                <a
-                  href={getImageUrl(message.content)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="block max-w-[78%]"
-                >
+              <div className={`flex ${isMe ? "justify-end" : "justify-start"} w-full`}>
+                {message.messageType === "sticker" ? (
                   <img
-                    src={getImageUrl(message.content)}
-                    alt="Chat attachment"
-                    className="max-h-48 rounded-2xl object-cover shadow-sm"
-                    onError={(event) => {
-                      const fallbackUrl = getImageFallbackUrl(message.content);
-                      if (fallbackUrl && event.currentTarget.src !== fallbackUrl) {
-                        event.currentTarget.src = fallbackUrl;
-                      }
-                    }}
+                    src={message.content}
+                    alt="Sticker"
+                    className="h-24 w-24 rounded-xl object-contain"
                   />
-                </a>
-              ) : (
-                <div
-                  className={`max-w-[78%] rounded-2xl px-3 py-2 text-sm leading-5 ${
-                    isMe
-                      ? "rounded-br-sm bg-[#1877f2] text-white"
-                      : "rounded-bl-sm bg-white text-[#111827] shadow-sm"
-                  }`}
-                >
-                  {content}
+                ) : message.messageType === "image" ? (
+                  <a
+                    href={getImageUrl(message.content)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="block max-w-[78%]"
+                  >
+                    <img
+                      src={getImageUrl(message.content)}
+                      alt="Chat attachment"
+                      className="max-h-48 rounded-2xl object-cover shadow-sm"
+                      onError={(event) => {
+                        const fallbackUrl = getImageFallbackUrl(message.content);
+                        if (fallbackUrl && event.currentTarget.src !== fallbackUrl) {
+                          event.currentTarget.src = fallbackUrl;
+                        }
+                      }}
+                    />
+                  </a>
+                ) : (
+                  <div
+                    className={`max-w-[78%] rounded-2xl px-3 py-2 text-sm leading-5 ${
+                      isMe
+                        ? "rounded-br-sm bg-[#1877f2] text-white"
+                        : "rounded-bl-sm bg-white text-[#111827] shadow-sm"
+                    }`}
+                  >
+                    {content}
+                  </div>
+                )}
+              </div>
+              {reactionSummary.length > 0 ? (
+                <div className={`mt-[-2px] px-2 ${isMe ? "text-right" : "text-left"}`}>
+                  <span className="inline-flex items-center gap-1 rounded-full border border-[#e5e7eb] bg-white px-1.5 py-0.5 text-[11px] shadow-sm">
+                    <span>{reactionSummary.map(([emoji]) => emoji).join(" ")}</span>
+                    <span className="font-semibold text-[#6b7280]">
+                      {message.reactions?.length || 0}
+                    </span>
+                  </span>
                 </div>
-              )}
+              ) : null}
             </div>
           );
         })}

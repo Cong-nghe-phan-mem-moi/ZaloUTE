@@ -39,6 +39,8 @@ import { chatAPI } from "../../services/chat.service";
 import { stickerAPI } from "../../services/sticker.service";
 import { getConversationPreview } from "../../utils/chatUtils";
 
+const MESSAGE_REACTIONS = ["👍", "❤️", "😂", "😮", "😢", "😡"];
+
 const getChatWsUrl = (token) => {
   const encodedToken = encodeURIComponent(token);
   const isSecure = window.location.protocol === "https:";
@@ -690,6 +692,20 @@ const ChatPage = () => {
     );
   };
 
+  const handleReactMessage = (msg, emoji) => {
+    if (!msg?._id || !socket || socket.readyState !== WebSocket.OPEN || !activeConversation) return;
+
+    socket.send(
+      JSON.stringify({
+        type: "react_message",
+        conversationId: activeConversation._id,
+        messageId: msg._id,
+        emoji,
+      })
+    );
+    setActiveMenuMessageId(null);
+  };
+
   const handleKeyDown = (e) => {
     if (showTagDropdown && filteredMembersForTag.length > 0) {
       if (e.key === "ArrowDown") {
@@ -821,6 +837,29 @@ const ChatPage = () => {
     if (message.messageType === "post_share") return "Shared a post";
     if (message.messageType === "story_reply") return "Replied to a story";
     return message.content || "Message";
+  };
+
+  const getReactionUserId = (reaction) =>
+    reaction?.user?._id || reaction?.user?.id || reaction?.user;
+
+  const getCurrentUserReaction = (message) => {
+    const profileId = String(profile?.id || profile?.userId || profile?._id || "");
+    if (!profileId) return null;
+
+    return (message.reactions || []).find(
+      (reaction) => String(getReactionUserId(reaction)) === profileId
+    );
+  };
+
+  const getReactionSummary = (message) => {
+    const grouped = new Map();
+
+    (message.reactions || []).forEach((reaction) => {
+      if (!reaction?.emoji) return;
+      grouped.set(reaction.emoji, (grouped.get(reaction.emoji) || 0) + 1);
+    });
+
+    return Array.from(grouped.entries());
   };
 
   const filteredFriends = searchQuery.trim()
@@ -1307,6 +1346,8 @@ const ChatPage = () => {
                         profile &&
                         msg.senderId &&
                         (msg.senderId._id || msg.senderId) === (profile.id || profile.userId);
+                      const reactionSummary = getReactionSummary(msg);
+                      const currentUserReaction = getCurrentUserReaction(msg);
 
                       return (
                         <div
@@ -1461,7 +1502,25 @@ const ChatPage = () => {
                                       <span className="material-symbols-outlined text-[13px] block">more_horiz</span>
                                     </button>
                                     {activeMenuMessageId === msg._id && (
-                                      <div className={`absolute top-7 z-30 w-36 bg-white border border-gray-200 rounded-xl shadow-lg py-1 ${isMe ? "right-0" : "left-0"}`}>
+                                      <div className={`absolute top-7 z-30 w-44 bg-white border border-gray-200 rounded-xl shadow-lg py-1 ${isMe ? "right-0" : "left-0"}`}>
+                                        <div className="flex items-center justify-between gap-1 border-b border-gray-100 px-2 py-1.5">
+                                          {MESSAGE_REACTIONS.map((emoji) => (
+                                            <button
+                                              key={emoji}
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleReactMessage(msg, emoji);
+                                              }}
+                                              className={`flex h-7 w-7 items-center justify-center rounded-full text-base transition hover:bg-blue-50 hover:scale-110 ${
+                                                currentUserReaction?.emoji === emoji ? "bg-blue-100 ring-1 ring-[#1877f2]" : ""
+                                              }`}
+                                              title="React"
+                                            >
+                                              {emoji}
+                                            </button>
+                                          ))}
+                                        </div>
                                         <button
                                           type="button"
                                           onClick={(e) => {
@@ -1506,6 +1565,21 @@ const ChatPage = () => {
                                 </div>
                               )}
                             </div>
+
+                            {reactionSummary.length > 0 ? (
+                              <div
+                                className={`mt-[-2px] flex ${isMe ? "justify-end pr-2" : "justify-start pl-2"}`}
+                              >
+                                <div className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-2 py-0.5 text-xs shadow-sm">
+                                  <span className="tracking-tight">
+                                    {reactionSummary.map(([emoji]) => emoji).join(" ")}
+                                  </span>
+                                  <span className="font-semibold text-gray-500">
+                                    {msg.reactions?.length || 0}
+                                  </span>
+                                </div>
+                              </div>
+                            ) : null}
 
                             <span className={`text-[10px] text-gray-400 mt-1 px-1 ${isMe ? "text-right" : "text-left"}`}>
                               {format(new Date(msg.createdAt), "HH:mm")}
