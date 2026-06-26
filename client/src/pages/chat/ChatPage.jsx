@@ -6,7 +6,7 @@ import HomeHeader from "../../components/home/HomeHeader";
 import RightSidebar from "../../components/home/RightSidebar";
 import UserAvatar from "../../components/common/UserAvatar";
 import SharedPostPreview from "../../components/post/SharedPostPreview";
-import getImageUrl from "../../utils/imageUrl";
+import getImageUrl, { getImageFallbackUrl } from "../../utils/imageUrl";
 import {
   AddMembersModal,
   ConfirmModal,
@@ -35,17 +35,18 @@ import {
   deleteConversation,
   updateParticipantStatus,
 } from "../../redux/slices/chatSlice";
+import { chatAPI } from "../../services/chat.service";
 import { stickerAPI } from "../../services/sticker.service";
 import { getConversationPreview } from "../../utils/chatUtils";
+
+const MESSAGE_REACTIONS = ["👍", "❤️", "😂", "😮", "😢", "😡"];
 
 const getChatWsUrl = (token) => {
   const encodedToken = encodeURIComponent(token);
   const isSecure = window.location.protocol === "https:";
 
   if (import.meta.env.DEV) {
-    const apiOrigin =
-      import.meta.env.VITE_API_ORIGIN ||
-      `${window.location.protocol}//${window.location.hostname}:5000`;
+    const apiOrigin = import.meta.env.VITE_API_ORIGIN || window.location.origin;
     const wsOrigin = apiOrigin.replace(/^http/, isSecure ? "wss" : "ws");
 
     return `${wsOrigin}/api/chats/ws?token=${encodedToken}`;
@@ -128,9 +129,13 @@ const ChatPage = () => {
   const [stickerPacks, setStickerPacks] = useState([]);
   const [stickersOpen, setStickersOpen] = useState(false);
   const [activeStickerPack, setActiveStickerPack] = useState(0);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [pendingImages, setPendingImages] = useState([]);
   const typingTimeoutRef = useRef(null);
   const messageEndRef = useRef(null);
   const inputRef = useRef(null);
+  const imageInputRef = useRef(null);
+  const pendingImagesRef = useRef([]);
 
   const [replyingMessage, setReplyingMessage] = useState(null);
   const [activeMenuMessageId, setActiveMenuMessageId] = useState(null);
@@ -174,6 +179,16 @@ const ChatPage = () => {
     confirmBtnText: "",
     isDanger: false,
   });
+
+  useEffect(() => {
+    pendingImagesRef.current = pendingImages;
+  }, [pendingImages]);
+
+  useEffect(() => {
+    return () => {
+      pendingImagesRef.current.forEach((image) => URL.revokeObjectURL(image.previewUrl));
+    };
+  }, []);
 
   const handleCreateGroup = (name, participantIds) => {
     dispatch(createGroup({ name, participantIds }))
@@ -350,6 +365,10 @@ const ChatPage = () => {
   }, [messages]);
 
   useEffect(() => {
+    clearPendingImages();
+  }, [activeConversationId]);
+
+  useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) return undefined;
 
@@ -412,8 +431,12 @@ const ChatPage = () => {
         }
       };
 
-      ws.onclose = () => {
-        console.log("Chat websocket disconnected");
+      ws.onclose = (event) => {
+        console.log("Chat websocket disconnected", {
+          code: event.code,
+          reason: event.reason,
+          wasClean: event.wasClean,
+        });
         if (shouldReconnect) {
           reconnectTimer = window.setTimeout(connect, 3000);
         }
@@ -452,15 +475,158 @@ const ChatPage = () => {
     }
   }, [activeConversationId, socket, messages.length]);
 
-  const handleSendMessage = (e) => {
+  const handleSendMessage = async (e) => {
     e.preventDefault();
+
+    if (pendingImages.length > 0) {
+      if (messageText.trim()) {
+        sendTextMessage();
+      }
+
+      const failedImages = [];
+
+      for (const image of pendingImages) {
+        const sent = await uploadAndSendImage(image.file);
+        if (sent) {
+          URL.revokeObjectURL(image.previewUrl);
+        } else {
+          failedImages.push(image);
+        }
+      }
+
+      setPendingImages(failedImages);
+      return;
+    }
+
+    sendTextMessage();
+  };
+
+  const handleSendSticker = (sticker) => {
+    if (
+      !sticker?.imageUrl ||
+      !activeConversation ||
+      !socket ||
+      socket.readyState !== WebSocket.OPEN
+    ) {
+      return;
+    }
+
+    socket.send(
+      JSON.stringify({
+        type: "send_message",
+        conversationId: activeConversation._id,
+        content: sticker.imageUrl,
+        messageType: "sticker",
+      }),
+    );
+    setStickersOpen(false);
+  };
+
+  const uploadAndSendImage = async (file) => {
+    if (!file || !activeConversation || !socket || socket.readyState !== WebSocket.OPEN) {
+      return false;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      alert("Please choose an image file.");
+      return false;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      alert("Image must be 10MB or smaller.");
+      return false;
+    }
+
+    try {
+      setIsUploadingImage(true);
+      const response = await chatAPI.uploadConversationImage(activeConversation._id, file);
+      const imageUrl = response.data?.data?.url;
+
+      if (!imageUrl) {
+        throw new Error("Upload completed without an image URL");
+      }
+
+      const payload = {
+        type: "send_message",
+        conversationId: activeConversation._id,
+        content: imageUrl,
+        messageType: "image",
+      };
+
+      if (replyingMessage) {
+        payload.replyTo = replyingMessage._id;
+      }
+
+      socket.send(JSON.stringify(payload));
+      setReplyingMessage(null);
+      return true;
+    } catch (error) {
+      alert(error.response?.data?.message || error.message || "Unable to upload image");
+      return false;
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  const addPendingImageFiles = (files) => {
+    const selectedFiles = Array.from(files || []);
+    if (selectedFiles.length === 0) return;
+
+    const validImages = [];
+
+    selectedFiles.forEach((file) => {
+      if (!file.type.startsWith("image/")) {
+        alert("Please choose image files only.");
+        return;
+      }
+
+      if (file.size > 10 * 1024 * 1024) {
+        alert(`${file.name || "Image"} must be 10MB or smaller.`);
+        return;
+      }
+
+      validImages.push({
+        id: `${file.name}-${file.size}-${file.lastModified}-${crypto.randomUUID()}`,
+        file,
+        previewUrl: URL.createObjectURL(file),
+      });
+    });
+
+    if (validImages.length === 0) return;
+
+    setPendingImages((currentImages) => [...currentImages, ...validImages]);
+    setStickersOpen(false);
+  };
+
+  const handleSendImage = (event) => {
+    const files = event.target.files;
+    event.target.value = "";
+    addPendingImageFiles(files);
+  };
+
+  const handlePasteImage = (event) => {
+    if (isUploadingImage) return;
+
+    const imageFiles = Array.from(event.clipboardData?.items || [])
+      .filter((item) => item.type.startsWith("image/"))
+      .map((item) => item.getAsFile())
+      .filter(Boolean);
+
+    if (imageFiles.length === 0) return;
+
+    event.preventDefault();
+    addPendingImageFiles(imageFiles);
+  };
+
+  const sendTextMessage = () => {
     if (
       !messageText.trim() ||
       !activeConversation ||
       !socket ||
       socket.readyState !== WebSocket.OPEN
-    )
-      return;
+    ) {
+      return false;
+    }
 
     const activeMentions = mentionedUsers.filter((u) =>
       messageText.includes(`@${u.fullName}`)
@@ -494,27 +660,24 @@ const ChatPage = () => {
       );
       setTypingState(false);
     }
+
+    return true;
   };
 
-  const handleSendSticker = (sticker) => {
-    if (
-      !sticker?.imageUrl ||
-      !activeConversation ||
-      !socket ||
-      socket.readyState !== WebSocket.OPEN
-    ) {
-      return;
-    }
+  const removePendingImage = (imageId) => {
+    setPendingImages((currentImages) => {
+      const imageToRemove = currentImages.find((image) => image.id === imageId);
+      if (imageToRemove) {
+        URL.revokeObjectURL(imageToRemove.previewUrl);
+      }
 
-    socket.send(
-      JSON.stringify({
-        type: "send_message",
-        conversationId: activeConversation._id,
-        content: sticker.imageUrl,
-        messageType: "sticker",
-      }),
-    );
-    setStickersOpen(false);
+      return currentImages.filter((image) => image.id !== imageId);
+    });
+  };
+
+  const clearPendingImages = () => {
+    pendingImagesRef.current.forEach((image) => URL.revokeObjectURL(image.previewUrl));
+    setPendingImages([]);
   };
 
   const handleRevokeMessage = (msg) => {
@@ -527,6 +690,20 @@ const ChatPage = () => {
         messageId: msg._id,
       })
     );
+  };
+
+  const handleReactMessage = (msg, emoji) => {
+    if (!msg?._id || !socket || socket.readyState !== WebSocket.OPEN || !activeConversation) return;
+
+    socket.send(
+      JSON.stringify({
+        type: "react_message",
+        conversationId: activeConversation._id,
+        messageId: msg._id,
+        emoji,
+      })
+    );
+    setActiveMenuMessageId(null);
   };
 
   const handleKeyDown = (e) => {
@@ -650,6 +827,39 @@ const ChatPage = () => {
 
       return part;
     });
+  };
+
+  const getMessagePreviewText = (message) => {
+    if (!message) return "";
+    if (message.isRevoked) return "Message has been unsent";
+    if (message.messageType === "image") return "Sent an image";
+    if (message.messageType === "sticker") return "Sent a sticker";
+    if (message.messageType === "post_share") return "Shared a post";
+    if (message.messageType === "story_reply") return "Replied to a story";
+    return message.content || "Message";
+  };
+
+  const getReactionUserId = (reaction) =>
+    reaction?.user?._id || reaction?.user?.id || reaction?.user;
+
+  const getCurrentUserReaction = (message) => {
+    const profileId = String(profile?.id || profile?.userId || profile?._id || "");
+    if (!profileId) return null;
+
+    return (message.reactions || []).find(
+      (reaction) => String(getReactionUserId(reaction)) === profileId
+    );
+  };
+
+  const getReactionSummary = (message) => {
+    const grouped = new Map();
+
+    (message.reactions || []).forEach((reaction) => {
+      if (!reaction?.emoji) return;
+      grouped.set(reaction.emoji, (grouped.get(reaction.emoji) || 0) + 1);
+    });
+
+    return Array.from(grouped.entries());
   };
 
   const filteredFriends = searchQuery.trim()
@@ -1136,6 +1346,8 @@ const ChatPage = () => {
                         profile &&
                         msg.senderId &&
                         (msg.senderId._id || msg.senderId) === (profile.id || profile.userId);
+                      const reactionSummary = getReactionSummary(msg);
+                      const currentUserReaction = getCurrentUserReaction(msg);
 
                       return (
                         <div
@@ -1179,6 +1391,42 @@ const ChatPage = () => {
                                   alt="Sticker"
                                   className="h-28 w-28 rounded-xl object-contain"
                                 />
+                              ) : msg.messageType === "image" ? (
+                                <div className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}>
+                                  {msg.replyTo && (
+                                    <div className={`mb-2 rounded-lg p-2 text-xs flex flex-col gap-0.5 max-w-[280px] border-l-[3px] ${isMe
+                                        ? "bg-[#1877f2]/10 border-[#1877f2]/50 text-gray-700"
+                                        : "bg-white border-gray-200 text-gray-700 shadow-sm"
+                                      }`}>
+                                      <span className="font-bold text-gray-800 truncate">
+                                        {msg.replyTo.senderId?._id === (profile?.id || profile?.userId)
+                                          ? "You"
+                                          : msg.replyTo.senderId?.fullName || "User"}
+                                      </span>
+                                      <span className="truncate text-gray-500">
+                                        {getMessagePreviewText(msg.replyTo)}
+                                      </span>
+                                    </div>
+                                  )}
+                                  <a
+                                    href={getImageUrl(msg.content)}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="block"
+                                  >
+                                    <img
+                                      src={getImageUrl(msg.content)}
+                                      alt="Chat attachment"
+                                      className="max-h-80 max-w-xs rounded-2xl object-cover shadow-sm"
+                                      onError={(event) => {
+                                        const fallbackUrl = getImageFallbackUrl(msg.content);
+                                        if (fallbackUrl && event.currentTarget.src !== fallbackUrl) {
+                                          event.currentTarget.src = fallbackUrl;
+                                        }
+                                      }}
+                                    />
+                                  </a>
+                                </div>
                               ) : msg.messageType === "post_share" ? (
                                 <div
                                   className={`max-w-sm rounded-2xl p-2 shadow-sm text-sm ${
@@ -1230,7 +1478,7 @@ const ChatPage = () => {
                                           : msg.replyTo.senderId?.fullName || "User"}
                                       </span>
                                       <span className={`truncate ${isMe ? "text-white/80" : "text-gray-500"}`}>
-                                        {msg.replyTo.isRevoked ? "Message has been unsent" : renderMessageContent(msg.replyTo.content, msg.replyTo.mentions, isMe)}
+                                        {msg.replyTo.isRevoked ? "Message has been unsent" : getMessagePreviewText(msg.replyTo)}
                                       </span>
                                     </div>
                                   )}
@@ -1254,7 +1502,25 @@ const ChatPage = () => {
                                       <span className="material-symbols-outlined text-[13px] block">more_horiz</span>
                                     </button>
                                     {activeMenuMessageId === msg._id && (
-                                      <div className={`absolute top-7 z-30 w-36 bg-white border border-gray-200 rounded-xl shadow-lg py-1 ${isMe ? "right-0" : "left-0"}`}>
+                                      <div className={`absolute top-7 z-30 w-44 bg-white border border-gray-200 rounded-xl shadow-lg py-1 ${isMe ? "right-0" : "left-0"}`}>
+                                        <div className="flex items-center justify-between gap-1 border-b border-gray-100 px-2 py-1.5">
+                                          {MESSAGE_REACTIONS.map((emoji) => (
+                                            <button
+                                              key={emoji}
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleReactMessage(msg, emoji);
+                                              }}
+                                              className={`flex h-7 w-7 items-center justify-center rounded-full text-base transition hover:bg-blue-50 hover:scale-110 ${
+                                                currentUserReaction?.emoji === emoji ? "bg-blue-100 ring-1 ring-[#1877f2]" : ""
+                                              }`}
+                                              title="React"
+                                            >
+                                              {emoji}
+                                            </button>
+                                          ))}
+                                        </div>
                                         <button
                                           type="button"
                                           onClick={(e) => {
@@ -1300,6 +1566,21 @@ const ChatPage = () => {
                               )}
                             </div>
 
+                            {reactionSummary.length > 0 ? (
+                              <div
+                                className={`mt-[-2px] flex ${isMe ? "justify-end pr-2" : "justify-start pl-2"}`}
+                              >
+                                <div className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-2 py-0.5 text-xs shadow-sm">
+                                  <span className="tracking-tight">
+                                    {reactionSummary.map(([emoji]) => emoji).join(" ")}
+                                  </span>
+                                  <span className="font-semibold text-gray-500">
+                                    {msg.reactions?.length || 0}
+                                  </span>
+                                </div>
+                              </div>
+                            ) : null}
+
                             <span className={`text-[10px] text-gray-400 mt-1 px-1 ${isMe ? "text-right" : "text-left"}`}>
                               {format(new Date(msg.createdAt), "HH:mm")}
                             </span>
@@ -1334,7 +1615,7 @@ const ChatPage = () => {
                             : replyingMessage.senderId?.fullName || "user"}
                         </span>
                         <span className="text-xs text-gray-500 truncate max-w-[500px]">
-                          {replyingMessage.isRevoked ? "Message has been unsent" : replyingMessage.content}
+                          {getMessagePreviewText(replyingMessage)}
                         </span>
                       </div>
                     </div>
@@ -1465,39 +1746,113 @@ const ChatPage = () => {
 
                 <form
                   onSubmit={handleSendMessage}
-                  className="bg-white border-t border-gray-200 p-4 flex items-center gap-3 shrink-0"
+                  className="bg-white border-t border-gray-200 p-4 flex flex-col gap-3 shrink-0"
                 >
-                  <button type="button" className="p-2 hover:bg-gray-100 rounded-full text-gray-500 transition">
-                    <span className="material-symbols-outlined">add_circle</span>
-                  </button>
-                  <button type="button" className="p-2 hover:bg-gray-100 rounded-full text-gray-500 transition">
-                    <span className="material-symbols-outlined">image</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setStickersOpen((open) => !open)}
-                    className={`p-2 hover:bg-gray-100 rounded-full transition ${
-                      stickersOpen ? "text-[#1877f2] bg-blue-50" : "text-gray-500"
-                    }`}
-                  >
-                    <span className="material-symbols-outlined">sticky_note_2</span>
-                  </button>
-                  <input
-                    ref={inputRef}
-                    type="text"
-                    placeholder="Type a message..."
-                    value={messageText}
-                    onChange={handleInputChange}
-                    onKeyDown={handleKeyDown}
-                    className="flex-1 bg-[#f0f2f5] px-4 py-2.5 text-sm rounded-full outline-none placeholder:text-gray-500 focus:bg-white focus:ring-1 focus:ring-[#1877f2]"
-                  />
-                  <button
-                    type="submit"
-                    disabled={!messageText.trim()}
-                    className="p-2.5 bg-[#1877f2] hover:bg-[#166fe5] text-white rounded-full shadow-md transition disabled:bg-gray-300 disabled:cursor-not-allowed"
-                  >
-                    <span className="material-symbols-outlined text-[20px] block">send</span>
-                  </button>
+                  {pendingImages.length > 0 ? (
+                    <div className="border-t border-gray-100 pt-2">
+                      <div className="mb-2 flex items-center justify-between text-sm">
+                        <span className="font-semibold text-gray-700">
+                          {pendingImages.length} ảnh
+                        </span>
+                        <button
+                          type="button"
+                          onClick={clearPendingImages}
+                          disabled={isUploadingImage}
+                          className="font-medium text-gray-500 hover:text-[#1877f2] disabled:cursor-not-allowed disabled:text-gray-300"
+                        >
+                          Xóa tất cả
+                        </button>
+                      </div>
+                      <div className="flex gap-2 overflow-x-auto pb-1">
+                        {pendingImages.map((image) => (
+                          <div
+                            key={image.id}
+                            className="group relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded border border-gray-200 bg-gray-100"
+                          >
+                            <img
+                              src={image.previewUrl}
+                              alt={image.file.name || "Selected attachment preview"}
+                              className="h-full w-full object-cover"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => removePendingImage(image.id)}
+                              disabled={isUploadingImage}
+                              className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white opacity-100 transition hover:bg-black/75 disabled:cursor-not-allowed disabled:bg-gray-400"
+                              aria-label="Remove selected image"
+                              title="Remove selected image"
+                            >
+                              <span className="material-symbols-outlined text-[14px]">close</span>
+                            </button>
+                          </div>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => imageInputRef.current?.click()}
+                          disabled={isUploadingImage || !activeConversation}
+                          className="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded border border-dashed border-gray-300 bg-gray-50 text-gray-500 hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-300"
+                          aria-label="Add more images"
+                          title="Add more images"
+                        >
+                          <span className="material-symbols-outlined text-[28px]">add</span>
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  <div className="flex items-center gap-3">
+                    <button type="button" className="p-2 hover:bg-gray-100 rounded-full text-gray-500 transition">
+                      <span className="material-symbols-outlined">add_circle</span>
+                    </button>
+                    <input
+                      ref={imageInputRef}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleSendImage}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => imageInputRef.current?.click()}
+                      disabled={isUploadingImage || !activeConversation}
+                      className="p-2 hover:bg-gray-100 rounded-full text-gray-500 transition disabled:cursor-not-allowed disabled:text-gray-300"
+                      title={isUploadingImage ? "Uploading image..." : "Choose image"}
+                    >
+                      <span className="material-symbols-outlined">
+                        {isUploadingImage ? "hourglass_empty" : "image"}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setStickersOpen((open) => !open)}
+                      className={`p-2 hover:bg-gray-100 rounded-full transition ${
+                        stickersOpen ? "text-[#1877f2] bg-blue-50" : "text-gray-500"
+                      }`}
+                    >
+                      <span className="material-symbols-outlined">sticky_note_2</span>
+                    </button>
+                    <input
+                      ref={inputRef}
+                      type="text"
+                      placeholder={pendingImages.length > 0 ? "Press send to share images..." : "Type a message..."}
+                      value={messageText}
+                      onChange={handleInputChange}
+                      onKeyDown={handleKeyDown}
+                      onPaste={handlePasteImage}
+                      disabled={isUploadingImage}
+                      className="flex-1 bg-[#f0f2f5] px-4 py-2.5 text-sm rounded-full outline-none placeholder:text-gray-500 focus:bg-white focus:ring-1 focus:ring-[#1877f2] disabled:text-gray-400"
+                    />
+                    <button
+                      type="submit"
+                      disabled={isUploadingImage || (!messageText.trim() && pendingImages.length === 0)}
+                      className="p-2.5 bg-[#1877f2] hover:bg-[#166fe5] text-white rounded-full shadow-md transition disabled:bg-gray-300 disabled:cursor-not-allowed"
+                    >
+                      <span className="material-symbols-outlined text-[20px] block">
+                        {isUploadingImage ? "hourglass_empty" : "send"}
+                      </span>
+                    </button>
+                  </div>
                 </form>
               </div>
               </>

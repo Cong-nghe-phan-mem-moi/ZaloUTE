@@ -226,6 +226,15 @@ export const useHeaderChat = (profile) => {
             }
           }
 
+          if (data.type === "message_update" && data.data?._id) {
+            const updatedMessage = data.data;
+            setMiniMessages((items) =>
+              items.map((item) =>
+                item._id === updatedMessage._id ? updatedMessage : item,
+              ),
+            );
+          }
+
           if (data.type === "conversation_update" && data.data?._id) {
             const nextConversation = data.data;
             const exists = conversationsCache.some(
