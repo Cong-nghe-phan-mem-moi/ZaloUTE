@@ -8,8 +8,8 @@ const tabs = [
 
 export default function ProfileTabs({ activeTab, onChange }) {
   return (
-    <div className="overflow-x-auto rounded bg-white shadow-sm">
-      <div className="flex min-w-max border-b border-[#e5e7eb] px-2">
+    <div className="rounded-lg bg-white shadow-sm">
+      <div className="grid grid-cols-5 border-b border-[#e5e7eb] px-1 sm:px-2">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.key;
 
@@ -18,7 +18,7 @@ export default function ProfileTabs({ activeTab, onChange }) {
               key={tab.key}
               type="button"
               onClick={() => onChange(tab.key)}
-              className={`flex items-center gap-2 border-b-2 px-5 py-4 text-sm font-semibold transition-colors ${
+              className={`flex min-w-0 items-center justify-center gap-1 border-b-2 px-1 py-3 text-xs font-semibold transition-colors sm:gap-2 sm:px-4 sm:py-4 sm:text-sm ${
                 isActive
                   ? "border-[#1877f2] text-[#1877f2]"
                   : "border-transparent text-[#6b7280] hover:text-[#111827]"
@@ -27,7 +27,9 @@ export default function ProfileTabs({ activeTab, onChange }) {
               <span className="material-symbols-outlined text-[18px]">
                 {tab.icon}
               </span>
-              {tab.label}
+              <span className="hidden truncate min-[420px]:inline">
+                {tab.label}
+              </span>
             </button>
           );
         })}

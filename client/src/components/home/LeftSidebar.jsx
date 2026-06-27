@@ -15,9 +15,7 @@ const getGroupInitials = (name = "") =>
     .join("")
     .toUpperCase() || "G";
 
-const LeftSidebar = () => {
-  const location = useLocation();
-  const navigate = useNavigate();
+export const QuickAccessSection = ({ compact = false }) => {
   const [groups, setGroups] = useState([]);
   const [groupsLoading, setGroupsLoading] = useState(false);
 
@@ -53,7 +51,103 @@ const LeftSidebar = () => {
     };
   }, []);
 
-  const shortcutGroups = useMemo(() => groups.slice(0, 5), [groups]);
+  const shortcutGroups = useMemo(() => groups.slice(0, compact ? 8 : 5), [
+    compact,
+    groups,
+  ]);
+
+  return (
+    <section className={compact ? "rounded-lg bg-white p-4 shadow-sm" : ""}>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h2 className="text-sm font-bold">Quick Access</h2>
+        {groups.length > shortcutGroups.length ? (
+          <Link to="/groups" className="text-xs font-semibold text-[#0b66c3]">
+            See All
+          </Link>
+        ) : null}
+      </div>
+
+      {groupsLoading ? (
+        <div
+          className={
+            compact ? "flex gap-3 overflow-hidden" : "space-y-3"
+          }
+        >
+          {[0, 1, 2].map((item) => (
+            <div
+              key={item}
+              className={
+                compact
+                  ? "w-20 shrink-0"
+                  : "flex items-center gap-4"
+              }
+            >
+              <span className="block h-10 w-10 animate-pulse rounded bg-[#f1f5f9]" />
+              <span
+                className={
+                  compact
+                    ? "mt-2 block h-3 w-16 animate-pulse rounded bg-[#f1f5f9]"
+                    : "h-4 flex-1 animate-pulse rounded bg-[#f1f5f9]"
+                }
+              />
+            </div>
+          ))}
+        </div>
+      ) : shortcutGroups.length > 0 ? (
+        <div
+          className={
+            compact
+              ? "flex gap-3 overflow-x-auto pb-1"
+              : "space-y-3"
+          }
+        >
+          {shortcutGroups.map((group) => {
+            const groupId = getGroupId(group);
+
+            return (
+              <Link
+                key={groupId}
+                to={`/groups/${groupId}`}
+                className={
+                  compact
+                    ? "flex w-24 shrink-0 flex-col items-center gap-2 rounded-lg p-2 text-center text-xs font-semibold hover:bg-[#f2f3f5]"
+                    : "flex min-w-0 items-center gap-4 rounded-lg px-1 py-1.5 text-sm font-semibold hover:bg-[#f2f3f5]"
+                }
+              >
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded bg-[#f1f5f9] text-xs text-[#0b66c3]">
+                  {group.avatar ? (
+                    <img
+                      src={getImageUrl(group.avatar)}
+                      alt={group.name}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    getGroupInitials(group.name)
+                  )}
+                </span>
+                <span className={compact ? "line-clamp-2" : "truncate"}>
+                  {group.name}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      ) : (
+        <Link
+          to="/groups"
+          className="flex items-center gap-3 rounded-lg bg-[#f8fafc] px-3 py-3 text-sm font-semibold text-[#0b66c3] hover:bg-[#eef5ff]"
+        >
+          <span className="material-symbols-outlined text-[20px]">groups</span>
+          Join or create groups
+        </Link>
+      )}
+    </section>
+  );
+};
+
+const LeftSidebar = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const scrollToComposer = () => {
     const composer = document.getElementById("create-post-composer");
@@ -75,7 +169,7 @@ const LeftSidebar = () => {
   };
 
   return (
-    <aside className="sticky top-20 hidden h-[calc(100vh-80px)] overflow-y-auto bg-white px-8 py-5 lg:block">
+    <aside className="sticky top-20 hidden h-[calc(100vh-80px)] overflow-y-auto bg-white px-5 py-5 lg:block xl:px-8">
       <button
         type="button"
         onClick={handleCreatePostClick}
@@ -101,60 +195,7 @@ const LeftSidebar = () => {
 
       <div className="my-5 h-px bg-[#e5e7eb]" />
 
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <h2 className="text-sm font-bold">Your shortcuts</h2>
-        {groups.length > shortcutGroups.length ? (
-          <Link to="/groups" className="text-xs font-semibold text-[#0b66c3]">
-            See All
-          </Link>
-        ) : null}
-      </div>
-
-      {groupsLoading ? (
-        <div className="space-y-3">
-          {[0, 1, 2].map((item) => (
-            <div key={item} className="flex items-center gap-4">
-              <span className="h-9 w-9 animate-pulse rounded bg-[#f1f5f9]" />
-              <span className="h-4 flex-1 animate-pulse rounded bg-[#f1f5f9]" />
-            </div>
-          ))}
-        </div>
-      ) : shortcutGroups.length > 0 ? (
-        <div className="space-y-3">
-          {shortcutGroups.map((group) => {
-            const groupId = getGroupId(group);
-
-            return (
-              <Link
-                key={groupId}
-                to={`/groups/${groupId}`}
-                className="flex min-w-0 items-center gap-4 rounded-lg px-1 py-1.5 text-sm font-semibold hover:bg-[#f2f3f5]"
-              >
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded bg-[#f1f5f9] text-xs text-[#0b66c3]">
-                  {group.avatar ? (
-                    <img
-                      src={getImageUrl(group.avatar)}
-                      alt={group.name}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    getGroupInitials(group.name)
-                  )}
-                </span>
-                <span className="truncate">{group.name}</span>
-              </Link>
-            );
-          })}
-        </div>
-      ) : (
-        <Link
-          to="/groups"
-          className="flex items-center gap-3 rounded-lg bg-[#f8fafc] px-3 py-3 text-sm font-semibold text-[#0b66c3] hover:bg-[#eef5ff]"
-        >
-          <span className="material-symbols-outlined text-[20px]">groups</span>
-          Join or create groups
-        </Link>
-      )}
+      <QuickAccessSection />
     </aside>
   );
 };

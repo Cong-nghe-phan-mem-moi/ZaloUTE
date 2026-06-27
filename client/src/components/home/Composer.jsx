@@ -2,7 +2,7 @@
 import { useObjectUrls } from "../../hooks";
 import { useAppDispatch, useAppSelector } from "../../redux/hooks";
 import { createPost } from "../../redux/slices/postSlice";
-import { DEFAULT_POST_PRIVACY, getPrivacyOption } from "../../utils/privacy";
+import { DEFAULT_POST_PRIVACY } from "../../utils/privacy";
 import UserAvatar from "../common/UserAvatar";
 import AudienceSelector from "../privacy/AudienceSelector";
 
@@ -21,7 +21,6 @@ const Composer = ({
   const [privacy, setPrivacy] = useState(DEFAULT_POST_PRIVACY);
 
   const canSubmit = content.trim().length > 0 || files.length > 0;
-  const privacyOption = getPrivacyOption(privacy.type);
 
   const handleFileChange = (event) => {
     const selectedFiles = Array.from(event.target.files || []);
@@ -77,7 +76,10 @@ const Composer = ({
   };
 
   return (
-    <section id="create-post-composer" className="rounded bg-white p-7 shadow-sm">
+    <section
+      id="create-post-composer"
+      className="rounded-lg bg-white p-4 shadow-sm sm:p-5 lg:p-7"
+    >
       <form onSubmit={handleSubmit}>
         <div className="flex items-center gap-3">
           <UserAvatar image={profile?.avatar} name={profile?.fullName} />
@@ -119,7 +121,7 @@ const Composer = ({
           : null}
 
         <textarea
-          className="mt-7 min-h-20 w-full resize-none border-0 border-b border-[#d1d5db] bg-transparent pb-7 text-xl text-[#111827] outline-none placeholder:text-[#b0b4ba]"
+          className="mt-5 min-h-20 w-full resize-none border-0 border-b border-[#d1d5db] bg-transparent pb-5 text-lg text-[#111827] outline-none placeholder:text-[#b0b4ba] sm:mt-7 sm:pb-7 sm:text-xl"
           maxLength={5000}
           placeholder={`What's on your mind, ${
             profile?.fullName?.split(" ")?.slice(-1)?.[0] || "Hexania"
@@ -139,7 +141,7 @@ const Composer = ({
           className="hidden"
         />
 
-        <div className="mt-4 grid grid-cols-4 items-center gap-2 text-sm font-semibold text-[#4b5563]">
+        <div className="mt-4 grid grid-cols-[repeat(3,minmax(0,1fr))_auto] items-center gap-1 text-sm font-semibold text-[#4b5563] sm:gap-2">
           <ComposerAction
             icon="videocam"
             label="Live Video"

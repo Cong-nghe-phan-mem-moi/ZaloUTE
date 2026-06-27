@@ -14,7 +14,7 @@ const MessagesDropdown = ({
   onOpenMessages,
   onOpenConversation,
 }) => (
-  <div className="absolute right-0 top-12 z-40 w-[360px] overflow-hidden rounded-lg border border-[#e5e7eb] bg-white shadow-2xl">
+  <div className="fixed left-3 right-3 top-24 z-40 overflow-hidden rounded-lg border border-[#e5e7eb] bg-white shadow-2xl sm:absolute sm:left-auto sm:right-0 sm:top-12 sm:w-[min(360px,calc(100vw-24px))]">
     <div className="flex items-center justify-between border-b border-[#e5e7eb] px-4 py-3">
       <h2 className="text-lg font-bold text-[#111827]">Chats</h2>
       <button
