@@ -177,6 +177,15 @@ const assertCurrentPassword = async (accountId, currentPassword) => {
       includePassword: true,
     },
   );
+
+  if (!accountWithPassword?.passwordHash) {
+    throwError(
+      400,
+      "PASSWORD_LOGIN_UNAVAILABLE",
+      "This account does not have a password yet",
+    );
+  }
+
   const passwordMatches = await bcrypt.compare(
     currentPassword,
     accountWithPassword.passwordHash,

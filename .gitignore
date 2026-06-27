@@ -9,3 +9,4 @@ tests/api/**/*test_run.json
 # Environment files
 .env
 .env.*
+!.env.example
