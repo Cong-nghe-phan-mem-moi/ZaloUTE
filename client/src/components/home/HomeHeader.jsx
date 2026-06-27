@@ -85,8 +85,6 @@ const HomeHeader = ({ profile, activePage = "home" }) => {
 
       <nav className="hidden flex-1 items-center justify-center gap-8 text-[#6b7280] md:flex">
         <HeaderTab icon="home" active={activePage === "home"} />
-        <HeaderTab icon="storefront" />
-        <HeaderTab icon="smart_display" />
         <HeaderTab
           icon="groups"
           href="/groups"
