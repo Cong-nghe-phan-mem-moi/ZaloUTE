@@ -20,6 +20,10 @@ const findAccountByEmail = async (email, options = {}) => {
   return query;
 };
 
+const findAccountByGoogleId = async (googleId) => {
+  return Account.findOne({ googleId });
+};
+
 const findAccountById = async (accountId) => {
   return Account.findById(accountId);
 };
@@ -124,6 +128,7 @@ module.exports = {
   createAccount,
   deleteAccountByEmail,
   findAccountByEmail,
+  findAccountByGoogleId,
   findAccountById,
   updatePasswordHash,
   updateAccountStatus,

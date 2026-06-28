@@ -36,6 +36,7 @@ const ProfileHeader = ({
   onToggleFollow,
   followLoading = false,
   onReportUser,
+  onMessage,
 }) => {
   const {
     name,
@@ -49,7 +50,7 @@ const ProfileHeader = ({
   } = profileData;
 
   return (
-    <div className="overflow-hidden rounded bg-white shadow-sm">
+    <div className="overflow-hidden rounded-lg bg-white shadow-sm">
       <CoverImage
         coverImage={coverImage}
         isOwnProfile={isOwnProfile}
@@ -58,9 +59,9 @@ const ProfileHeader = ({
         onPreviewCover={onPreviewCover}
       />
 
-      <div className="px-5 pb-7 sm:px-8">
-        <div className="relative -mt-16 mb-6 flex flex-wrap items-end justify-between gap-4">
-          <div className="flex flex-wrap items-end gap-5">
+      <div className="px-4 pb-5 sm:px-6 sm:pb-7 lg:px-8">
+        <div className="relative -mt-12 mb-5 flex flex-col gap-4 sm:-mt-16 sm:mb-6">
+          <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-end sm:gap-5">
             <ProfileAvatar
               profileImage={profileImage}
               isOnline={isOnline}
@@ -69,47 +70,51 @@ const ProfileHeader = ({
               avatarUploading={avatarUploading}
               onPreviewAvatar={onPreviewAvatar}
             />
-            <div className="mb-3 min-w-0">
-              <h1 className="truncate text-3xl font-bold text-[#111827]">
-                {name}
-              </h1>
-              <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-[#6b7280]">
-                <span className="font-medium">{username}</span>
-                <span className="h-1 w-1 rounded-full bg-[#d1d5db]" />
-                <span
-                  className={
-                    isOnline ? "text-emerald-600" : "text-[#9ca3af]"
-                  }
-                >
-                  {isOnline ? "Active now" : "Offline"}
-                </span>
-              </p>
+            <div className="flex min-w-0 flex-1 flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+              <div className="min-w-0 flex-1 pb-2">
+                <h1 className="min-w-0 truncate text-2xl font-bold text-[#111827] sm:text-3xl">
+                  {name}
+                </h1>
+                <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-[#6b7280]">
+                  <span className="font-medium">{username}</span>
+                  <span className="h-1 w-1 rounded-full bg-[#d1d5db]" />
+                  <span
+                    className={
+                      isOnline ? "text-emerald-600" : "text-[#9ca3af]"
+                    }
+                  >
+                    {isOnline ? "Active now" : "Offline"}
+                  </span>
+                </p>
+              </div>
+
+              <ActionButtons
+                isOwnProfile={isOwnProfile}
+                onEdit={onEdit}
+                relation={relation}
+                onSendFriendRequest={onSendFriendRequest}
+                sendingFriendRequest={sendingFriendRequest}
+                onAcceptFriendRequest={onAcceptFriendRequest}
+                acceptingFriendRequest={acceptingFriendRequest}
+                onRejectFriendRequest={onRejectFriendRequest}
+                rejectingFriendRequest={rejectingFriendRequest}
+                onCancelFriendRequest={onCancelFriendRequest}
+                cancellingFriendRequest={cancellingFriendRequest}
+                onUnfriend={onUnfriend}
+                unfriending={unfriending}
+                onBlockUser={onBlockUser}
+                onUnblockUser={onUnblockUser}
+                blockingUser={blockingUser}
+                unblockingUser={unblockingUser}
+                isBlocked={isBlocked}
+                isFollowing={isFollowing}
+                onToggleFollow={onToggleFollow}
+                followLoading={followLoading}
+                onReportUser={onReportUser}
+                onMessage={onMessage}
+              />
             </div>
           </div>
-          <ActionButtons
-            isOwnProfile={isOwnProfile}
-            onEdit={onEdit}
-            relation={relation}
-            onSendFriendRequest={onSendFriendRequest}
-            sendingFriendRequest={sendingFriendRequest}
-            onAcceptFriendRequest={onAcceptFriendRequest}
-            acceptingFriendRequest={acceptingFriendRequest}
-            onRejectFriendRequest={onRejectFriendRequest}
-            rejectingFriendRequest={rejectingFriendRequest}
-            onCancelFriendRequest={onCancelFriendRequest}
-            cancellingFriendRequest={cancellingFriendRequest}
-            onUnfriend={onUnfriend}
-            unfriending={unfriending}
-            onBlockUser={onBlockUser}
-            onUnblockUser={onUnblockUser}
-            blockingUser={blockingUser}
-            unblockingUser={unblockingUser}
-            isBlocked={isBlocked}
-            isFollowing={isFollowing}
-            onToggleFollow={onToggleFollow}
-            followLoading={followLoading}
-            onReportUser={onReportUser}
-          />
         </div>
 
         {bio ? (
@@ -132,7 +137,7 @@ const CoverImage = ({
   onPreviewCover,
 }) => {
   return (
-    <div className="relative h-56 w-full cursor-pointer bg-gradient-to-br from-[#dbeafe] via-[#bfdbfe] to-[#93c5fd] sm:h-60" onClick={onPreviewCover}>
+    <div className="relative h-40 w-full cursor-pointer bg-gradient-to-br from-[#dbeafe] via-[#bfdbfe] to-[#93c5fd] sm:h-52 lg:h-60" onClick={onPreviewCover}>
       {coverImage && (
         <img
           className="h-full w-full object-cover"
@@ -142,7 +147,7 @@ const CoverImage = ({
       )}
 
       {isOwnProfile ? (
-        <label className="absolute bottom-4 right-4 z-30 flex cursor-pointer items-center gap-2 overflow-hidden rounded-md bg-white px-4 py-2 text-sm font-semibold text-[#111827] shadow-sm hover:bg-[#f2f3f5] has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-60">
+        <label className="absolute bottom-3 right-3 z-30 flex cursor-pointer items-center gap-2 overflow-hidden rounded-md bg-white px-3 py-2 text-xs font-semibold text-[#111827] shadow-sm hover:bg-[#f2f3f5] has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-60 sm:bottom-4 sm:right-4 sm:px-4 sm:text-sm">
           <input
             type="file"
             accept="image/*"
@@ -157,7 +162,7 @@ const CoverImage = ({
           <span className="material-symbols-outlined text-[18px]">
             {coverUploading ? "sync" : "photo_camera"}
           </span>
-          <span>{coverUploading ? "Uploading..." : "Edit cover photo"}</span>
+          <span className="hidden sm:inline">{coverUploading ? "Uploading..." : "Edit cover photo"}</span>
         </label>
       ) : null}
     </div>
@@ -174,7 +179,7 @@ const ProfileAvatar = ({
 }) => {
   return (
     <div className="relative group">
-      <div onClick={onPreviewAvatar} className="h-32 w-32 cursor-pointer overflow-hidden rounded-full border-4 border-white bg-[#facc15] text-[#7c2d12] shadow-md transition-transform duration-300 group-hover:scale-[1.02] sm:h-36 sm:w-36">
+      <div onClick={onPreviewAvatar} className="h-24 w-24 cursor-pointer overflow-hidden rounded-full border-4 border-white bg-[#facc15] text-[#7c2d12] shadow-md transition-transform duration-300 group-hover:scale-[1.02] sm:h-32 sm:w-32 lg:h-36 lg:w-36">
         {profileImage ? (
           <img
             className="h-full w-full object-cover"
@@ -235,12 +240,14 @@ const ActionButtons = ({
   onToggleFollow,
   followLoading,
   onReportUser,
+  onMessage,
 }) => {
   if (!isOwnProfile) {
     const action = relationLabels[relation] || relationLabels.none;
     const isAcceptAction = relation === "received_request";
     const isCancelAction = relation === "sent_request";
     const isUnfriendAction = relation === "friend";
+    const isFriendAction = relation === "friend";
     const isBusy = isAcceptAction
       ? acceptingFriendRequest
       : isCancelAction
@@ -258,18 +265,18 @@ const ActionButtons = ({
     const handleSecondaryAction = isAcceptAction ? onRejectFriendRequest : null;
 
     return (
-      <div className="mb-2 flex flex-wrap gap-2">
+      <div className="grid w-full grid-cols-1 gap-2 self-end pb-2 sm:w-auto sm:grid-cols-2 lg:flex lg:flex-wrap lg:items-center lg:justify-end">
         <button
           type="button"
           onClick={handlePrimaryAction}
           disabled={action.disabled || isBusy}
-          className={`flex items-center gap-2 rounded-md px-5 py-2 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+          className={`flex items-center justify-center gap-1.5 rounded-md px-4 py-2 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
             isUnfriendAction
               ? "bg-[#dc3545] hover:bg-[#c82333] text-white"
               : "bg-[#1877f2] hover:bg-[#166fe5] text-white"
           }`}
         >
-          <span className="material-symbols-outlined text-[18px]">
+          <span className="material-symbols-outlined text-[16px]">
             {isBusy ? "sync" : action.icon}
           </span>
           {isBusy
@@ -288,9 +295,9 @@ const ActionButtons = ({
             type="button"
             onClick={handleSecondaryAction}
             disabled={rejectingFriendRequest}
-            className="flex items-center gap-2 rounded-md bg-[#e5e7eb] px-5 py-2 text-sm font-semibold text-[#111827] transition-colors hover:bg-[#d1d5db] disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex items-center justify-center gap-1.5 rounded-md bg-[#e5e7eb] px-4 py-2 text-sm font-semibold text-[#111827] transition-colors hover:bg-[#d1d5db] disabled:cursor-not-allowed disabled:opacity-60"
           >
-            <span className="material-symbols-outlined text-[18px]">
+            <span className="material-symbols-outlined text-[16px]">
               {rejectingFriendRequest ? "sync" : "close"}
             </span>
             {rejectingFriendRequest ? "Rejecting..." : "Reject"}
@@ -300,26 +307,26 @@ const ActionButtons = ({
         <button
           type="button"
           onClick={onToggleFollow}
-          disabled={followLoading}
-          className={`flex items-center gap-2 rounded-md px-5 py-2 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
-            isFollowing
+          disabled={followLoading || isFriendAction}
+          className={`flex items-center justify-center gap-1.5 rounded-md px-4 py-2 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+            isFollowing || isFriendAction
               ? "bg-[#e7f3ff] text-[#1877f2] hover:bg-[#dbeafe]"
               : "bg-[#e5e7eb] text-[#111827] hover:bg-[#d1d5db]"
           }`}
         >
-          <span className="material-symbols-outlined text-[18px]">
-            {followLoading ? "sync" : isFollowing ? "done" : "rss_feed"}
+          <span className="material-symbols-outlined text-[16px]">
+            {followLoading ? "sync" : (isFollowing || isFriendAction) ? "done" : "rss_feed"}
           </span>
-          {followLoading ? "Saving..." : isFollowing ? "Following" : "Follow"}
+          {followLoading ? "Saving..." : (isFollowing || isFriendAction) ? "Following" : "Follow"}
         </button>
 
         <button
           type="button"
           onClick={isBlocked ? onUnblockUser : onBlockUser}
           disabled={blockingUser || unblockingUser}
-          className="flex items-center gap-2 rounded-md bg-[#111827] px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex items-center justify-center gap-1.5 rounded-md bg-[#111827] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
         >
-          <span className="material-symbols-outlined text-[18px]">
+          <span className="material-symbols-outlined text-[16px]">
             {blockingUser || unblockingUser ? "sync" : "block"}
           </span>
           {blockingUser || unblockingUser
@@ -334,14 +341,18 @@ const ActionButtons = ({
         <button
           type="button"
           onClick={onReportUser}
-          className="flex items-center gap-2 rounded-md bg-[#fee2e2] px-5 py-2 text-sm font-semibold text-[#b91c1c] transition-colors hover:bg-[#fecaca]"
+          className="flex items-center justify-center gap-1.5 rounded-md bg-[#fee2e2] px-4 py-2 text-sm font-semibold text-[#b91c1c] transition-colors hover:bg-[#fecaca]"
         >
-          <span className="material-symbols-outlined text-[18px]">flag</span>
+          <span className="material-symbols-outlined text-[16px]">flag</span>
           Report
         </button>
 
-        <button className="flex items-center gap-2 rounded-md bg-[#e5e7eb] px-5 py-2 text-sm font-semibold text-[#111827] transition-colors hover:bg-[#d1d5db]">
-          <span className="material-symbols-outlined text-[18px]">chat</span>
+        <button
+          type="button"
+          onClick={onMessage}
+          className="flex items-center justify-center gap-1.5 rounded-md bg-[#e5e7eb] px-4 py-2 text-sm font-semibold text-[#111827] transition-colors hover:bg-[#d1d5db]"
+        >
+          <span className="material-symbols-outlined text-[16px]">chat</span>
           Message
         </button>
       </div>
@@ -349,16 +360,16 @@ const ActionButtons = ({
   }
 
   return (
-    <div className="mb-2 flex gap-2">
+    <div className="grid w-full grid-cols-[minmax(0,1fr)_auto] gap-2 self-end pb-2 sm:w-auto sm:flex sm:flex-wrap sm:items-center sm:justify-end">
       <button
         onClick={onEdit}
-        className="flex items-center gap-2 rounded-md bg-[#1877f2] px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#166fe5]"
+        className="flex items-center justify-center gap-1.5 rounded-md bg-[#1877f2] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#166fe5]"
       >
-        <span className="material-symbols-outlined text-[18px]">edit</span>
+        <span className="material-symbols-outlined text-[16px]">edit</span>
         Edit profile
       </button>
 
-      <button className="rounded-md bg-[#e5e7eb] px-4 py-2 text-[#111827] transition-colors hover:bg-[#d1d5db]">
+      <button className="rounded-md bg-[#e5e7eb] px-3 py-2 text-[#111827] transition-colors hover:bg-[#d1d5db]">
         <span className="material-symbols-outlined">share</span>
       </button>
     </div>
@@ -366,7 +377,7 @@ const ActionButtons = ({
 };
 
 const StatsSection = ({ stats }) => (
-  <div className="flex gap-8 border-t border-[#e5e7eb] pt-6">
+  <div className="grid grid-cols-3 gap-3 border-t border-[#e5e7eb] pt-5 sm:flex sm:gap-8 sm:pt-6">
     <StatCard value={stats.friends} label="Friends" />
     <StatCard value={stats.posts} label="Posts" />
     <StatCard value={stats.photos} label="Photos" />

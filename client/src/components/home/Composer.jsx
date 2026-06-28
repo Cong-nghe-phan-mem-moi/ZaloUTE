@@ -2,7 +2,7 @@
 import { useObjectUrls } from "../../hooks";
 import { useAppDispatch, useAppSelector } from "../../redux/hooks";
 import { createPost } from "../../redux/slices/postSlice";
-import { DEFAULT_POST_PRIVACY, getPrivacyOption } from "../../utils/privacy";
+import { DEFAULT_POST_PRIVACY } from "../../utils/privacy";
 import UserAvatar from "../common/UserAvatar";
 import AudienceSelector from "../privacy/AudienceSelector";
 
@@ -21,7 +21,6 @@ const Composer = ({
   const [privacy, setPrivacy] = useState(DEFAULT_POST_PRIVACY);
 
   const canSubmit = content.trim().length > 0 || files.length > 0;
-  const privacyOption = getPrivacyOption(privacy.type);
 
   const handleFileChange = (event) => {
     const selectedFiles = Array.from(event.target.files || []);
@@ -52,14 +51,14 @@ const Composer = ({
 
     const formData = new FormData();
     formData.append("content", content.trim());
-    
+
     // Shared FormData handling for group posts and posts with privacy.
     if (groupId) {
       formData.append("groupId", groupId);
     } else {
       formData.append("privacy", JSON.stringify(privacy));
     }
-    
+
     files.forEach((file) => formData.append("media", file));
 
     try {
@@ -77,21 +76,34 @@ const Composer = ({
   };
 
   return (
-    <section className="rounded bg-white p-7 shadow-sm">
+    <section
+      id="create-post-composer"
+      className="rounded-lg bg-white p-4 shadow-sm sm:p-5 lg:p-7"
+    >
       <form onSubmit={handleSubmit}>
         <div className="flex items-center gap-3">
           <UserAvatar image={profile?.avatar} name={profile?.fullName} />
-          <div>
+          <div className="min-w-0 flex-1">
             <p className="text-sm font-bold">
               {profile?.fullName || "Hexa Betania"}
             </p>
-            {/* Shared helper label under the name. */}
-            <p className="flex items-center gap-1 text-xs text-[#6b7280]">
-              <span className="material-symbols-outlined text-[14px]">
-                {groupId ? "groups" : privacyOption.icon}
-              </span>
-              {groupId ? groupName || "Groups" : privacyOption.label}
-            </p>
+
+            {groupId ? (
+              <p className="flex items-center gap-1 text-xs text-[#6b7280]">
+                <span className="material-symbols-outlined text-[14px]">
+                  groups
+                </span>
+                {groupName || "Groups"}
+              </p>
+            ) : (
+              <AudienceSelector
+                friends={profile?.friends || []}
+                privacy={privacy}
+                onChange={setPrivacy}
+                compact
+                className="mt-1 max-w-[135px]"
+              />
+            )}
           </div>
         </div>
 
@@ -99,23 +111,17 @@ const Composer = ({
           - Inside groups: show approval notice when required.
           - On profile/newsfeed: show the audience selector.
         */}
-        {groupId ? (
-          requiresApproval && (
-            <div className="mt-4 rounded-md bg-[#fff7ed] px-4 py-3 text-sm font-semibold text-[#c2410c]">
-              Member posts will wait for admin approval before appearing in the group.
-            </div>
-          )
-        ) : (
-          <AudienceSelector
-            friends={profile?.friends || []}
-            privacy={privacy}
-            onChange={setPrivacy}
-            className="mt-4 max-w-sm"
-          />
-        )}
+        {groupId
+          ? requiresApproval && (
+              <div className="mt-4 rounded-md bg-[#fff7ed] px-4 py-3 text-sm font-semibold text-[#c2410c]">
+                Member posts will wait for admin approval before appearing in
+                the group.
+              </div>
+            )
+          : null}
 
         <textarea
-          className="mt-7 min-h-20 w-full resize-none border-0 border-b border-[#d1d5db] bg-transparent pb-7 text-xl text-[#111827] outline-none placeholder:text-[#b0b4ba]"
+          className="mt-5 min-h-20 w-full resize-none border-0 border-b border-[#d1d5db] bg-transparent pb-5 text-lg text-[#111827] outline-none placeholder:text-[#b0b4ba] sm:mt-7 sm:pb-7 sm:text-xl"
           maxLength={5000}
           placeholder={`What's on your mind, ${
             profile?.fullName?.split(" ")?.slice(-1)?.[0] || "Hexania"
@@ -135,7 +141,7 @@ const Composer = ({
           className="hidden"
         />
 
-        <div className="mt-4 grid grid-cols-4 items-center gap-2 text-sm font-semibold text-[#4b5563]">
+        <div className="mt-4 grid grid-cols-[repeat(3,minmax(0,1fr))_auto] items-center gap-1 text-sm font-semibold text-[#4b5563] sm:gap-2">
           <ComposerAction
             icon="videocam"
             label="Live Video"
@@ -162,7 +168,11 @@ const Composer = ({
                 disabled={loading}
                 className="rounded-md bg-[#1877f2] px-5 py-2 text-sm font-semibold text-white hover:bg-[#166fe5] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {loading ? "Posting..." : (groupId && requiresApproval) ? "Submit for review" : "Post"}
+                {loading
+                  ? "Posting..."
+                  : groupId && requiresApproval
+                    ? "Submit for review"
+                    : "Post"}
               </button>
             ) : (
               <span className="material-symbols-outlined text-[#6b7280]">
@@ -185,7 +195,8 @@ const SelectedMediaPreview = ({ files, onRemove }) => {
 
   const visibleFiles = files.slice(0, 5);
   const remainingCount = files.length - visibleFiles.length;
-  const isSingleImage = files.length === 1 && files[0].type.startsWith("image/");
+  const isSingleImage =
+    files.length === 1 && files[0].type.startsWith("image/");
 
   if (isSingleImage) {
     const previewUrl = previewUrls[0];
@@ -299,4 +310,3 @@ const ComposerAction = ({ icon, label, color, type = "button", onClick }) => (
 );
 
 export default Composer;
-

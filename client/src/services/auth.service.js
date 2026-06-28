@@ -2,6 +2,7 @@ import apiClient from "./apiClient";
 
 export const authAPI = {
   login: (credentials) => apiClient.post("/auth/login", credentials),
+  googleLogin: (payload) => apiClient.post("/auth/google", payload),
 };
 
 export const registerAPI = {

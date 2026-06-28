@@ -9,6 +9,7 @@ import { userAPI } from "../../services/user.service";
 const sections = [
   { id: "security", icon: "lock", label: "Security" },
   { id: "contact", icon: "alternate_email", label: "Contact" },
+  { id: "blocked", icon: "block", label: "Blocked users" },
   { id: "notifications", icon: "notifications", label: "Notifications" },
   { id: "sessions", icon: "devices", label: "Sessions" },
   { id: "privacy", icon: "shield", label: "Privacy" },
@@ -67,6 +68,7 @@ export default function AccountSettings() {
     currentPassword: "",
   });
   const [deactivatePassword, setDeactivatePassword] = useState("");
+  const [blockedUsers, setBlockedUsers] = useState([]);
 
   const loadSettings = async () => {
     setLoading(true);
@@ -76,6 +78,7 @@ export default function AccountSettings() {
       const response = await userAPI.getAccountSettings();
       const data = response.data?.data || emptySettings;
       setSettings({ ...emptySettings, ...data });
+      setBlockedUsers(profile?.blockedUsers || []);
       setContactForm({
         email: data.contact?.email || "",
         phone: data.contact?.phone || "",
@@ -97,6 +100,19 @@ export default function AccountSettings() {
 
     return () => window.clearTimeout(timer);
   }, [dispatch]);
+
+  useEffect(() => {
+    const loadBlockedUsers = async () => {
+      try {
+        const response = await userAPI.getBlockedUsers();
+        setBlockedUsers(response.data?.data || []);
+      } catch {
+        setBlockedUsers([]);
+      }
+    };
+
+    loadBlockedUsers();
+  }, []);
 
   const activeSessions = useMemo(
     () => settings.sessions.filter((session) => !session.revokedAt),
@@ -240,6 +256,20 @@ export default function AccountSettings() {
     }
   };
 
+  const handleUnblockUser = async (userId) => {
+    const response = await runAction(
+      `unblock-${userId}`,
+      () => userAPI.unblockUser(userId),
+      "User unblocked successfully.",
+    );
+
+    if (response) {
+      const blockedResponse = await userAPI.getBlockedUsers();
+      setBlockedUsers(blockedResponse.data?.data || []);
+      dispatch(fetchUserProfile());
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#f2f3f5] text-[#111827]">
       <HomeHeader profile={profile} activePage={null} />
@@ -332,6 +362,46 @@ export default function AccountSettings() {
                       />
                       <PrimaryButton loading={saving === "contact"}>Save contact</PrimaryButton>
                     </form>
+                  </SettingsPanel>
+                ) : null}
+
+                {activeSection === "blocked" ? (
+                  <SettingsPanel title="Blocked users" icon="block">
+                    <div className="space-y-3">
+                      {blockedUsers.length === 0 ? (
+                        <p className="text-sm text-[#65676b]">
+                          You have not blocked any users.
+                        </p>
+                      ) : (
+                        blockedUsers.map((user) => (
+                          <div
+                            key={user.id}
+                            className="flex items-center justify-between rounded-md border border-[#dddfe2] p-4"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="h-10 w-10 overflow-hidden rounded-full bg-[#f2f3f5]">
+                                {user.avatar ? (
+                                  <img
+                                    src={user.avatar}
+                                    alt={user.fullName}
+                                    className="h-full w-full object-cover"
+                                  />
+                                ) : null}
+                              </div>
+                              <p className="text-sm font-semibold text-[#050505]">
+                                {user.fullName}
+                              </p>
+                            </div>
+                            <SecondaryButton
+                              onClick={() => handleUnblockUser(user.id)}
+                              loading={saving === `unblock-${user.id}`}
+                            >
+                              Unblock
+                            </SecondaryButton>
+                          </div>
+                        ))
+                      )}
+                    </div>
                   </SettingsPanel>
                 ) : null}
 

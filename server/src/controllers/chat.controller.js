@@ -1,4 +1,18 @@
 const ChatService = require("../services/chat.service");
+const googleDriveService = require("../services/googleDrive.service");
+const fs = require("fs/promises");
+
+const cleanupUploadedFile = async (file) => {
+  if (!file?.path) return;
+
+  try {
+    await fs.unlink(file.path);
+  } catch (error) {
+    if (error.code !== "ENOENT") {
+      console.error("Unable to cleanup uploaded chat image:", error);
+    }
+  }
+};
 
 async function getConversations(req, res) {
   try {
@@ -60,6 +74,49 @@ async function getMessages(req, res) {
       success: false,
       code: error.code || "INTERNAL_SERVER_ERROR",
       message: error.message || "Internal server error",
+    });
+  }
+}
+
+async function uploadConversationImage(req, res) {
+  try {
+    const userId = req.user.userId;
+    const { conversationId } = req.params;
+
+    const result = await ChatService.uploadConversationImage(
+      userId,
+      conversationId,
+      req.file,
+    );
+    return res.status(201).json(result);
+  } catch (error) {
+    console.error("Upload Conversation Image Error:", error);
+    return res.status(error.statusCode || 500).json({
+      success: false,
+      code: error.code || "INTERNAL_SERVER_ERROR",
+      message: error.message || "Internal server error",
+    });
+  } finally {
+    await cleanupUploadedFile(req.file);
+  }
+}
+
+async function proxyConversationImage(req, res) {
+  try {
+    const { fileId } = req.params;
+    const imageResponse = await googleDriveService.fetchPublicImage(fileId);
+
+    res.setHeader("Content-Type", imageResponse.headers.get("content-type") || "image/jpeg");
+    res.setHeader("Cache-Control", "public, max-age=86400");
+
+    const buffer = Buffer.from(await imageResponse.arrayBuffer());
+    return res.status(200).send(buffer);
+  } catch (error) {
+    console.error("Proxy Conversation Image Error:", error);
+    return res.status(error.statusCode || 500).json({
+      success: false,
+      code: error.code || "IMAGE_PROXY_ERROR",
+      message: error.message || "Unable to load image",
     });
   }
 }
@@ -258,6 +315,8 @@ module.exports = {
   getConversationBadge,
   getOrCreateConversation,
   getMessages,
+  uploadConversationImage,
+  proxyConversationImage,
   markConversationsAsSeen,
   createGroup,
   removeMember,

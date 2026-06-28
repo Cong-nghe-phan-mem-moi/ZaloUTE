@@ -33,7 +33,6 @@ const TopAppBar = ({ profile }) => {
             active={isFriendRequestsPage}
           />
           <NavIcon icon="forum" label="Messages" href="/" />
-          <NavIcon icon="smart_display" label="Watch" href="/" />
         </nav>
 
         <div className="flex shrink-0 items-center gap-2">

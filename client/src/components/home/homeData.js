@@ -3,14 +3,6 @@ export const menuItems = [
   { icon: "groups", label: "Groups", href: "/groups" },
   { icon: "photo_library", label: "Photos/Videos", href: "/profile/media" },
   { icon: "settings", label: "Account Settings", href: "/account/settings" },
-  { icon: "storefront", label: "Marketplace", href: "/" },
-  { icon: "smart_display", label: "Watch", href: "/" },
-];
-
-export const shortcuts = [
-  { initials: "UD", label: "UI/UX Designer" },
-  { initials: "UR", label: "UX Research" },
-  { initials: "UI", label: "UX Illustrator" },
 ];
 
 export const stories = [

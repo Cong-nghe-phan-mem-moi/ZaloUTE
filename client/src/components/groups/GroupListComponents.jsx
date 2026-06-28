@@ -34,7 +34,7 @@ export const InvitationPanel = ({ invitations, actionKey, onAccept, onReject }) 
             key={groupId}
             className="rounded-lg border border-[#e5e7eb] bg-[#f8fafc] p-4"
           >
-            <div className="flex gap-4">
+            <div className="flex gap-3 sm:gap-4">
               <GroupAvatar group={group} />
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
@@ -102,7 +102,7 @@ export const GroupCard = ({
     <article className="rounded-lg bg-white p-4 shadow-sm ring-1 ring-[#eef0f2] transition hover:-translate-y-0.5 hover:shadow-md">
       <Link
         to={`/groups/${getGroupEntityId(group)}`}
-        className="flex items-start gap-4 rounded-md hover:bg-[#f8fafc]"
+        className="flex items-start gap-3 rounded-md hover:bg-[#f8fafc] sm:gap-4"
       >
         <GroupAvatar group={group} />
         <div className="min-w-0 flex-1">
@@ -132,7 +132,7 @@ export const GroupCard = ({
       </Link>
 
       {isAdmin ? (
-        <div className="mt-4 grid gap-2 sm:grid-cols-3">
+        <div className="mt-4 grid gap-2 sm:grid-cols-3 xl:grid-cols-1 2xl:grid-cols-3">
           <GroupCardButton icon="edit" label="Edit" onClick={onEdit} />
           <GroupCardButton
             icon="person_add"
@@ -173,7 +173,7 @@ const GroupCardButton = ({ icon, label, tone = "neutral", onClick }) => {
 };
 
 export const GroupAvatar = ({ group }) => (
-  <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-md bg-[#dbeafe] text-xl font-bold text-[#1877f2]">
+  <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-md bg-[#dbeafe] text-xl font-bold text-[#1877f2] sm:h-16 sm:w-16">
     {group.avatar ? (
       <img
         className="h-full w-full object-cover"
@@ -237,10 +237,10 @@ export const GroupModal = ({
         : onAssignAdmin;
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 px-4 py-8">
+    <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/40 px-3 py-3 sm:items-center sm:px-4 sm:py-8">
       <form
         onSubmit={submitHandler}
-        className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-lg bg-white p-5 shadow-2xl"
+        className="max-h-[92vh] w-full max-w-xl overflow-y-auto rounded-lg bg-white p-4 shadow-2xl sm:p-5"
       >
         <div className="mb-5 flex items-center justify-between gap-3">
           <div>
@@ -275,7 +275,7 @@ export const GroupModal = ({
           />
         ) : null}
 
-        <div className="mt-6 flex justify-end gap-3">
+        <div className="mt-6 grid gap-3 sm:flex sm:justify-end">
           <button
             type="button"
             onClick={onClose}

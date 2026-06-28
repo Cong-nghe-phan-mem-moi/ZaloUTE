@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { UserAvatar } from "../../common";
 
 const ProfileMenu = ({ profile, isLoggingOut, onLogout }) => (
-  <div className="absolute right-0 top-12 z-50 w-72 rounded-lg border border-[#dddfe2] bg-white p-2 shadow-2xl">
+  <div className="fixed left-3 right-3 top-24 z-50 rounded-lg border border-[#dddfe2] bg-white p-2 shadow-2xl sm:absolute sm:left-auto sm:right-0 sm:top-12 sm:w-[min(288px,calc(100vw-24px))]">
     <Link
       to="/user/profile"
       className="flex items-center gap-3 rounded-lg p-3 text-[#111827] hover:bg-[#f2f3f5]"

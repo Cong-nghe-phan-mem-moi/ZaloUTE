@@ -102,6 +102,10 @@ export const getConversationPreview = (conversation, profile) => {
     return `${prefix}Sent a sticker`;
   }
 
+  if (lastMessage.messageType === "image") {
+    return `${prefix}Sent an image`;
+  }
+
   return `${prefix}${lastMessage.content || "Message"}`;
 };
 
@@ -114,6 +118,7 @@ export const getMiniMessageContent = (message) => {
     return message.content || "Replied to a story";
   }
   if (message.messageType === "sticker") return "Sent a sticker";
+  if (message.messageType === "image") return "Sent an image";
   if (message.messageType === "system") return message.content || "System message";
   return message.content || "Message";
 };

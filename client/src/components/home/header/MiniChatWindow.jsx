@@ -6,6 +6,18 @@ import {
   getMiniMessageContent,
   getProfileId,
 } from "../../../utils/chatUtils";
+import getImageUrl, { getImageFallbackUrl } from "../../../utils/imageUrl";
+
+const getReactionSummary = (message) => {
+  const grouped = new Map();
+
+  (message.reactions || []).forEach((reaction) => {
+    if (!reaction?.emoji) return;
+    grouped.set(reaction.emoji, (grouped.get(reaction.emoji) || 0) + 1);
+  });
+
+  return Array.from(grouped.entries());
+};
 
 const MiniChatWindow = ({
   conversation,
@@ -47,7 +59,7 @@ const MiniChatWindow = ({
       <button
         type="button"
         onClick={onRestore}
-        className="fixed bottom-4 right-4 z-50 flex w-72 items-center gap-3 rounded-t-lg border border-[#d1d5db] bg-white px-3 py-2 text-left shadow-2xl hover:bg-[#f8fafc]"
+        className="fixed bottom-3 left-3 right-3 z-50 flex items-center gap-3 rounded-t-lg border border-[#d1d5db] bg-white px-3 py-2 text-left shadow-2xl hover:bg-[#f8fafc] sm:left-auto sm:right-4 sm:w-72"
       >
         <span className="relative shrink-0">
           <UserAvatar image={avatar} name={title} size="sm" />
@@ -66,7 +78,7 @@ const MiniChatWindow = ({
   }
 
   return (
-    <section className="fixed bottom-4 right-4 z-50 flex h-[460px] w-80 flex-col overflow-hidden rounded-t-lg border border-[#d1d5db] bg-white shadow-2xl">
+    <section className="fixed bottom-3 left-3 right-3 z-50 flex h-[min(460px,calc(100vh-96px))] flex-col overflow-hidden rounded-t-lg border border-[#d1d5db] bg-white shadow-2xl sm:left-auto sm:right-4 sm:w-80">
       <div className="flex items-center gap-2 border-b border-[#e5e7eb] px-3 py-2">
         <UserAvatar image={avatar} name={title} size="sm" />
         <button
@@ -141,29 +153,61 @@ const MiniChatWindow = ({
         {messages.map((message) => {
           const isMe = String(getId(message.senderId)) === profileId;
           const content = getMiniMessageContent(message);
+          const reactionSummary = getReactionSummary(message);
 
           return (
             <div
               key={message._id}
-              className={`flex ${isMe ? "justify-end" : "justify-start"}`}
+              className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}
             >
-              {message.messageType === "sticker" ? (
-                <img
-                  src={message.content}
-                  alt="Sticker"
-                  className="h-24 w-24 rounded-xl object-contain"
-                />
-              ) : (
-                <div
-                  className={`max-w-[78%] rounded-2xl px-3 py-2 text-sm leading-5 ${
-                    isMe
-                      ? "rounded-br-sm bg-[#1877f2] text-white"
-                      : "rounded-bl-sm bg-white text-[#111827] shadow-sm"
-                  }`}
-                >
-                  {content}
+              <div className={`flex ${isMe ? "justify-end" : "justify-start"} w-full`}>
+                {message.messageType === "sticker" ? (
+                  <img
+                    src={message.content}
+                    alt="Sticker"
+                    className="h-24 w-24 rounded-xl object-contain"
+                  />
+                ) : message.messageType === "image" ? (
+                  <a
+                    href={getImageUrl(message.content)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="block max-w-[78%]"
+                  >
+                    <img
+                      src={getImageUrl(message.content)}
+                      alt="Chat attachment"
+                      className="max-h-48 rounded-2xl object-cover shadow-sm"
+                      onError={(event) => {
+                        const fallbackUrl = getImageFallbackUrl(message.content);
+                        if (fallbackUrl && event.currentTarget.src !== fallbackUrl) {
+                          event.currentTarget.src = fallbackUrl;
+                        }
+                      }}
+                    />
+                  </a>
+                ) : (
+                  <div
+                    className={`max-w-[78%] rounded-2xl px-3 py-2 text-sm leading-5 ${
+                      isMe
+                        ? "rounded-br-sm bg-[#1877f2] text-white"
+                        : "rounded-bl-sm bg-white text-[#111827] shadow-sm"
+                    }`}
+                  >
+                    {content}
+                  </div>
+                )}
+              </div>
+              {reactionSummary.length > 0 ? (
+                <div className={`mt-[-2px] px-2 ${isMe ? "text-right" : "text-left"}`}>
+                  <span className="inline-flex items-center gap-1 rounded-full border border-[#e5e7eb] bg-white px-1.5 py-0.5 text-[11px] shadow-sm">
+                    <span>{reactionSummary.map(([emoji]) => emoji).join(" ")}</span>
+                    <span className="font-semibold text-[#6b7280]">
+                      {message.reactions?.length || 0}
+                    </span>
+                  </span>
                 </div>
-              )}
+              ) : null}
             </div>
           );
         })}

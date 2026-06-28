@@ -22,6 +22,21 @@ const populateSharedStory = {
   },
 };
 
+const populateMessageQuery = (query) =>
+  query
+    .populate("senderId", "fullName avatar")
+    .populate("mentions", "fullName avatar")
+    .populate("reactions.user", "fullName avatar")
+    .populate(populateSharedPost)
+    .populate(populateSharedStory)
+    .populate({
+      path: "replyTo",
+      populate: {
+        path: "senderId",
+        select: "fullName avatar",
+      },
+    });
+
 /**
  */
 async function getConversationsByUserId(userId) {
@@ -75,18 +90,7 @@ async function getConversationById(conversationId) {
 async function saveMessage(messageData) {
   const message = new Message(messageData);
   const savedMessage = await message.save();
-  return await Message.findById(savedMessage._id)
-    .populate("senderId", "fullName avatar")
-    .populate("mentions", "fullName avatar")
-    .populate(populateSharedPost)
-    .populate(populateSharedStory)
-    .populate({
-      path: "replyTo",
-      populate: {
-        path: "senderId",
-        select: "fullName avatar",
-      },
-    });
+  return await populateMessageQuery(Message.findById(savedMessage._id));
 }
 
 /**
@@ -95,21 +99,14 @@ async function saveMessage(messageData) {
  * @param {number} limit 
  */
 async function getMessagesByConversationId(conversationId, skip = 0, limit = 50) {
-  return await Message.find({ conversationId })
-    .populate("senderId", "fullName avatar")
-    .populate("mentions", "fullName avatar")
-    .populate(populateSharedPost)
-    .populate(populateSharedStory)
-    .populate({
-      path: "replyTo",
-      populate: {
-        path: "senderId",
-        select: "fullName avatar",
-      },
-    })
+  return await populateMessageQuery(Message.find({ conversationId }))
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit);
+}
+
+async function getMessageById(messageId) {
+  return await populateMessageQuery(Message.findById(messageId));
 }
 
 /**
@@ -196,6 +193,7 @@ module.exports = {
   getMessagesByConversationId,
   updateConversationLastMessage,
   markMessagesAsRead,
+  getMessageById,
   removeParticipant,
   updateConversationAdmin,
   addParticipants,

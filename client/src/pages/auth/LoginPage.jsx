@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { authAPI } from "../../services/auth.service";
 
@@ -13,7 +13,101 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const googleButtonRef = useRef(null);
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
+  const handleLoginSuccess = useCallback((response) => {
+    const { token, redirectUrl } = response.data.data;
+
+    localStorage.setItem("token", token);
+    navigate(redirectUrl === "/home" ? "/" : redirectUrl || "/", {
+      replace: true,
+    });
+  }, [navigate]);
+
+  useEffect(() => {
+    if (!googleClientId || !googleButtonRef.current) {
+      return undefined;
+    }
+
+    let isCancelled = false;
+
+    const handleGoogleCredential = async (googleResponse) => {
+      if (!googleResponse?.credential) {
+        setErrorMessage("Unable to get Google credential.");
+        return;
+      }
+
+      setErrorMessage("");
+      setIsGoogleSubmitting(true);
+
+      try {
+        const response = await authAPI.googleLogin({
+          credential: googleResponse.credential,
+        });
+        handleLoginSuccess(response);
+      } catch (error) {
+        setErrorMessage(getErrorMessage(error));
+      } finally {
+        setIsGoogleSubmitting(false);
+      }
+    };
+
+    const renderGoogleButton = () => {
+      if (
+        isCancelled ||
+        !window.google?.accounts?.id ||
+        !googleButtonRef.current
+      ) {
+        return;
+      }
+
+      googleButtonRef.current.innerHTML = "";
+      window.google.accounts.id.initialize({
+        client_id: googleClientId,
+        callback: handleGoogleCredential,
+      });
+      window.google.accounts.id.renderButton(googleButtonRef.current, {
+        theme: "outline",
+        size: "large",
+        type: "standard",
+        text: "signin",
+        shape: "rectangular",
+        logo_alignment: "left",
+        locale: "en",
+        width: googleButtonRef.current.offsetWidth || 296,
+      });
+    };
+
+    if (window.google?.accounts?.id) {
+      renderGoogleButton();
+    } else {
+      const scriptId = "google-identity-services";
+      let script = document.getElementById(scriptId);
+
+      if (!script) {
+        script = document.createElement("script");
+        script.id = scriptId;
+        script.src = "https://accounts.google.com/gsi/client?hl=en";
+        script.async = true;
+        script.defer = true;
+        document.head.appendChild(script);
+      }
+
+      script.addEventListener("load", renderGoogleButton);
+
+      return () => {
+        isCancelled = true;
+        script.removeEventListener("load", renderGoogleButton);
+      };
+    }
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [googleClientId, handleLoginSuccess]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -25,12 +119,7 @@ function LoginPage() {
         email: email.trim(),
         password,
       });
-      const { token, redirectUrl } = response.data.data;
-
-      localStorage.setItem("token", token);
-      navigate(redirectUrl === "/home" ? "/" : redirectUrl || "/", {
-        replace: true,
-      });
+      handleLoginSuccess(response);
     } catch (error) {
       setErrorMessage(getErrorMessage(error));
     } finally {
@@ -55,7 +144,7 @@ function LoginPage() {
             </p>
           </div>
 
-          <FieldLabel label="Username" />
+          <FieldLabel label="Email" />
           <InputShell icon="mail">
             <input
               id="email"
@@ -124,13 +213,25 @@ function LoginPage() {
 
           <Divider />
 
-          <button
-            type="button"
-            className="flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50"
-          >
-            <span className="font-bold text-[#4285f4]">G</span>
-            Continue with Google
-          </button>
+          {googleClientId ? (
+            <div className="min-h-10 w-full">
+              <div ref={googleButtonRef} className="flex justify-center" />
+              {isGoogleSubmitting ? (
+                <p className="mt-2 text-center text-xs text-slate-400">
+                  Login Google...
+                </p>
+              ) : null}
+            </div>
+          ) : (
+            <button
+              type="button"
+              disabled
+              className="flex h-10 w-full cursor-not-allowed items-center justify-center gap-2 rounded-lg border border-slate-200 text-xs font-semibold text-slate-400"
+            >
+              <span className="font-bold text-[#4285f4]">G</span>
+              Login Google
+            </button>
+          )}
         </div>
 
         <p className="mt-5 text-center text-xs text-slate-500">

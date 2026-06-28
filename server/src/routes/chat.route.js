@@ -2,12 +2,21 @@
 const router = express.Router();
 const chatController = require("../controllers/chat.controller");
 const { authMiddleware } = require("../middlewares/authMiddleware");
+const upload = require("../middlewares/uploadMiddleware");
+router.get("/images/:fileId", chatController.proxyConversationImage);
+
 router.use(authMiddleware);
 router.get("/conversations", chatController.getConversations);
 router.get("/conversations/badge", chatController.getConversationBadge);
 router.post("/conversations", chatController.getOrCreateConversation);
 router.post("/conversations/seen", chatController.markConversationsAsSeen);
 router.get("/conversations/:conversationId/messages", chatController.getMessages);
+router.post(
+  "/conversations/:conversationId/images",
+  upload.imageUpload.single("image"),
+  upload.handleUploadError,
+  chatController.uploadConversationImage,
+);
 router.post("/groups", chatController.createGroup);
 router.post("/groups/:conversationId/remove-member", chatController.removeMember);
 router.post("/groups/:conversationId/leave", chatController.leaveGroup);

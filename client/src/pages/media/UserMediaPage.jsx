@@ -21,7 +21,7 @@ const UserMediaPage = ({ own = false }) => {
   return (
     <div className="min-h-screen bg-[#f2f3f5] text-[#111827]">
       <HomeHeader profile={profile} activePage={null} />
-      <main className="mx-auto w-full max-w-6xl px-4 py-5">
+      <main className="mx-auto w-full max-w-6xl px-3 py-3 sm:px-4 sm:py-5">
         <UserMediaGallery
           userId={targetUserId}
           isOwnProfile={own || String(targetUserId) === String(currentUserId)}

@@ -1,13 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../../redux/hooks";
-import { fetchUserProfile, updateUserProfile } from "../../redux/slices/userSlice";
+import {
+  fetchUserProfile,
+  updateUserProfile,
+} from "../../redux/slices/userSlice";
 import { userAPI } from "../../services/user.service";
 import Composer from "../../components/home/Composer";
 import HomeHeader from "../../components/home/HomeHeader";
 import ProfileHeader from "../../components/profile/ProfileHeader";
 import FriendsGrid from "../../components/profile/FriendsGrid";
 import EditProfileModal from "../../components/profile/EditProfileModal";
-import FAB from "../../components/common/FAB";
 import StatusCard from "../../components/common/StatusCard";
 import ProfileTabs from "../../components/profile/ProfileTabs";
 import ProfileImagePreviewModal from "../../components/profile/ProfileImagePreviewModal";
@@ -15,6 +18,7 @@ import ProfileAboutTab from "../../components/profile/ProfileAboutTab";
 import ProfileMediaTab from "../../components/profile/ProfileMediaTab";
 import { PostList } from "../../components/post";
 import ReportModal from "../../components/report/ReportModal";
+import Toast from "../../components/common/Toast";
 
 const getProfileId = (profile) =>
   profile?.userId || profile?._id || profile?.id;
@@ -41,6 +45,7 @@ const getActionErrorMessage = (error, fallback) => {
 
 const ProfilePage = ({ userId }) => {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const { profile, loading, error } = useAppSelector((state) => state.user);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [otherProfile, setOtherProfile] = useState(null);
@@ -259,7 +264,7 @@ const ProfilePage = ({ userId }) => {
   };
 
   const handleUnblockUser = async () => {
-    const targetId = getProfileId(otherProfile);
+    const targetId = userId || getProfileId(otherProfile);
     if (!targetId || unblockingUser) return;
 
     setUnblockingUser(true);
@@ -267,7 +272,9 @@ const ProfilePage = ({ userId }) => {
 
     try {
       const response = await userAPI.unblockUser(targetId);
-      await refreshProfilesAfterAction();
+      await dispatch(fetchUserProfile());
+      setOtherError("");
+      await loadOtherProfile();
       setNotice(getActionMessage(response, "User unblocked successfully."));
     } catch (err) {
       setNotice(getActionErrorMessage(err, "Unable to unblock user."));
@@ -292,6 +299,27 @@ const ProfilePage = ({ userId }) => {
       setNotice(getActionErrorMessage(err, "Unable to update follow status."));
     } finally {
       setFollowLoading(false);
+    }
+  };
+
+  const handleMessageUser = async () => {
+    const targetId = getProfileId(otherProfile);
+    if (!targetId) return;
+
+    try {
+      window.dispatchEvent(
+        new CustomEvent("zalo-open-mini-chat", {
+          detail: {
+            id: targetId,
+            _id: targetId,
+            userId: targetId,
+            fullName: otherProfile?.fullName,
+            avatar: otherProfile?.avatar || null,
+          },
+        }),
+      );
+    } catch (err) {
+      setNotice(getActionErrorMessage(err, "Unable to open chat."));
     }
   };
 
@@ -359,6 +387,11 @@ const ProfilePage = ({ userId }) => {
         (item) => String(item.id || item._id || item) === String(userId),
       )
     : false;
+  const isBlockedProfileError =
+    typeof pageError === "string" &&
+    ["You cannot view this profile", "PROFILE_BLOCKED"].some((text) =>
+      pageError.includes(text),
+    );
 
   if (pageLoading) {
     return (
@@ -370,13 +403,68 @@ const ProfilePage = ({ userId }) => {
     );
   }
 
+  if (!isOwnProfile && isBlockedProfileError) {
+    return (
+      <div className="min-h-screen bg-[#f2f3f5] text-[#111827]">
+        <div className="min-h-screen w-full bg-white">
+          <HomeHeader profile={profile} activePage={null} />
+
+          <main className="mx-auto flex min-h-[calc(100vh-80px)] max-w-3xl items-center justify-center px-3 py-6 sm:px-4 sm:py-10">
+            <div className="w-full rounded-2xl border border-[#dddfe2] bg-white p-5 text-center shadow-sm sm:p-8">
+              <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-[#eef2ff] text-[#1d4ed8]">
+                <span className="material-symbols-outlined text-[40px]">
+                  block
+                </span>
+              </div>
+
+              <h1 className="mt-6 text-2xl font-bold text-[#111827]">
+                {isBlocked
+                  ? "You blocked this user"
+                  : "This profile is unavailable"}
+              </h1>
+
+              <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-[#6b7280]">
+                {isBlocked
+                  ? "Unblock this user to view their profile, posts, and send friend requests again."
+                  : "This profile is currently unavailable to you. It may be blocked or restricted by privacy settings."}
+              </p>
+
+              <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+                {isBlocked ? (
+                  <button
+                    type="button"
+                    onClick={handleUnblockUser}
+                    disabled={unblockingUser}
+                    className="rounded-lg bg-[#111827] px-5 py-3 text-sm font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {unblockingUser ? "Unblocking..." : "Unblock"}
+                  </button>
+                ) : null}
+
+                <button
+                  type="button"
+                  onClick={() => navigate(-1)}
+                  className="rounded-lg border border-[#d1d5db] bg-white px-5 py-3 text-sm font-semibold text-[#111827] hover:bg-[#f9fafb]"
+                >
+                  Go back
+                </button>
+              </div>
+            </div>
+          </main>
+        </div>
+
+        <Toast message={notice} type="success" onClose={() => setNotice("")} />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#f2f3f5] text-[#111827]">
       <div className="min-h-screen w-full bg-white">
         <HomeHeader profile={profile} activePage={null} />
 
-        <main className="min-h-[calc(100vh-80px)] bg-[#f2f3f5] px-4 py-5 lg:px-6">
-          <div className="mx-auto w-full max-w-[70vw] space-y-5">
+        <main className="min-h-[calc(100vh-80px)] bg-[#f2f3f5] px-3 py-3 sm:px-4 sm:py-5 lg:px-6">
+          <div className="mx-auto w-full max-w-6xl space-y-4 lg:space-y-5">
             {pageError ? (
               <StatusCard
                 icon="error"
@@ -388,10 +476,6 @@ const ProfilePage = ({ userId }) => {
                 }
                 layout="inline"
               />
-            ) : null}
-
-            {notice ? (
-              <StatusCard icon="info" message={notice} layout="inline" />
             ) : null}
 
             <ProfileHeader
@@ -426,15 +510,19 @@ const ProfilePage = ({ userId }) => {
               isFollowing={displayProfile.isFollowedByMe}
               onToggleFollow={handleToggleFollow}
               followLoading={followLoading}
+              onMessage={handleMessageUser}
               onReportUser={() =>
-                setReportTarget({ type: "User", id: getProfileId(otherProfile) })
+                setReportTarget({
+                  type: "User",
+                  id: getProfileId(otherProfile),
+                })
               }
             />
 
             <ProfileTabs activeTab={activeTab} onChange={setActiveTab} />
 
             {activeTab === "introduction" ? (
-              <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(240px,30%)_minmax(0,70%)]">
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(240px,320px)_minmax(0,1fr)] lg:gap-5">
                 <div>
                   <ProfileAboutTab
                     profile={currentProfile}
@@ -499,7 +587,6 @@ const ProfilePage = ({ userId }) => {
             onSave={handleSaveProfile}
             initialData={profile}
           />
-          <FAB icon="add" label="Post Update" />
         </>
       ) : null}
 
@@ -515,6 +602,8 @@ const ProfilePage = ({ userId }) => {
         onClose={() => setReportTarget(null)}
         onSubmitted={() => setNotice("Report submitted.")}
       />
+
+      <Toast message={notice} type="success" onClose={() => setNotice("")} />
     </div>
   );
 };

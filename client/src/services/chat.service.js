@@ -11,6 +11,11 @@ export const chatAPI = {
     apiClient.get(`/chats/conversations/${conversationId}/messages`, {
       params: { page, limit },
     }),
+  uploadConversationImage: (conversationId, file) => {
+    const formData = new FormData();
+    formData.append("image", file);
+    return apiClient.post(`/chats/conversations/${conversationId}/images`, formData);
+  },
   createGroup: (name, participantIds) =>
     apiClient.post("/chats/groups", { name, participantIds }),
   removeGroupMember: (conversationId, memberId) =>

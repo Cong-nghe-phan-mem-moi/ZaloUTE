@@ -45,8 +45,7 @@ const getNotificationHref = (notification) => {
   }
 
   if (notification.type === "friend_request") {
-    const userId = data.profileId || notification.sender?._id;
-    return userId ? `/users/profile/${userId}` : "/friend-requests";
+    return "/friend-requests";
   }
 
   if (isFriendAcceptNotification(notification)) {
@@ -139,7 +138,7 @@ export const NotificationsDropdown = ({
   onMarkAllAsRead,
   onNotificationClick,
 }) => (
-  <div className="absolute right-0 top-12 z-50 w-[min(380px,calc(100vw-24px))] rounded-lg border border-[#dddfe2] bg-white p-3 shadow-2xl">
+  <div className="fixed left-3 right-3 top-24 z-50 rounded-lg border border-[#dddfe2] bg-white p-3 shadow-2xl sm:absolute sm:left-auto sm:right-0 sm:top-12 sm:w-[min(380px,calc(100vw-24px))]">
     <div className="mb-3 flex items-center justify-between">
       <h2 className="text-lg font-bold text-[#111827]">Notifications</h2>
       {unreadCount > 0 ? (

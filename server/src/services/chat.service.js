@@ -3,6 +3,7 @@ const UserRepository = require("../repositories/user.repository");
 const Message = require("../models/message.model");
 const Conversation = require("../models/conversation.model");
 const User = require("../models/user.model");
+const googleDriveService = require("./googleDrive.service");
 const jwt = require("jsonwebtoken");
 const { WebSocketServer, WebSocket } = require("ws");
 
@@ -16,6 +17,25 @@ const throwError = (statusCode, code, message) => {
 };
 
 const onlineTracker = require("../utils/onlineTracker");
+const websocketMessageTypes = new Set(["text", "image", "sticker"]);
+const messageReactionEmojis = new Set(["👍", "❤️", "😂", "😮", "😢", "😡"]);
+
+const areUsersBlockedForDirectChat = async (userAId, userBId) => {
+  const [userA, userB] = await Promise.all([
+    User.findById(userAId).select("blockedUsers"),
+    User.findById(userBId).select("blockedUsers"),
+  ]);
+
+  const userABlocked = (userA?.blockedUsers || []).some(
+    (id) => String(id) === String(userBId),
+  );
+  const userBBlocked = (userB?.blockedUsers || []).some(
+    (id) => String(id) === String(userAId),
+  );
+
+  return userABlocked || userBBlocked;
+};
+
 const sendToUser = (userId, payload) => {
   const userClients = clients.get(userId.toString());
   if (!userClients) return;
@@ -59,6 +79,67 @@ const addClient = (userId, socket) => {
 };
 
 class ChatService {
+  static async ensureUserCanUseConversation(userId, conversationId) {
+    const conversation = await chatRepository.getConversationById(conversationId);
+    if (!conversation) {
+      throwError(404, "CONVERSATION_NOT_FOUND", "Conversation not found");
+    }
+
+    const isParticipant = conversation.participants.some(
+      (p) => p._id.toString() === userId.toString()
+    );
+    if (!isParticipant) {
+      throwError(403, "FORBIDDEN", "You are not a participant in this conversation");
+    }
+
+    if (!conversation.isGroup) {
+      const otherParticipant = conversation.participants.find(
+        (participant) => participant._id.toString() !== userId.toString(),
+      );
+
+      if (
+        otherParticipant &&
+        (await areUsersBlockedForDirectChat(userId, otherParticipant._id))
+      ) {
+        throwError(403, "DIRECT_CHAT_BLOCKED", "You cannot message this user");
+      }
+    }
+
+    if (conversation.blockedBy && conversation.blockedBy.length > 0) {
+      const isBlockedByOther = conversation.blockedBy.some(
+        (id) => id.toString() !== userId.toString()
+      );
+      const hasBlockedOther = conversation.blockedBy.some(
+        (id) => id.toString() === userId.toString()
+      );
+
+      let message = "The conversation is blocked";
+      if (isBlockedByOther) {
+        message = "You have been blocked by this user";
+      } else if (hasBlockedOther) {
+        message = "You have blocked this user. Please unblock to continue messaging.";
+      }
+
+      throwError(403, "CONVERSATION_BLOCKED", message);
+    }
+
+    return conversation;
+  }
+
+  static async uploadConversationImage(userId, conversationId, file) {
+    if (!file) {
+      throwError(400, "MISSING_IMAGE", "Image file is required");
+    }
+
+    await this.ensureUserCanUseConversation(userId, conversationId);
+    const uploaded = await googleDriveService.uploadPublicImage(file);
+
+    return {
+      success: true,
+      data: uploaded,
+    };
+  }
+
   static async getUserConversations(userId) {
     const conversations = await chatRepository.getConversationsByUserId(userId);
     return {
@@ -74,6 +155,10 @@ class ChatService {
     const targetUser = await UserRepository.findById(targetUserId);
     if (!targetUser) {
       throwError(404, "USER_NOT_FOUND", "Target user not found");
+    }
+
+    if (await areUsersBlockedForDirectChat(userId, targetUserId)) {
+      throwError(403, "DIRECT_CHAT_BLOCKED", "You cannot message this user");
     }
 
     let conversation = await chatRepository.findDirectConversation(userId, targetUserId);
@@ -571,7 +656,28 @@ class ChatService {
 
             if (type === "send_message") {
               const { content, messageType, replyTo, mentions } = payload;
-              if (!content || String(content).trim() === "") return;
+              const normalizedContent = String(content || "").trim();
+              const normalizedMessageType = messageType || "text";
+              if (!normalizedContent) return;
+              if (!websocketMessageTypes.has(normalizedMessageType)) return;
+
+              if (!conversation.isGroup) {
+                const otherParticipant = conversation.participants.find(
+                  (participant) => participant._id.toString() !== ws.userId.toString(),
+                );
+
+                if (
+                  otherParticipant &&
+                  (await areUsersBlockedForDirectChat(ws.userId, otherParticipant._id))
+                ) {
+                  ws.send(JSON.stringify({
+                    type: "error",
+                    conversationId,
+                    message: "You cannot message this user",
+                  }));
+                  return;
+                }
+              }
 
               // Check blocking
               if (conversation.blockedBy && conversation.blockedBy.length > 0) {
@@ -598,7 +704,7 @@ class ChatService {
               }
 
               let finalMentions = mentions || [];
-              if (content.includes("@All") && conversation.isGroup) {
+              if (normalizedMessageType === "text" && normalizedContent.includes("@All") && conversation.isGroup) {
                 const allParticipantIds = conversation.participants
                   .map((p) => (p._id || p).toString())
                   .filter((id) => id !== ws.userId.toString());
@@ -607,8 +713,8 @@ class ChatService {
               const savedMessage = await chatRepository.saveMessage({
                 conversationId,
                 senderId: ws.userId,
-                content: content.trim(),
-                messageType: messageType || "text",
+                content: normalizedContent,
+                messageType: normalizedMessageType,
                 readBy: [ws.userId],
                 replyTo: replyTo || null,
                 mentions: finalMentions,
@@ -625,7 +731,7 @@ class ChatService {
                       sender: ws.userId,
                       type: "mention",
                       content: `${savedMessage.senderId.fullName} mentioned you in the group ${conversation.name || "chat"}`,
-                      preview: content.trim(),
+                      preview: normalizedContent,
                       relatedId: conversationId,
                       relatedType: null,
                       data: {
@@ -675,15 +781,7 @@ class ChatService {
               message.messageType = "text";
               await message.save();
 
-              const populatedMessage = await Message.findById(message._id)
-                .populate("senderId", "fullName avatar")
-                .populate({
-                  path: "replyTo",
-                  populate: {
-                    path: "senderId",
-                    select: "fullName avatar",
-                  },
-                });
+              const populatedMessage = await chatRepository.getMessageById(message._id);
 
               // Fetch updated conversation to send for sidebar updates
               const updatedConversation = await chatRepository.getConversationsByUserId(ws.userId);
@@ -704,6 +802,38 @@ class ChatService {
                 sendToUser(participantIdStr, {
                   type: "conversation_update",
                   data: conversationForThisId || conversation,
+                });
+              });
+
+            } else if (type === "react_message") {
+              const { messageId, emoji } = payload;
+              if (!messageId || !messageReactionEmojis.has(emoji)) return;
+
+              const message = await Message.findById(messageId);
+              if (!message || message.isRevoked) return;
+              if (message.conversationId.toString() !== conversationId.toString()) return;
+
+              const existingReaction = (message.reactions || []).find(
+                (reaction) => reaction.user?.toString() === ws.userId.toString()
+              );
+
+              if (existingReaction?.emoji === emoji) {
+                message.reactions = message.reactions.filter(
+                  (reaction) => reaction.user?.toString() !== ws.userId.toString()
+                );
+              } else if (existingReaction) {
+                existingReaction.emoji = emoji;
+              } else {
+                message.reactions.push({ emoji, user: ws.userId });
+              }
+
+              await message.save();
+              const populatedMessage = await chatRepository.getMessageById(message._id);
+
+              conversation.participants.forEach((participant) => {
+                sendToUser(participant._id.toString(), {
+                  type: "message_update",
+                  data: populatedMessage,
                 });
               });
 
