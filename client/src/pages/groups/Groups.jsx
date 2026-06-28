@@ -282,13 +282,13 @@ const Groups = () => {
       <div className="min-h-screen w-full bg-white">
         <HomeHeader profile={profile} activePage="groups" />
 
-        <main className="grid min-h-[calc(100vh-80px)] grid-cols-1 bg-[#f2f3f5] lg:grid-cols-[280px_minmax(0,1fr)_320px]">
+        <main className="grid min-h-[calc(100vh-80px)] grid-cols-1 justify-center bg-[#f2f3f5] lg:grid-cols-[240px_minmax(0,780px)] xl:grid-cols-[260px_minmax(0,820px)_300px] 2xl:grid-cols-[280px_minmax(0,920px)_320px]">
           <LeftSidebar profile={profile} />
 
-          <section className="space-y-5 px-5 py-5">
-            <section className="rounded-lg bg-white p-7 shadow-sm">
+          <section className="min-w-0 space-y-4 px-3 py-3 sm:px-4 sm:py-4 lg:space-y-5 lg:px-5 lg:py-5">
+            <section className="rounded-lg bg-white p-4 shadow-sm sm:p-5 lg:p-7">
               <div className="flex flex-wrap items-center justify-between gap-4">
-                <div>
+                <div className="min-w-0">
                   <p className="text-xs font-semibold uppercase text-[#1877f2]">
                     Community
                   </p>
@@ -298,12 +298,12 @@ const Groups = () => {
                   </p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3">
-                  <div className="grid grid-cols-2 gap-3">
+                <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
+                  <div className="grid grid-cols-2 gap-3 sm:w-auto">
                     {stats.map((item) => (
                       <div
                         key={item.label}
-                        className="min-w-24 rounded-md bg-[#f2f3f5] px-4 py-3 text-center"
+                        className="min-w-0 rounded-md bg-[#f2f3f5] px-4 py-3 text-center sm:min-w-24"
                       >
                         <div className="text-xl font-bold">{item.value}</div>
                         <div className="text-[10px] font-semibold uppercase text-[#6b7280]">
@@ -316,7 +316,7 @@ const Groups = () => {
                   <button
                     type="button"
                     onClick={openCreateModal}
-                    className="rounded-md bg-[#1877f2] px-5 py-2 text-sm font-semibold text-white shadow-md hover:bg-[#166fe5]"
+                    className="w-full rounded-md bg-[#1877f2] px-5 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-[#166fe5] sm:w-auto"
                   >
                     Create group
                   </button>
@@ -345,15 +345,15 @@ const Groups = () => {
             ) : null}
 
             {groups.length > 0 ? (
-              <section className="rounded-lg bg-white p-5 shadow-sm">
-                <div className="mb-5 flex items-center justify-between">
+              <section className="rounded-lg bg-white p-4 shadow-sm sm:p-5">
+                <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
                   <h2 className="text-base font-bold">Your groups</h2>
                   <span className="text-xs font-semibold text-[#6b7280]">
                     {groups.length} groups
                   </span>
                 </div>
 
-                <div className="grid gap-4 xl:grid-cols-2">
+                <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
                   {groups.map((group) => (
                     <GroupCard
                       key={getId(group)}

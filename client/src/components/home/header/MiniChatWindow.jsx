@@ -59,7 +59,7 @@ const MiniChatWindow = ({
       <button
         type="button"
         onClick={onRestore}
-        className="fixed bottom-4 right-4 z-50 flex w-72 items-center gap-3 rounded-t-lg border border-[#d1d5db] bg-white px-3 py-2 text-left shadow-2xl hover:bg-[#f8fafc]"
+        className="fixed bottom-3 left-3 right-3 z-50 flex items-center gap-3 rounded-t-lg border border-[#d1d5db] bg-white px-3 py-2 text-left shadow-2xl hover:bg-[#f8fafc] sm:left-auto sm:right-4 sm:w-72"
       >
         <span className="relative shrink-0">
           <UserAvatar image={avatar} name={title} size="sm" />
@@ -78,7 +78,7 @@ const MiniChatWindow = ({
   }
 
   return (
-    <section className="fixed bottom-4 right-4 z-50 flex h-[460px] w-80 flex-col overflow-hidden rounded-t-lg border border-[#d1d5db] bg-white shadow-2xl">
+    <section className="fixed bottom-3 left-3 right-3 z-50 flex h-[min(460px,calc(100vh-96px))] flex-col overflow-hidden rounded-t-lg border border-[#d1d5db] bg-white shadow-2xl sm:left-auto sm:right-4 sm:w-80">
       <div className="flex items-center gap-2 border-b border-[#e5e7eb] px-3 py-2">
         <UserAvatar image={avatar} name={title} size="sm" />
         <button

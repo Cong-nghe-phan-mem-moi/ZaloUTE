@@ -9,6 +9,7 @@ const {
   resetPassword,
   getResetOtpDev,
   login,
+  googleLogin,
 } = require("../controllers/auth.controller");
 const {
   validateRegister,
@@ -63,5 +64,6 @@ router.post(
 router.get("/dev/reset-otp", getResetOtpDev);
 
 router.post("/login", loginLimiter, login);
+router.post("/google", loginLimiter, googleLogin);
 
 module.exports = router;

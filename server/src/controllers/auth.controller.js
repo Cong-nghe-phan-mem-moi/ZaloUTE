@@ -211,6 +211,30 @@ const login = async (req, res) => {
   }
 };
 
+// [POST] /api/auth/google
+const googleLogin = async (req, res) => {
+  try {
+    const { credential } = req.body;
+
+    const result = await authService.googleLogin(credential, {
+      userAgent: req.get("user-agent") || "",
+      ipAddress: req.ip || req.socket?.remoteAddress || "",
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Google login successful!!!",
+      data: result,
+    });
+  } catch (error) {
+    res.status(error.statusCode || 400).json({
+      success: false,
+      code: error.code || "GOOGLE_LOGIN_FAILED",
+      message: error.message || "Google login failed",
+    });
+  }
+};
+
 module.exports = {
   register,
   verifyOTP,
@@ -219,6 +243,7 @@ module.exports = {
   resetPassword,
   getResetOtpDev,
   login,
+  googleLogin,
 };
 
 

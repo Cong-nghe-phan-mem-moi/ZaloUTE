@@ -37,7 +37,7 @@ export default function ProfileAboutTab({ profile, showSocialLinks = true }) {
 
   return (
     <div className={`grid grid-cols-1 gap-5 ${showSocialLinks ? "lg:grid-cols-2" : ""}`}>
-      <section className="rounded bg-white p-5 shadow-sm">
+      <section className="rounded-lg bg-white p-4 shadow-sm sm:p-5">
         <h2 className="mb-4 text-lg font-bold text-[#111827]">Introduction</h2>
         <div className="space-y-4">
           <div>
@@ -59,7 +59,7 @@ export default function ProfileAboutTab({ profile, showSocialLinks = true }) {
       </section>
 
       {showSocialLinks ? (
-        <section className="rounded bg-white p-5 shadow-sm">
+        <section className="rounded-lg bg-white p-4 shadow-sm sm:p-5">
           <h2 className="mb-4 text-lg font-bold text-[#111827]">Social links</h2>
           <div className="space-y-3">
             {socialConfig.map((item) => {

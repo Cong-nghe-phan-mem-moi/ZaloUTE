@@ -47,7 +47,7 @@ export const GroupHero = ({
   onEdit,
 }) => (
   <section className="overflow-hidden rounded-lg bg-white shadow-sm">
-    <div className="relative h-52 bg-gradient-to-br from-[#e8f1ff] via-[#cfe1ff] to-[#9fc5ff] sm:h-60">
+    <div className="relative h-40 bg-gradient-to-br from-[#e8f1ff] via-[#cfe1ff] to-[#9fc5ff] sm:h-52 lg:h-60">
       <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.18),rgba(15,23,42,0.08))]" />
       <div className="absolute bottom-5 right-6 hidden items-center gap-2 rounded-md bg-white/90 px-4 py-2 text-sm font-semibold text-[#111827] shadow-sm sm:flex">
         <span className="material-symbols-outlined text-[18px]">
@@ -57,10 +57,10 @@ export const GroupHero = ({
       </div>
     </div>
 
-    <div className="px-5 pb-7 sm:px-8">
-      <div className="relative -mt-16 flex flex-wrap items-end justify-between gap-4">
-        <div className="flex min-w-0 flex-wrap items-end gap-5">
-          <div className="h-32 w-32 overflow-hidden rounded-full border-4 border-white bg-[#dbeafe] text-[#1877f2] shadow-md sm:h-36 sm:w-36">
+    <div className="px-4 pb-5 sm:px-6 sm:pb-7 lg:px-8">
+      <div className="relative -mt-12 flex flex-col gap-4 sm:-mt-16">
+        <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-end sm:gap-5">
+          <div className="h-24 w-24 overflow-hidden rounded-full border-4 border-white bg-[#dbeafe] text-[#1877f2] shadow-md sm:h-32 sm:w-32 lg:h-36 lg:w-36">
             {group.avatar ? (
               <img
                 className="h-full w-full object-cover"
@@ -76,9 +76,9 @@ export const GroupHero = ({
             )}
           </div>
 
-          <div className="mb-3 min-w-0">
+          <div className="mb-2 min-w-0 flex-1 sm:mb-3">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="truncate text-3xl font-bold text-[#111827]">
+              <h1 className="min-w-0 truncate text-2xl font-bold text-[#111827] sm:text-3xl">
                 {group.name}
               </h1>
               <span className="rounded-full bg-[#eef5ff] px-3 py-1 text-xs font-semibold text-[#1877f2]">
@@ -93,18 +93,18 @@ export const GroupHero = ({
         </div>
 
         {group.description ? (
-          <p className="mb-3 max-w-2xl text-sm leading-6 text-[#4b5563]">
+          <p className="max-w-2xl text-sm leading-6 text-[#4b5563]">
             {group.description}
           </p>
         ) : null}
 
-        <div className="mb-3 flex flex-wrap gap-2">
+        <div className="grid w-full gap-2 sm:flex sm:w-auto sm:flex-wrap">
           {group.hasPendingInvite && !group.isCurrentUserMember ? (
             <button
               type="button"
               onClick={onAcceptInvite}
               disabled={accepting}
-              className="flex items-center gap-2 rounded-md bg-[#1877f2] px-5 py-2 text-sm font-semibold text-white hover:bg-[#166fe5] disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex items-center justify-center gap-2 rounded-md bg-[#1877f2] px-5 py-2 text-sm font-semibold text-white hover:bg-[#166fe5] disabled:cursor-not-allowed disabled:opacity-60"
             >
               <span className="material-symbols-outlined text-[18px]">
                 how_to_reg
@@ -118,7 +118,7 @@ export const GroupHero = ({
               <button
                 type="button"
                 disabled
-                className="flex cursor-not-allowed items-center gap-2 rounded-md bg-[#e5e7eb] px-5 py-2 text-sm font-semibold text-[#6b7280]"
+                className="flex cursor-not-allowed items-center justify-center gap-2 rounded-md bg-[#e5e7eb] px-5 py-2 text-sm font-semibold text-[#6b7280]"
               >
                 <span className="material-symbols-outlined text-[18px]">
                   pending
@@ -130,7 +130,7 @@ export const GroupHero = ({
                 type="button"
                 onClick={onRequestJoin}
                 disabled={requesting}
-                className="flex items-center gap-2 rounded-md bg-[#1877f2] px-5 py-2 text-sm font-semibold text-white hover:bg-[#166fe5] disabled:cursor-not-allowed disabled:opacity-60"
+                className="flex items-center justify-center gap-2 rounded-md bg-[#1877f2] px-5 py-2 text-sm font-semibold text-white hover:bg-[#166fe5] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <span className="material-symbols-outlined text-[18px]">
                   group_add
@@ -144,7 +144,7 @@ export const GroupHero = ({
             <button
               type="button"
               onClick={onEdit}
-              className="flex items-center gap-2 rounded-md bg-[#e7f3ff] px-5 py-2 text-sm font-semibold text-[#1877f2] hover:bg-[#dbeafe]"
+              className="flex items-center justify-center gap-2 rounded-md bg-[#e7f3ff] px-5 py-2 text-sm font-semibold text-[#1877f2] hover:bg-[#dbeafe]"
             >
               <span className="material-symbols-outlined text-[18px]">
                 edit
@@ -170,7 +170,7 @@ export const GroupHero = ({
 );
 
 export const InfoPanel = ({ group }) => (
-  <section className="rounded bg-white p-5 shadow-sm">
+  <section className="rounded bg-white p-4 shadow-sm sm:p-5">
     <h2 className="text-base font-bold">About</h2>
     <p className="mt-3 text-sm leading-6 text-[#4b5563]">
       {group.description || "This group has no description yet."}
@@ -208,7 +208,7 @@ export const PendingGroupPostsPanel = ({
   onApprove,
   onReject,
 }) => (
-  <section className="rounded bg-white p-5 shadow-sm">
+  <section className="rounded bg-white p-4 shadow-sm sm:p-5">
     <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
       <div>
         <h2 className="text-base font-bold">Pending posts</h2>
@@ -329,10 +329,10 @@ export const EditGroupModal = ({
   onClose,
   onSubmit,
 }) => (
-  <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 px-4 py-8">
+  <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/40 px-3 py-3 sm:items-center sm:px-4 sm:py-8">
     <form
       onSubmit={onSubmit}
-      className="w-full max-w-xl rounded-lg bg-white p-5 shadow-2xl"
+      className="max-h-[92vh] w-full max-w-xl overflow-y-auto rounded-lg bg-white p-4 shadow-2xl sm:p-5"
     >
       <div className="mb-5 flex items-center justify-between gap-3">
         <div>
@@ -401,7 +401,7 @@ export const EditGroupModal = ({
         </label>
       </div>
 
-      <div className="mt-6 flex justify-end gap-3">
+      <div className="mt-6 grid gap-3 sm:flex sm:justify-end">
         <button
           type="button"
           onClick={onClose}
@@ -446,7 +446,7 @@ export const ManageListPanel = ({
   const isPrivacySection = activeList === "privacy";
 
   return (
-    <section className="rounded bg-white p-5 shadow-sm">
+    <section className="rounded bg-white p-4 shadow-sm sm:p-5">
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#eef5ff] text-[#1877f2]">
@@ -605,7 +605,7 @@ const ManagedPersonRow = ({
       </Link>
 
       {canManage ? (
-        <div className="flex flex-wrap gap-2">
+        <div className="grid w-full gap-2 sm:w-auto sm:grid-flow-col sm:auto-cols-max">
           {activeList === "requests" ? (
             <>
               <ActionButton
@@ -685,7 +685,7 @@ export const SummaryPanel = ({
   isCurrentUserAdmin,
   onSelect,
 }) => (
-  <section className="rounded bg-white p-5 shadow-sm">
+    <section className="rounded bg-white p-4 shadow-sm sm:p-5">
     <div className="mb-4">
       <h2 className="text-base font-bold">Group management</h2>
       <p className="mt-1 text-xs font-semibold text-[#6b7280]">
@@ -693,7 +693,7 @@ export const SummaryPanel = ({
       </p>
     </div>
 
-    <div className="space-y-3">
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
       {Object.entries(listConfigs).map(([key, item]) => {
         const locked = !isCurrentUserAdmin && ["invites", "requests"].includes(key);
         return (

@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import {
@@ -186,6 +186,14 @@ const PostList = ({
   const loadMoreRef = useRef(null);
   const canLoadMore = pagination && pagination.page < pagination.totalPages;
 
+  const handleLoadMore = useCallback(() => {
+    if (loading || !canLoadMore) {
+      return;
+    }
+
+    setPage((prev) => prev + 1);
+  }, [canLoadMore, loading]);
+
   const allowedAuthorIdSet = useMemo(() => {
     if (!Array.isArray(allowedAuthorIds)) {
       return null;
@@ -265,7 +273,7 @@ const PostList = ({
 
     observer.observe(loadMoreRef.current);
     return () => observer.disconnect();
-  }, [authorId, canLoadMore, loading]);
+  }, [authorId, canLoadMore, handleLoadMore, loading]);
 
   // ======================================================================
 
@@ -310,14 +318,6 @@ const PostList = ({
     dispatch(toggleFollowAuthor(authorProfileId));
   };
 
-  const handleLoadMore = () => {
-    if (loading || !canLoadMore) {
-      return;
-    }
-
-    setPage((prev) => prev + 1);
-  };
-
   const handleOpenAuthorProfile = (post) => {
     const authorProfileId = post.author?._id;
     if (!authorProfileId) return;
@@ -353,18 +353,18 @@ const PostList = ({
         key={post._id}
         className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition overflow-hidden"
       >
-        <div className="flex items-center justify-between p-4 border-b border-gray-100">
-          <div className="flex items-center gap-3 flex-1">
+        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-gray-100 p-3 sm:p-4">
+          <div className="flex min-w-0 flex-1 items-center gap-3">
             <img
               src={post.author?.avatar || "/default-avatar.svg"}
               alt={post.author?.fullName}
-              className="w-12 h-12 rounded-full object-cover cursor-pointer hover:opacity-80"
+              className="h-11 w-11 shrink-0 cursor-pointer rounded-full object-cover hover:opacity-80 sm:h-12 sm:w-12"
               onClick={() => handleOpenAuthorProfile(post)}
             />
-            <div className="flex-1">
+            <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
                 <h3
-                  className="font-semibold text-gray-900 cursor-pointer hover:text-blue-600"
+                  className="min-w-0 cursor-pointer truncate font-semibold text-gray-900 hover:text-blue-600"
                   onClick={() => handleOpenAuthorProfile(post)}
                 >
                   {post.author?.fullName}
@@ -394,7 +394,7 @@ const PostList = ({
             </div>
           </div>
 
-          <div className="flex flex-wrap justify-end gap-2">
+          <div className="ml-auto flex shrink-0 flex-wrap justify-end gap-1 sm:gap-2">
             {!isOwnPost ? (
               <button
                 type="button"
@@ -458,7 +458,7 @@ const PostList = ({
         </div>
 
         <div
-          className="p-4 cursor-pointer hover:bg-gray-50 transition"
+          className="cursor-pointer p-3 transition hover:bg-gray-50 sm:p-4"
           onClick={() => setSelectedPostId(post._id)}
         >
           {post.content ? (
@@ -486,7 +486,7 @@ const PostList = ({
   return (
     <div className="w-full space-y-4 pb-8">
       {!authorId ? (
-        <div className="flex items-center justify-between rounded-lg bg-white px-4 py-3 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white px-4 py-3 shadow-sm">
           <p className="text-sm font-bold text-gray-900">News Feed</p>
           <div className="flex rounded-md bg-gray-100 p-1 text-sm font-semibold">
             <button

@@ -3,8 +3,8 @@ import FriendCard from '../common/FriendCard';
 
 const FriendsGrid = ({ friends, totalFriends }) => {
   return (
-    <div className="rounded bg-white p-5 shadow-sm">
-      <div className="mb-5 flex items-center justify-between">
+    <div className="rounded-lg bg-white p-4 shadow-sm sm:p-5">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-base font-bold text-[#111827]">Friends</h2>
           <p className="text-sm text-[#6b7280]">
@@ -20,7 +20,7 @@ const FriendsGrid = ({ friends, totalFriends }) => {
       </div>
       
       {friends.length > 0 ? (
-        <div className="grid grid-cols-3 gap-4 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4">
           {friends.map((friend) => (
             <FriendCard key={friend.id} friend={friend} />
           ))}

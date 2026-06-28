@@ -104,9 +104,9 @@ const UserMediaGallery = ({ userId, isOwnProfile = false }) => {
 
   return (
     <section className="space-y-4">
-      <div className="rounded-lg bg-white p-5 shadow-sm">
+      <div className="rounded-lg bg-white p-4 shadow-sm sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
+          <div className="min-w-0">
             <h2 className="text-lg font-bold text-[#111827]">Photos and videos</h2>
             <p className="mt-1 text-sm text-[#65676b]">
               {mediaItems.length} media items - {albums.length} albums
@@ -116,7 +116,7 @@ const UserMediaGallery = ({ userId, isOwnProfile = false }) => {
             <button
               type="button"
               onClick={() => setAlbumModalOpen(true)}
-              className="flex h-10 items-center gap-2 rounded-md bg-[#1877f2] px-4 text-sm font-semibold text-white hover:bg-[#166fe5]"
+              className="flex h-10 w-full items-center justify-center gap-2 rounded-md bg-[#1877f2] px-4 text-sm font-semibold text-white hover:bg-[#166fe5] sm:w-auto"
             >
               <span className="material-symbols-outlined text-[19px]">add_photo_alternate</span>
               Create album
@@ -124,13 +124,13 @@ const UserMediaGallery = ({ userId, isOwnProfile = false }) => {
           ) : null}
         </div>
 
-        <div className="mt-5 flex flex-wrap gap-2">
+        <div className="mt-5 flex gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0">
           {filters.map((filter) => (
             <button
               key={filter.id}
               type="button"
               onClick={() => setActiveFilter(filter.id)}
-              className={`flex h-10 items-center gap-2 rounded-md px-4 text-sm font-semibold ${
+              className={`flex h-10 shrink-0 items-center gap-2 rounded-md px-4 text-sm font-semibold ${
                 activeFilter === filter.id
                   ? "bg-[#e7f3ff] text-[#1877f2]"
                   : "bg-[#f2f3f5] text-[#050505] hover:bg-[#e5e7eb]"
@@ -185,7 +185,7 @@ const MediaGrid = ({ items, onOpen }) => {
   }
 
   return (
-    <div className="rounded-lg bg-white p-4 shadow-sm">
+    <div className="rounded-lg bg-white p-3 shadow-sm sm:p-4">
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5">
         {items.map((item, index) => (
           <MediaTile
@@ -209,7 +209,7 @@ const AlbumGrid = ({ albums, onOpen }) => {
   }
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+    <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
       {albums.map((album) => {
         const albumItems = flattenAlbumMedia(album);
 

@@ -6,13 +6,11 @@ import {
   updateUserProfile,
 } from "../../redux/slices/userSlice";
 import { userAPI } from "../../services/user.service";
-import { chatAPI } from "../../services/chat.service";
 import Composer from "../../components/home/Composer";
 import HomeHeader from "../../components/home/HomeHeader";
 import ProfileHeader from "../../components/profile/ProfileHeader";
 import FriendsGrid from "../../components/profile/FriendsGrid";
 import EditProfileModal from "../../components/profile/EditProfileModal";
-import FAB from "../../components/common/FAB";
 import StatusCard from "../../components/common/StatusCard";
 import ProfileTabs from "../../components/profile/ProfileTabs";
 import ProfileImagePreviewModal from "../../components/profile/ProfileImagePreviewModal";
@@ -411,8 +409,8 @@ const ProfilePage = ({ userId }) => {
         <div className="min-h-screen w-full bg-white">
           <HomeHeader profile={profile} activePage={null} />
 
-          <main className="mx-auto flex min-h-[calc(100vh-80px)] max-w-3xl items-center justify-center px-4 py-10">
-            <div className="w-full rounded-2xl border border-[#dddfe2] bg-white p-8 text-center shadow-sm">
+          <main className="mx-auto flex min-h-[calc(100vh-80px)] max-w-3xl items-center justify-center px-3 py-6 sm:px-4 sm:py-10">
+            <div className="w-full rounded-2xl border border-[#dddfe2] bg-white p-5 text-center shadow-sm sm:p-8">
               <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-[#eef2ff] text-[#1d4ed8]">
                 <span className="material-symbols-outlined text-[40px]">
                   block
@@ -465,8 +463,8 @@ const ProfilePage = ({ userId }) => {
       <div className="min-h-screen w-full bg-white">
         <HomeHeader profile={profile} activePage={null} />
 
-        <main className="min-h-[calc(100vh-80px)] bg-[#f2f3f5] px-4 py-5 lg:px-6">
-          <div className="mx-auto w-full max-w-[70vw] space-y-5">
+        <main className="min-h-[calc(100vh-80px)] bg-[#f2f3f5] px-3 py-3 sm:px-4 sm:py-5 lg:px-6">
+          <div className="mx-auto w-full max-w-6xl space-y-4 lg:space-y-5">
             {pageError ? (
               <StatusCard
                 icon="error"
@@ -524,7 +522,7 @@ const ProfilePage = ({ userId }) => {
             <ProfileTabs activeTab={activeTab} onChange={setActiveTab} />
 
             {activeTab === "introduction" ? (
-              <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(240px,30%)_minmax(0,70%)]">
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(240px,320px)_minmax(0,1fr)] lg:gap-5">
                 <div>
                   <ProfileAboutTab
                     profile={currentProfile}
@@ -589,7 +587,6 @@ const ProfilePage = ({ userId }) => {
             onSave={handleSaveProfile}
             initialData={profile}
           />
-          <FAB icon="add" label="Post Update" />
         </>
       ) : null}
 

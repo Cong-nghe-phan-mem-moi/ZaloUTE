@@ -77,91 +77,102 @@ const HomeHeader = ({ profile, activePage = "home" }) => {
   useClickOutside(profileMenuRef, closeProfileMenu);
 
   return (
-    <header className="sticky top-0 z-40 flex h-20 items-center justify-between gap-4 border-b border-[#e5e7eb] bg-white px-6 shadow-sm lg:px-12">
-      <div className="flex items-center gap-5">
-        <AppLogo />
-        <UserSearchBox />
+    <header className="sticky top-0 z-40 border-b border-[#e5e7eb] bg-white px-3 py-3 shadow-sm sm:px-5 lg:px-12">
+      <div className="flex min-h-10 items-center justify-between gap-3">
+        <div className="flex min-w-0 flex-1 items-center gap-3 lg:gap-5">
+          <AppLogo className="shrink-0" />
+          <UserSearchBox
+            wrapperClassName="relative hidden min-w-0 flex-1 sm:block sm:max-w-72"
+            shellClassName="flex h-10 items-center gap-2 rounded-full bg-[#f0f2f5] px-3 text-[#65676b]"
+            inputClassName="min-w-0 flex-1 border-0 bg-transparent text-sm outline-none placeholder:text-[#9ca3af]"
+          />
+        </div>
+
+        <nav className="hidden flex-1 items-center justify-center gap-4 text-[#6b7280] md:flex lg:gap-8">
+          <HeaderTab icon="home" active={activePage === "home"} />
+          <HeaderTab
+            icon="groups"
+            href="/groups"
+            active={activePage === "groups"}
+          />
+        </nav>
+
+        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+          <div className="relative" ref={messagesRef}>
+            <IconButton
+              icon="forum"
+              label="Messages"
+              onClick={handleToggleMessages}
+              badge={unreadConversationCount}
+            />
+            {messagesOpen ? (
+              <MessagesDropdown
+                conversations={messageConversations}
+                loading={messagesLoading}
+                profile={profile}
+                onOpenMessages={() => navigate("/messages")}
+                onOpenConversation={openMiniConversation}
+              />
+            ) : null}
+          </div>
+
+          <div className="relative" ref={notificationsRef}>
+            <IconButton
+              icon="notifications"
+              label="Notifications"
+              onClick={handleToggleNotifications}
+              badge={newNotificationCount}
+            />
+            {notificationsOpen ? (
+              <NotificationsDropdown
+                notifications={notifications}
+                unreadCount={unreadCount}
+                loading={notificationsLoading}
+                onDeleteNotification={handleDeleteNotification}
+                onMarkAllAsRead={handleMarkAllAsRead}
+                onNotificationClick={handleNotificationClick}
+              />
+            ) : null}
+          </div>
+
+          <div className="relative" ref={profileMenuRef}>
+            <button
+              type="button"
+              onClick={() => setProfileMenuOpen((open) => !open)}
+              className="flex items-center gap-2 rounded-full px-1 py-1 hover:bg-[#f2f3f5]"
+              aria-expanded={profileMenuOpen}
+              aria-label="Open profile menu"
+            >
+              <UserAvatar
+                image={profile?.avatar}
+                name={profile?.fullName}
+                size="sm"
+              />
+              <span className="hidden max-w-36 truncate text-sm font-semibold text-[#111827] lg:block">
+                {profile?.fullName || "Hexa Pentania"}
+              </span>
+              <span className="material-symbols-outlined hidden text-[18px] text-[#111827] sm:inline">
+                expand_more
+              </span>
+            </button>
+
+            {profileMenuOpen ? (
+              <ProfileMenu
+                profile={profile}
+                isLoggingOut={isLoggingOut}
+                onLogout={handleLogout}
+              />
+            ) : null}
+          </div>
+        </div>
       </div>
 
-      <nav className="hidden flex-1 items-center justify-center gap-8 text-[#6b7280] md:flex">
-        <HeaderTab icon="home" active={activePage === "home"} />
-        <HeaderTab icon="storefront" />
-        <HeaderTab icon="smart_display" />
-        <HeaderTab
-          icon="groups"
-          href="/groups"
-          active={activePage === "groups"}
-        />
-      </nav>
-
-      <div className="flex items-center gap-3">
-        <div className="relative" ref={messagesRef}>
-          <IconButton
-            icon="forum"
-            label="Messages"
-            onClick={handleToggleMessages}
-            badge={unreadConversationCount}
-          />
-          {messagesOpen ? (
-            <MessagesDropdown
-              conversations={messageConversations}
-              loading={messagesLoading}
-              profile={profile}
-              onOpenMessages={() => navigate("/messages")}
-              onOpenConversation={openMiniConversation}
-            />
-          ) : null}
-        </div>
-
-        <div className="relative" ref={notificationsRef}>
-          <IconButton
-            icon="notifications"
-            label="Notifications"
-            onClick={handleToggleNotifications}
-            badge={newNotificationCount}
-          />
-          {notificationsOpen ? (
-            <NotificationsDropdown
-              notifications={notifications}
-              unreadCount={unreadCount}
-              loading={notificationsLoading}
-              onDeleteNotification={handleDeleteNotification}
-              onMarkAllAsRead={handleMarkAllAsRead}
-              onNotificationClick={handleNotificationClick}
-            />
-          ) : null}
-        </div>
-
-        <div className="relative" ref={profileMenuRef}>
-          <button
-            type="button"
-            onClick={() => setProfileMenuOpen((open) => !open)}
-            className="flex items-center gap-2 rounded-full px-1 py-1 hover:bg-[#f2f3f5]"
-            aria-expanded={profileMenuOpen}
-            aria-label="Open profile menu"
-          >
-            <UserAvatar
-              image={profile?.avatar}
-              name={profile?.fullName}
-              size="sm"
-            />
-            <span className="hidden max-w-36 truncate text-sm font-semibold text-[#111827] sm:block">
-              {profile?.fullName || "Hexa Pentania"}
-            </span>
-            <span className="material-symbols-outlined text-[18px] text-[#111827]">
-              expand_more
-            </span>
-          </button>
-
-          {profileMenuOpen ? (
-            <ProfileMenu
-              profile={profile}
-              isLoggingOut={isLoggingOut}
-              onLogout={handleLogout}
-            />
-          ) : null}
-        </div>
-      </div>
+      <UserSearchBox
+        wrapperClassName="relative mt-3 block sm:hidden"
+        shellClassName="flex h-10 items-center gap-2 rounded-full bg-[#f0f2f5] px-3 text-[#65676b]"
+        inputClassName="min-w-0 flex-1 border-0 bg-transparent text-sm outline-none placeholder:text-[#9ca3af]"
+        dropdownClassName="absolute left-0 top-12 z-50 w-full rounded-lg border border-[#dddfe2] bg-white p-2 shadow-2xl"
+      />
 
       {popupNotification ? (
         <NotificationPopup
