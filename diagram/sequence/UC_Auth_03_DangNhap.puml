@@ -1,0 +1,64 @@
+﻿@startuml
+skinparam shadowing false
+skinparam sequence {
+  ArrowColor #0F172A
+  LifeLineBorderColor #334155
+  LifeLineBackgroundColor #F8FAFC
+  ParticipantBorderColor #334155
+}
+title Sequence - Đăng nhập
+actor "Khách" as Guest
+boundary "React UI\n(LoginPage)" as UI
+participant Hook as "Frontend hook/service"
+participant API as "API Client"
+participant "Express Router\n/auth/login" as Route
+participant "RateLimiter" as MW
+control "AuthController\nlogin()" as C
+control "AuthService\nlogin()" as S
+participant "AuthRepository" as Repo
+entity "Account Model" as AccountModel
+database "MongoDB" as DB
+
+note over UI,Route
+  API: POST /api/auth/login
+end note
+
+Guest -> UI : Nhập email và mật khẩu
+UI -> Hook: Gửi yêu cầu đăng nhập
+Hook -> API: Gọi API tương ứng
+API -> Route: Gửi yêu cầu đăng nhập
+Route -> MW : Kiểm tra giới hạn request
+MW -> C : Chuyển request
+C -> C : Kiểm tra email/mật khẩu không rỗng
+C -> S : login(email, password, sessionMeta)
+S -> Repo : findAccountByEmail(includePassword)
+Repo -> AccountModel : findOne(email).select(passwordHash)
+AccountModel -> DB : Tìm Account
+DB --> AccountModel : Account
+AccountModel --> Repo : Account
+S -> S : Kiểm tra trạng thái Account\nSo sánh mật khẩu\nTạo sessionId và token
+alt Đăng nhập hợp lệ
+  S -> Repo : addLoginSession()
+  Repo -> AccountModel : updateOne($push loginSessions)
+  AccountModel -> DB : Lưu phiên đăng nhập
+  S --> C : token, redirectUrl
+  C --> API: Đăng nhập thành công
+API --> Hook: Đăng nhập thành công
+Hook --> UI: Đăng nhập thành công
+  alt Role admin
+    UI --> Guest : Chuyển đến Admin Dashboard
+  else Role user
+    UI --> Guest : Chuyển đến trang người dùng
+  end
+else Sai thông tin hoặc Account không hợp lệ
+  S --> C : Trả lỗi
+  C --> API: Thông báo lỗi đăng nhập
+API --> Hook: Thông báo lỗi đăng nhập
+Hook --> UI: Thông báo lỗi đăng nhập
+  UI --> Guest : Hiển thị lỗi
+end
+@enduml
+
+
+
+

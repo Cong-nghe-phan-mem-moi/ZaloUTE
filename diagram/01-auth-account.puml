@@ -1,0 +1,48 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+actor "Khach" as Guest
+actor "Nguoi dung" as User
+actor "He thong" as System
+
+User --|> Guest
+
+rectangle "Quan ly tai khoan va xac thuc" {
+  usecase "Dang ky tai khoan" as Register
+  usecase "Gui ma OTP" as SendOtp
+  usecase "Xac thuc OTP\ndang ky" as VerifyOtp
+  usecase "Dang nhap" as Login
+  usecase "Quen mat khau" as Forgot
+  usecase "Yeu cau OTP\ndat lai mat khau" as ResetOtp
+  usecase "Xac minh OTP\ndat lai mat khau" as VerifyResetOtp
+  usecase "Dat lai mat khau moi" as ResetPassword
+  usecase "Dang xuat" as Logout
+  usecase "Kiem tra gioi han\nrequest" as RateLimit
+  usecase "Tao/kiem tra phien\nxac thuc" as AuthSession
+}
+
+Guest --> Register
+Guest --> VerifyOtp
+Guest --> Login
+Guest --> Forgot
+User --> Logout
+System --> SendOtp
+System --> AuthSession
+
+Register ..> SendOtp : <<include>>
+Register ..> RateLimit : <<include>>
+VerifyOtp ..> AuthSession : <<include>>
+Login ..> RateLimit : <<include>>
+Login ..> AuthSession : <<include>>
+Forgot ..> ResetOtp : <<include>>
+ResetOtp ..> SendOtp : <<include>>
+ResetOtp ..> RateLimit : <<include>>
+Forgot ..> VerifyResetOtp : <<include>>
+Forgot ..> ResetPassword : <<include>>
+VerifyResetOtp ..> RateLimit : <<include>>
+ResetPassword ..> AuthSession : <<include>>
+ResetPassword ..> RateLimit : <<include>>
+Logout ..> AuthSession : <<include>>
+@enduml

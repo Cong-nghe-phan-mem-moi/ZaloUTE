@@ -1,0 +1,56 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+actor "Nguoi dung" as User
+actor "Thanh vien nhom chat" as Member
+actor "He thong" as System
+
+Member --|> User
+
+rectangle "Nhan tin va hoi thoai" {
+  usecase "Tao/lay hoi thoai\nca nhan" as PersonalConversation
+  usecase "Lay danh sach\nhoi thoai" as ListConversations
+  usecase "Xem tin nhan theo\nhoi thoai" as ViewMessages
+  usecase "Gui tin nhan" as SendMessage
+  usecase "Gui hinh anh\ntrong hoi thoai" as SendImage
+  usecase "Xem anh hoi thoai" as ProxyImage
+  usecase "Danh dau hoi thoai\nda xem" as MarkSeen
+  usecase "Hien thi so hoi thoai\nchua doc" as Badge
+  usecase "Tao nhom chat" as CreateChatGroup
+  usecase "Them thanh vien\nnhom chat" as AddMembers
+  usecase "Xoa thanh vien\nnhom chat" as RemoveMember
+  usecase "Roi khoi nhom chat" as LeaveGroup
+  usecase "Tat/bat thong bao\nhoi thoai" as MuteUnmute
+  usecase "Chan/bo chan\nhoi thoai" as BlockUnblock
+  usecase "Xoa hoi thoai" as DeleteConversation
+}
+
+User --> PersonalConversation
+User --> ListConversations
+User --> ViewMessages
+User --> SendMessage
+User --> SendImage
+User --> ProxyImage
+User --> MarkSeen
+User --> Badge
+User --> CreateChatGroup
+User --> AddMembers
+User --> RemoveMember
+User --> LeaveGroup
+User --> MuteUnmute
+User --> BlockUnblock
+User --> DeleteConversation
+
+Member --> ViewMessages
+Member --> SendMessage
+System --> Badge
+System --> MarkSeen
+
+PersonalConversation ..> ListConversations : <<include>>
+ViewMessages ..> MarkSeen : <<extend>>
+SendImage ..> SendMessage : <<extend>>
+CreateChatGroup ..> AddMembers : <<include>>
+DeleteConversation ..> ListConversations : <<include>>
+@enduml

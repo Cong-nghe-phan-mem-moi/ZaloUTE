@@ -1,0 +1,66 @@
+﻿@startuml
+skinparam shadowing false
+skinparam sequence {
+  ArrowColor #0F172A
+  LifeLineBorderColor #334155
+  LifeLineBackgroundColor #F8FAFC
+  ParticipantBorderColor #334155
+}
+title Sequence - Tìm kiếm người dùng
+actor "Người dùng" as User
+boundary "React UI\n(SearchPage/UserSearchBox)" as UI
+participant Hook as "Frontend hook/service"
+participant API as "API Client"
+participant "Express Router\n/users/search" as Route
+participant "AuthMiddleware" as MW
+control "UserController\nhandleGlobalSearch()" as C
+control "UserService\nglobalSearch()" as S
+participant "UserRepository\nPostRepository" as Repo
+entity "User Model" as UserModel
+entity "Post Model" as PostModel
+entity "Media Model" as MediaModel
+database "MongoDB" as DB
+
+note over UI,Route
+  API: GET /api/users/search
+end note
+
+User -> UI : Nhập từ khóa tìm kiếm
+UI -> Hook: Gửi từ khóa và bộ lọc
+Hook -> API: Gọi API tương ứng
+API -> Route: Gửi từ khóa và bộ lọc
+Route -> MW : Xác thực phiên
+MW -> C : Chuyển request
+C -> C : Chuẩn hóa từ khóa và loại tìm kiếm
+alt Từ khóa hợp lệ
+  C -> S : globalSearch(q, type, filters, myId)
+  S -> Repo : Tìm user/post/media phù hợp
+  Repo -> UserModel : find theo từ khóa nếu tìm user
+  UserModel -> DB : Truy vấn User
+  Repo -> PostModel : find theo từ khóa nếu tìm post
+  PostModel -> DB : Truy vấn Post
+  Repo -> MediaModel : find theo bộ lọc media nếu có
+  MediaModel -> DB : Truy vấn Media
+  DB --> UserModel : Kết quả User
+  DB --> PostModel : Kết quả Post
+  DB --> MediaModel : Kết quả Media
+  UserModel --> Repo : User[]
+  PostModel --> Repo : Post[]
+  MediaModel --> Repo : Media[]
+  Repo --> S : Danh sách kết quả
+  S --> C : data, nextLimit
+  C --> API: Trả kết quả tìm kiếm
+API --> Hook: Trả kết quả tìm kiếm
+Hook --> UI: Trả kết quả tìm kiếm
+  UI --> User : Hiển thị danh sách kết quả
+else Từ khóa rỗng
+  C --> API: Yêu cầu nhập từ khóa
+API --> Hook: Yêu cầu nhập từ khóa
+Hook --> UI: Yêu cầu nhập từ khóa
+  UI --> User : Hiển thị thông báo
+end
+@enduml
+
+
+
+

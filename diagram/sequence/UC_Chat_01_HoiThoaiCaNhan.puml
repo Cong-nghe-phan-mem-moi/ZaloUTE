@@ -1,0 +1,92 @@
+﻿@startuml
+skinparam shadowing false
+skinparam sequence {
+  ArrowColor #0F172A
+  LifeLineBorderColor #334155
+  LifeLineBackgroundColor #F8FAFC
+  ParticipantBorderColor #334155
+}
+title Sequence - Quản lý hội thoại cá nhân
+actor "Người dùng" as User
+boundary "React UI\n(ChatPage/MiniChat)" as UI
+participant Hook as "Frontend hook/service"
+participant API as "API Client"
+participant "Express Router\n/chats" as Route
+participant "AuthMiddleware\nUploadMiddleware" as MW
+control "ChatController" as C
+control "ChatService" as S
+participant "ChatRepository" as Repo
+entity "Conversation Model" as ConversationModel
+entity "Message Model" as MessageModel
+database "MongoDB" as DB
+participant "GoogleDriveService\nhoặc Storage" as Storage
+
+User -> UI : Mở trang tin nhắn
+UI -> Hook: Yêu cầu danh sách hội thoại
+Hook -> API: Gọi API tương ứng
+API -> Route: Yêu cầu danh sách hội thoại
+Route -> MW : Xác thực phiên
+MW -> C : getConversations()
+C -> S : getUserConversations(userId)
+S -> Repo : Lấy hội thoại của user
+Repo -> ConversationModel : find()
+ConversationModel -> DB : Truy vấn Conversation
+S --> C : Danh sách hội thoại
+C --> API: Trả danh sách
+API --> Hook: Trả danh sách
+Hook --> UI: Trả danh sách
+UI --> User : Hiển thị hội thoại
+
+alt Tạo/lấy hội thoại cá nhân
+  User -> UI : Chọn người cần nhắn tin
+  UI -> Hook: Gửi targetUserId
+Hook -> API: Gọi API tương ứng
+API -> Route: Gửi targetUserId
+  Route -> MW : Xác thực
+  MW -> C : getOrCreateConversation()
+  C -> S : getOrCreateDirectConversation(userId, targetUserId)
+  S -> Repo : Tìm hoặc tạo Conversation
+  Repo -> ConversationModel : findOne()/create()
+  ConversationModel -> DB : Truy vấn/lưu Conversation
+  S --> C : Hội thoại
+  C --> API: Trả hội thoại
+API --> Hook: Trả hội thoại
+Hook --> UI: Trả hội thoại
+else Xem tin nhắn
+  User -> UI : Mở hội thoại
+  UI -> Hook: Yêu cầu tin nhắn
+Hook -> API: Gọi API tương ứng
+API -> Route: Yêu cầu tin nhắn
+  Route -> MW : Xác thực
+  MW -> C : getMessages()
+  C -> S : getConversationMessages(conversationId, userId, page, limit)
+  S -> Repo : Lấy tin nhắn
+  Repo -> MessageModel : find()
+  MessageModel -> DB : Truy vấn Message
+  S --> C : Tin nhắn
+  C --> API: Trả tin nhắn
+API --> Hook: Trả tin nhắn
+Hook --> UI: Trả tin nhắn
+else Gửi ảnh
+  User -> UI : Chọn ảnh gửi
+  UI -> Hook: Upload ảnh hội thoại
+Hook -> API: Gọi API tương ứng
+API -> Route: Upload ảnh hội thoại
+  Route -> MW : Xác thực + nhận file
+  MW -> C : uploadConversationImage()
+  C -> S : uploadConversationImage(userId, conversationId, file)
+  S -> Storage : Lưu ảnh
+  S -> Repo : Lưu tin nhắn ảnh
+  Repo -> MessageModel : create()
+  MessageModel -> DB : Tạo Message
+  C -> C : Xóa file tạm sau upload
+  S --> C : Tin nhắn ảnh
+  C --> API: Gửi ảnh thành công
+API --> Hook: Gửi ảnh thành công
+Hook --> UI: Gửi ảnh thành công
+end
+@enduml
+
+
+
+

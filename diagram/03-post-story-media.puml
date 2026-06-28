@@ -1,0 +1,96 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+actor "Nguoi dung" as User
+actor "Tac gia bai viet" as Author
+actor "He thong" as System
+
+Author --|> User
+
+rectangle "Bai viet va tuong tac" {
+  usecase "Tao bai viet" as CreatePost
+  usecase "Dinh kem media\nvao bai viet" as AttachMedia
+  usecase "Chinh sua bai viet" as UpdatePost
+  usecase "Xoa bai viet" as DeletePost
+  usecase "Xem news feed" as Feed
+  usecase "Xem chi tiet\nbai viet" as ViewPost
+  usecase "Tim kiem bai viet" as SearchPost
+  usecase "Xem bai viet\ntheo tac gia" as AuthorPosts
+  usecase "Thich/bo thich\nbai viet" as LikePost
+  usecase "Xem danh sach\nnguoi thich" as ViewLikes
+  usecase "Binh luan bai viet" as Comment
+  usecase "Xem binh luan" as ViewComments
+  usecase "Sua/xoa binh luan" as ManageComment
+  usecase "Thich binh luan" as LikeComment
+  usecase "Chia se bai viet" as SharePost
+  usecase "Luu/bo luu bai viet" as SavePost
+  usecase "An bai viet" as HidePost
+}
+
+rectangle "Album anh va media" {
+  usecase "Xem media cua\nnguoi dung" as ViewUserMedia
+  usecase "Xem album cua\nnguoi dung" as ViewAlbums
+  usecase "Tao album" as CreateAlbum
+  usecase "Cap nhat album" as UpdateAlbum
+  usecase "Xoa album" as DeleteAlbum
+  usecase "Tai media" as DownloadMedia
+}
+
+rectangle "Story" {
+  usecase "Tao story" as CreateStory
+  usecase "Xem danh sach story" as ListStory
+  usecase "Xem chi tiet story" as ViewStory
+  usecase "Danh dau story\nda xem" as MarkViewed
+  usecase "Tha cam xuc story" as ReactStory
+  usecase "Phan hoi story" as ReplyStory
+  usecase "Xem nguoi da xem\nstory" as ViewStoryViewers
+  usecase "Xoa story" as DeleteStory
+}
+
+User --> Feed
+User --> ViewPost
+User --> SearchPost
+User --> AuthorPosts
+User --> LikePost
+User --> ViewLikes
+User --> Comment
+User --> ViewComments
+User --> LikeComment
+User --> SharePost
+User --> SavePost
+User --> HidePost
+User --> ViewUserMedia
+User --> ViewAlbums
+User --> DownloadMedia
+User --> CreateStory
+User --> ListStory
+User --> ViewStory
+User --> MarkViewed
+User --> ReactStory
+User --> ReplyStory
+User --> ViewStoryViewers
+
+Author --> CreatePost
+Author --> UpdatePost
+Author --> DeletePost
+Author --> ManageComment
+Author --> CreateAlbum
+Author --> UpdateAlbum
+Author --> DeleteAlbum
+Author --> DeleteStory
+
+System --> Feed
+System --> MarkViewed
+
+CreatePost ..> AttachMedia : <<extend>>
+UpdatePost ..> AttachMedia : <<extend>>
+ViewPost ..> ViewComments : <<include>>
+Comment ..> ViewComments : <<include>>
+SharePost ..> ViewPost : <<include>>
+CreateStory ..> AttachMedia : <<include>>
+ViewStory ..> MarkViewed : <<extend>>
+ReactStory ..> ViewStory : <<include>>
+ReplyStory ..> ViewStory : <<include>>
+@enduml

@@ -1,0 +1,84 @@
+﻿@startuml
+skinparam shadowing false
+skinparam sequence {
+  ArrowColor #0F172A
+  LifeLineBorderColor #334155
+  LifeLineBackgroundColor #F8FAFC
+  ParticipantBorderColor #334155
+}
+title Sequence - Quản lý album và media
+actor "Người dùng" as User
+boundary "React UI\n(UserMediaPage/AlbumEditor)" as UI
+participant Hook as "Frontend hook/service"
+participant API as "API Client"
+participant "Express Router\n/posts/*media, albums" as Route
+participant "AuthMiddleware" as MW
+control "PostController" as C
+control "PostService" as S
+participant "AlbumRepository\nPostRepository" as Repo
+entity "Album Model" as AlbumModel
+entity "Media Model" as MediaModel
+entity "Post Model" as PostModel
+database "MongoDB" as DB
+participant "Storage\n/uploads hoặc URL ngoài" as Storage
+
+User -> UI : Mở trang media/album
+UI -> Hook: Yêu cầu media hoặc album
+Hook -> API: Gọi API tương ứng
+API -> Route: Yêu cầu media hoặc album
+Route -> MW : Xác thực phiên
+MW -> C : getUserMedia()/getUserAlbums()
+C -> S : Lấy media/album theo tác giả và quyền xem
+S -> Repo : Truy vấn media/album
+Repo -> AlbumModel : find theo author
+AlbumModel -> DB : Lấy Album
+Repo -> MediaModel : find theo author/type
+MediaModel -> DB : Lấy Media
+Repo -> PostModel : find post chứa media nếu cần
+PostModel -> DB : Lấy Post
+DB --> AlbumModel : Album[]
+DB --> MediaModel : Media[]
+DB --> PostModel : Post[]
+AlbumModel --> Repo : Album[]
+MediaModel --> Repo : Media[]
+PostModel --> Repo : Post[]
+S --> C : Dữ liệu media/album
+C --> API: Trả danh sách
+API --> Hook: Trả danh sách
+Hook --> UI: Trả danh sách
+UI --> User : Hiển thị thư viện
+
+alt Tạo/cập nhật/xóa album
+  User -> UI : Thao tác album
+  UI -> Hook: Gửi thay đổi album
+Hook -> API: Gọi API tương ứng
+API -> Route: Gửi thay đổi album
+  Route -> MW : Xác thực
+  MW -> C : create/update/deleteAlbum()
+  C -> S : Xử lý album
+  S -> Repo : Lưu thay đổi album
+  Repo -> AlbumModel : create/update/delete
+  AlbumModel -> DB : Cập nhật Album
+  S --> C : Kết quả
+  C --> API: Cập nhật thành công
+API --> Hook: Cập nhật thành công
+Hook --> UI: Cập nhật thành công
+else Tải media
+  User -> UI : Chọn tải media
+  UI -> Hook: Yêu cầu tải
+Hook -> API: Gọi API tương ứng
+API -> Route: Yêu cầu tải
+  Route -> MW : Xác thực
+  MW -> C : downloadMedia()
+  C -> S : getDownloadableMedia()
+  S -> Repo : Kiểm tra quyền tải
+  Repo -> MediaModel : findById()
+  MediaModel -> DB : Lấy media
+  C -> Storage : Lấy file hoặc chuyển đến URL ngoài
+  Storage --> UI : Trả media
+end
+@enduml
+
+
+
+

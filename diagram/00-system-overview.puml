@@ -1,0 +1,42 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+actor "Khach" as Guest
+actor "Nguoi dung" as User
+actor "Quan tri vien nhom" as GroupAdmin
+actor "Quan tri vien he thong" as Admin
+actor "He thong" as System
+
+User --|> Guest
+GroupAdmin --|> User
+Admin --|> User
+
+rectangle "ZaloUTE" {
+  usecase "Quan ly tai khoan\nva xac thuc" as UCAuth
+  usecase "Quan ly ho so\nca nhan" as UCProfile
+  usecase "Quan ly quan he\nnguoi dung" as UCFriend
+  usecase "Quan ly bai viet,\ntuong tac va media" as UCPost
+  usecase "Quan ly story" as UCStory
+  usecase "Nhan tin va\nhoi thoai" as UCChat
+  usecase "Quan ly nhom\ncong dong" as UCGroup
+  usecase "Quan ly\nthong bao" as UCNotification
+  usecase "Bao cao noi dung" as UCReport
+  usecase "Quan tri he thong" as UCAdmin
+}
+
+Guest --> UCAuth
+User --> UCProfile
+User --> UCFriend
+User --> UCPost
+User --> UCStory
+User --> UCChat
+User --> UCGroup
+User --> UCNotification
+User --> UCReport
+GroupAdmin --> UCGroup
+Admin --> UCAdmin
+System --> UCNotification
+System --> UCAuth
+@enduml

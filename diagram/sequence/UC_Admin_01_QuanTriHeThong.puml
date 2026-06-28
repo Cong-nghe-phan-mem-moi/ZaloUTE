@@ -1,0 +1,201 @@
+﻿@startuml
+skinparam shadowing false
+skinparam sequence {
+  ArrowColor #0F172A
+  LifeLineBorderColor #334155
+  LifeLineBackgroundColor #F8FAFC
+  ParticipantBorderColor #334155
+}
+
+title Sequence - Quản trị hệ thống
+
+actor Admin as "Quản trị viên hệ thống"
+participant UI as "AdminDashboard"
+participant Hook as "Admin hooks / state"
+participant API as "Admin API Client"
+control AuthMW as "AuthMiddleware"
+control RoleMW as "Authorize(admin)"
+control AdminCtl as "AdminController"
+participant AdminSvc as "AdminService"
+database AccountModel as "Account Model"
+database UserModel as "User Model"
+database PostModel as "Post Model"
+database CommentModel as "Comment Model"
+database ReportModel as "Report Model"
+database StickerModel as "Sticker Model"
+database LogModel as "AdminActionLog Model"
+
+== Kiểm tra quyền truy cập trang quản trị ==
+Admin -> UI: Truy cập trang quản trị
+UI -> Hook: Khởi tạo trạng thái dashboard
+Hook -> API: Gửi request kèm token
+API -> AuthMW: Xác thực token và phiên đăng nhập
+AuthMW -> AccountModel: findById(accountId)
+AccountModel --> AuthMW: Account + loginSessions
+AuthMW -> RoleMW: Chuyển request đã xác thực
+RoleMW -> RoleMW: Kiểm tra role admin
+
+alt Không có quyền quản trị
+  RoleMW --> API: 403 Forbidden
+  API --> Hook: Lỗi phân quyền
+  Hook --> UI: Cập nhật trạng thái lỗi
+  UI --> Admin: Hiển thị thông báo không có quyền
+else Có quyền quản trị
+  RoleMW -> AdminCtl: getStats()
+  AdminCtl -> AdminSvc: getStats()
+  AdminSvc -> UserModel: countDocuments()
+  UserModel --> AdminSvc: Tổng số người dùng
+  AdminSvc -> PostModel: countDocuments()
+  PostModel --> AdminSvc: Tổng số bài viết
+  AdminSvc -> CommentModel: countDocuments()
+  CommentModel --> AdminSvc: Tổng số bình luận
+  AdminSvc -> ReportModel: countDocuments()
+  ReportModel --> AdminSvc: Tổng số báo cáo
+  AdminSvc --> AdminCtl: Dashboard stats
+  AdminCtl --> API: 200 + stats
+  API --> Hook: stats
+  Hook --> UI: Cập nhật dashboard
+  UI --> Admin: Hiển thị thống kê hệ thống
+end
+
+== Quản lý người dùng ==
+Admin -> UI: Chọn tab người dùng
+UI -> Hook: Yêu cầu danh sách/chi tiết người dùng
+Hook -> API: Gửi request quản lý người dùng
+API -> AuthMW: Xác thực request
+AuthMW -> RoleMW: Kiểm tra quyền admin
+RoleMW -> AdminCtl: getUsers() / getUserDetail()
+AdminCtl -> AdminSvc: getUsers(query) / getUserDetail(userId)
+AdminSvc -> UserModel: find() / findById()
+UserModel --> AdminSvc: Dữ liệu người dùng
+AdminSvc --> AdminCtl: Kết quả
+AdminCtl --> API: 200 + data
+API --> Hook: data
+Hook --> UI: Cập nhật danh sách
+UI --> Admin: Hiển thị người dùng
+
+alt Cập nhật trạng thái tài khoản
+  Admin -> UI: Chọn khóa/mở khóa/tạm đình chỉ
+  UI -> Hook: Gửi trạng thái mới
+  Hook -> API: Request cập nhật trạng thái
+  API -> AdminCtl: updateUserStatus()
+  AdminCtl -> AdminSvc: updateUserStatus(userId, status, adminId, payload)
+  AdminSvc -> AccountModel: findByIdAndUpdate()
+  AccountModel --> AdminSvc: Account đã cập nhật
+  AdminSvc -> LogModel: create()
+  LogModel --> AdminSvc: Log đã lưu
+  AdminSvc --> AdminCtl: Kết quả
+  AdminCtl --> API: 200 + data
+  API --> Hook: success
+  Hook --> UI: Refresh danh sách
+else Xóa người dùng
+  Admin -> UI: Xác nhận xóa người dùng
+  UI -> Hook: Gửi yêu cầu xóa
+  Hook -> API: Request xóa người dùng
+  API -> AdminCtl: deleteUser()
+  AdminCtl -> AdminSvc: deleteUser(userId, adminId)
+  AdminSvc -> UserModel: findByIdAndDelete()
+  UserModel --> AdminSvc: User đã xóa
+  AdminSvc -> AccountModel: deleteOne()
+  AccountModel --> AdminSvc: Account liên quan đã xóa
+  AdminSvc -> LogModel: create()
+  LogModel --> AdminSvc: Log đã lưu
+  AdminSvc --> AdminCtl: OK
+  AdminCtl --> API: 200
+  API --> Hook: success
+  Hook --> UI: Loại người dùng khỏi danh sách
+end
+
+== Quản lý bài viết và bình luận ==
+Admin -> UI: Chọn tab bài viết hoặc bình luận
+UI -> Hook: Yêu cầu dữ liệu nội dung
+Hook -> API: Gửi request nội dung
+API -> AuthMW: Xác thực request
+AuthMW -> RoleMW: Kiểm tra quyền admin
+
+alt Quản lý bài viết
+  RoleMW -> AdminCtl: getPosts() / hidePost() / deletePost()
+  AdminCtl -> AdminSvc: Xử lý bài viết
+  alt Xem danh sách bài viết
+    AdminSvc -> PostModel: find().populate(author)
+    PostModel --> AdminSvc: Danh sách bài viết
+  else Ẩn bài viết
+    AdminSvc -> PostModel: findByIdAndUpdate(isHidden, reason)
+    PostModel --> AdminSvc: Bài viết đã ẩn
+    AdminSvc -> LogModel: create()
+    LogModel --> AdminSvc: Log đã lưu
+  else Xóa bài viết
+    AdminSvc -> PostModel: findByIdAndDelete()
+    PostModel --> AdminSvc: Bài viết đã xóa
+    AdminSvc -> LogModel: create()
+    LogModel --> AdminSvc: Log đã lưu
+  end
+else Quản lý bình luận
+  RoleMW -> AdminCtl: getComments() / deleteComment()
+  AdminCtl -> AdminSvc: Xử lý bình luận
+  alt Xem danh sách bình luận
+    AdminSvc -> CommentModel: find().populate(author, post)
+    CommentModel --> AdminSvc: Danh sách bình luận
+  else Xóa bình luận
+    AdminSvc -> CommentModel: findByIdAndDelete()
+    CommentModel --> AdminSvc: Bình luận đã xóa
+    AdminSvc -> LogModel: create()
+    LogModel --> AdminSvc: Log đã lưu
+  end
+end
+
+AdminSvc --> AdminCtl: Kết quả xử lý
+AdminCtl --> API: 200 + data
+API --> Hook: data
+Hook --> UI: Cập nhật giao diện
+UI --> Admin: Hiển thị kết quả
+
+== Quản lý báo cáo, sticker và nhật ký ==
+Admin -> UI: Chọn báo cáo / sticker / nhật ký
+UI -> Hook: Gửi yêu cầu quản trị
+Hook -> API: Request tương ứng
+API -> AuthMW: Xác thực request
+AuthMW -> RoleMW: Kiểm tra quyền admin
+RoleMW -> AdminCtl: Gọi action tương ứng
+
+alt Xử lý báo cáo
+  AdminCtl -> AdminSvc: getReports() / resolveReport()
+  alt Xem báo cáo
+    AdminSvc -> ReportModel: find().populate(reporter, target)
+    ReportModel --> AdminSvc: Danh sách báo cáo
+  else Xử lý báo cáo
+    AdminSvc -> ReportModel: findByIdAndUpdate(status, resolution)
+    ReportModel --> AdminSvc: Báo cáo đã xử lý
+    AdminSvc -> LogModel: create()
+    LogModel --> AdminSvc: Log đã lưu
+  end
+else Quản lý sticker
+  AdminCtl -> AdminSvc: get/create/update/delete sticker
+  alt Xem sticker
+    AdminSvc -> StickerModel: find()
+    StickerModel --> AdminSvc: Danh sách sticker
+  else Thêm hoặc sửa sticker
+    AdminSvc -> StickerModel: create() / findByIdAndUpdate()
+    StickerModel --> AdminSvc: Sticker đã lưu
+    AdminSvc -> LogModel: create()
+    LogModel --> AdminSvc: Log đã lưu
+  else Xóa sticker
+    AdminSvc -> StickerModel: findByIdAndDelete()
+    StickerModel --> AdminSvc: Sticker đã xóa
+    AdminSvc -> LogModel: create()
+    LogModel --> AdminSvc: Log đã lưu
+  end
+else Xem nhật ký
+  AdminCtl -> AdminSvc: getActionLogs()
+  AdminSvc -> LogModel: find().populate(admin)
+  LogModel --> AdminSvc: Danh sách nhật ký
+end
+
+AdminSvc --> AdminCtl: Kết quả
+AdminCtl --> API: 200 + data
+API --> Hook: data
+Hook --> UI: Cập nhật giao diện
+UI --> Admin: Hiển thị kết quả
+
+@enduml
+

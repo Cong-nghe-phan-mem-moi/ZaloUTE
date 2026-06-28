@@ -1,0 +1,56 @@
+﻿@startuml
+skinparam shadowing false
+skinparam sequence {
+  ArrowColor #0F172A
+  LifeLineBorderColor #334155
+  LifeLineBackgroundColor #F8FAFC
+  ParticipantBorderColor #334155
+}
+title Sequence - Gửi báo cáo nội dung
+actor "Người dùng" as User
+boundary "React UI\n(ReportModal)" as UI
+participant Hook as "Frontend hook/service"
+participant API as "API Client"
+participant "Express Router\n/reports" as Route
+participant "AuthMiddleware" as MW
+control "ReportController\ncreateReport()" as C
+control "ReportService\ncreateReport()" as S
+participant "ReportModel" as Repo
+entity "Report Model" as ReportModel
+database "MongoDB" as DB
+
+note over UI,Route
+  API: POST /api/reports
+end note
+
+User -> UI : Chọn báo cáo nội dung
+UI --> User : Hiển thị biểu mẫu báo cáo
+User -> UI : Nhập/chọn lý do báo cáo
+UI -> Hook: Gửi báo cáo
+Hook -> API: Gọi API tương ứng
+API -> Route: Gửi báo cáo
+Route -> MW : Xác thực phiên
+MW -> C : createReport()
+C -> S : createReport(userId, reportData)
+S -> S : Kiểm tra dữ liệu báo cáo
+alt Báo cáo hợp lệ
+  S -> Repo : Tạo Report
+  Repo -> ReportModel : create()
+  ReportModel -> DB : Lưu báo cáo
+  S --> C : Report mới
+  C --> API: Gửi báo cáo thành công
+API --> Hook: Gửi báo cáo thành công
+Hook --> UI: Gửi báo cáo thành công
+  UI --> User : Hiển thị thông báo thành công
+else Báo cáo không hợp lệ
+  S --> C : Trả lỗi
+  C --> API: Thông báo lỗi
+API --> Hook: Thông báo lỗi
+Hook --> UI: Thông báo lỗi
+  UI --> User : Yêu cầu kiểm tra lại
+end
+@enduml
+
+
+
+

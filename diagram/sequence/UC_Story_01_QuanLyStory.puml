@@ -1,0 +1,86 @@
+﻿@startuml
+skinparam shadowing false
+skinparam sequence {
+  ArrowColor #0F172A
+  LifeLineBorderColor #334155
+  LifeLineBackgroundColor #F8FAFC
+  ParticipantBorderColor #334155
+}
+title Sequence - Quản lý story
+actor "Người dùng" as User
+boundary "React UI\n(Stories/StoryViewer)" as UI
+participant Hook as "Frontend hook/service"
+participant API as "API Client"
+participant "Express Router\n/stories" as Route
+participant "AuthMiddleware\nUploadMiddleware" as MW
+control "StoryController" as C
+control "StoryService" as S
+participant "StoryRepository" as Repo
+entity "Story Model" as StoryModel
+database "MongoDB" as DB
+participant "Storage\n/uploads" as Storage
+
+User -> UI : Mở story
+UI -> Hook: Yêu cầu danh sách story
+Hook -> API: Gọi API tương ứng
+API -> Route: Yêu cầu danh sách story
+Route -> MW : Xác thực
+MW -> C : getStories()
+C -> S : getActiveStories(userId)
+S -> Repo : Lấy story còn hoạt động
+Repo -> StoryModel : find(active)
+StoryModel -> DB : Truy vấn Story
+S --> C : Danh sách story
+C --> API: Trả story
+API --> Hook: Trả story
+Hook --> UI: Trả story
+UI --> User : Hiển thị story
+
+alt Tạo story
+  User -> UI : Nhập nội dung/chọn media
+  UI -> Hook: Gửi story
+Hook -> API: Gọi API tương ứng
+API -> Route: Gửi story
+  Route -> MW : Xác thực + upload media
+  MW -> Storage : Lưu media nếu có
+  MW -> C : createStory()
+  C -> S : createStory(userId, body, media)
+  S -> Repo : Lưu story
+  Repo -> StoryModel : create()
+  StoryModel -> DB : Tạo Story
+  S --> C : Story mới
+  C --> API: Tạo thành công
+API --> Hook: Tạo thành công
+Hook --> UI: Tạo thành công
+else Xem/tương tác story
+  User -> UI : Xem, thả cảm xúc hoặc phản hồi
+  UI -> Hook: Gửi thao tác story
+Hook -> API: Gọi API tương ứng
+API -> Route: Gửi thao tác story
+  Route -> MW : Xác thực
+  MW -> C : getStory()/markViewed()/reactToStory()/replyToStory()
+  C -> S : Xử lý thao tác story
+  S -> Repo : Cập nhật view/reaction/reply
+  Repo -> StoryModel : findByIdAndUpdate()
+  StoryModel -> DB : Lưu thay đổi
+  S --> C : Story cập nhật
+  C --> API: Trả kết quả
+API --> Hook: Trả kết quả
+Hook --> UI: Trả kết quả
+else Xóa story
+  User -> UI : Chọn xóa story
+  UI -> Hook: Gửi yêu cầu xóa
+Hook -> API: Gọi API tương ứng
+API -> Route: Gửi yêu cầu xóa
+  Route -> MW : Xác thực
+  MW -> C : deleteStory()
+  C -> S : deleteStory(storyId, userId)
+  S -> Repo : Kiểm tra quyền và xóa
+  Repo -> StoryModel : findByIdAndUpdate/delete
+  StoryModel -> DB : Cập nhật/xóa Story
+end
+@enduml
+
+
+
+

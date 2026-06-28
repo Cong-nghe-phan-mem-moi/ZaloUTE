@@ -1,0 +1,74 @@
+﻿@startuml
+skinparam shadowing false
+skinparam sequence {
+  ArrowColor #0F172A
+  LifeLineBorderColor #334155
+  LifeLineBackgroundColor #F8FAFC
+  ParticipantBorderColor #334155
+}
+title Sequence - Quản lý bài viết
+actor "Tác giả" as User
+boundary "React UI\n(PostCard/EditPost)" as UI
+participant Hook as "Frontend hook/service"
+participant API as "API Client"
+participant "Express Router\n/posts/:postId" as Route
+participant "AuthMiddleware\nUploadMiddleware" as MW
+control "PostController" as C
+control "PostService" as S
+participant "PostRepository" as Repo
+entity "Post Model" as PostModel
+entity "Media Model" as MediaModel
+database "MongoDB" as DB
+participant "Storage\n/uploads" as Storage
+
+note over UI,Route
+  API:
+  PUT /api/posts/:postId
+  DELETE /api/posts/:postId
+end note
+
+User -> UI : Chọn sửa hoặc xóa bài viết
+alt Sửa bài viết
+  UI -> Hook: Gửi nội dung/media mới
+Hook -> API: Gọi API tương ứng
+API -> Route: Gửi nội dung/media mới
+  Route -> MW : Xác thực + upload media mới nếu có
+  MW -> Storage : Lưu file mới nếu có
+  MW -> C : updatePost()
+  C -> C : Ghép media cũ và media mới
+  C -> S : updatePost(postId, userId, content, media)
+  S -> Repo : Tìm bài viết và kiểm tra quyền tác giả
+  Repo -> PostModel : findById()
+  PostModel -> DB : Truy vấn Post
+  S -> Repo : Cập nhật bài viết
+  Repo -> PostModel : findByIdAndUpdate()
+  PostModel -> DB : Lưu thay đổi Post
+  opt Có thay đổi media
+    Repo -> MediaModel : create/update/delete media
+    MediaModel -> DB : Lưu thay đổi Media
+  end
+  S --> C : Bài viết đã cập nhật
+  C --> API: Cập nhật thành công
+API --> Hook: Cập nhật thành công
+Hook --> UI: Cập nhật thành công
+else Xóa bài viết
+  UI -> Hook: Gửi yêu cầu xóa
+Hook -> API: Gọi API tương ứng
+API -> Route: Gửi yêu cầu xóa
+  Route -> MW : Xác thực
+  MW -> C : deletePost()
+  C -> S : deletePost(postId, userId)
+  S -> Repo : Kiểm tra quyền và xóa bài
+  Repo -> PostModel : update/delete
+  PostModel -> DB : Cập nhật/xóa Post
+  S --> C : Xóa thành công
+  C --> API: Xóa thành công
+API --> Hook: Xóa thành công
+Hook --> UI: Xóa thành công
+end
+UI --> User : Hiển thị kết quả
+@enduml
+
+
+
+

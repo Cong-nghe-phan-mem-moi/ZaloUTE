@@ -1,0 +1,78 @@
+﻿@startuml
+skinparam shadowing false
+skinparam sequence {
+  ArrowColor #0F172A
+  LifeLineBorderColor #334155
+  LifeLineBackgroundColor #F8FAFC
+  ParticipantBorderColor #334155
+}
+title Sequence - Tạo và xem nhóm cộng đồng
+actor "Người dùng" as User
+boundary "React UI\n(Groups/GroupDetail)" as UI
+participant Hook as "Frontend hook/service"
+participant API as "API Client"
+participant "Express Router\n/groups" as Route
+participant "AuthMiddleware\nUploadMiddleware" as MW
+control "GroupController" as C
+control "GroupService" as S
+participant "GroupRepository" as Repo
+entity "Group Model" as GroupModel
+database "MongoDB" as DB
+participant "Storage\n/uploads" as Storage
+
+User -> UI : Mở trang nhóm
+UI -> Hook: Yêu cầu danh sách nhóm
+Hook -> API: Gọi API tương ứng
+API -> Route: Yêu cầu danh sách nhóm
+Route -> MW : Xác thực phiên
+MW -> C : getGroups()
+C -> S : getGroups(userId)
+S -> Repo : Lấy nhóm của người dùng
+Repo -> GroupModel : find()
+GroupModel -> DB : Truy vấn Group
+S --> C : Danh sách nhóm
+C --> API: Trả danh sách
+API --> Hook: Trả danh sách
+Hook --> UI: Trả danh sách
+UI --> User : Hiển thị nhóm
+
+alt Tạo nhóm mới
+  User -> UI : Nhập tên, mô tả, quyền riêng tư, avatar
+  UI -> Hook: Gửi thông tin nhóm
+Hook -> API: Gọi API tương ứng
+API -> Route: Gửi thông tin nhóm
+  Route -> MW : Xác thực + upload avatar
+  opt Có avatar
+    MW -> Storage : Lưu avatar nhóm
+  end
+  MW -> C : createGroup()
+  C -> C : Parse isPrivate, invitedUserIds
+  C -> S : createNewGroup(creatorId, data)
+  S -> Repo : Tạo Group và lời mời ban đầu nếu có
+  Repo -> GroupModel : create()
+  GroupModel -> DB : Lưu Group
+  S --> C : Nhóm mới
+  C --> API: Tạo nhóm thành công
+API --> Hook: Tạo nhóm thành công
+Hook --> UI: Tạo nhóm thành công
+else Xem chi tiết/lời mời nhóm
+  User -> UI : Chọn nhóm hoặc mục lời mời
+  UI -> Hook: Gửi yêu cầu dữ liệu
+Hook -> API: Gọi API tương ứng
+API -> Route: Gửi yêu cầu dữ liệu
+  Route -> MW : Xác thực
+  MW -> C : getGroupDetail()/getGroupInvitations()
+  C -> S : Lấy dữ liệu nhóm
+  S -> Repo : Truy vấn Group
+  Repo -> GroupModel : findById()/find()
+  GroupModel -> DB : Lấy dữ liệu
+  S --> C : Dữ liệu nhóm
+  C --> API: Trả dữ liệu
+API --> Hook: Trả dữ liệu
+Hook --> UI: Trả dữ liệu
+end
+@enduml
+
+
+
+
