@@ -20,6 +20,7 @@ const HomeHeader = ({ profile, activePage = "home" }) => {
   const { isLoggingOut, logout: handleLogout } = useLogout();
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const messagesRef = useRef(null);
+  const mobileMessagesRef = useRef(null);
   const notificationsRef = useRef(null);
   const profileMenuRef = useRef(null);
 
@@ -73,11 +74,13 @@ const HomeHeader = ({ profile, activePage = "home" }) => {
   const closeProfileMenu = useCallback(() => setProfileMenuOpen(false), []);
 
   useClickOutside(messagesRef, closeMessages);
+  useClickOutside(mobileMessagesRef, closeMessages);
   useClickOutside(notificationsRef, closeNotifications);
   useClickOutside(profileMenuRef, closeProfileMenu);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-[#e5e7eb] bg-white px-3 py-3 shadow-sm sm:px-5 lg:px-12">
+    <>
+    <header className="fixed left-0 right-0 top-0 z-50 border-b border-[#e5e7eb] bg-white px-3 py-3 shadow-sm sm:px-5 lg:px-12">
       <div className="flex min-h-10 items-center justify-between gap-3">
         <div className="flex min-w-0 flex-1 items-center gap-3 lg:gap-5">
           <AppLogo className="shrink-0" />
@@ -88,17 +91,45 @@ const HomeHeader = ({ profile, activePage = "home" }) => {
           />
         </div>
 
-        <nav className="hidden flex-1 items-center justify-center gap-4 text-[#6b7280] md:flex lg:gap-8">
-          <HeaderTab icon="home" active={activePage === "home"} />
-          <HeaderTab
-            icon="groups"
-            href="/groups"
-            active={activePage === "groups"}
-          />
+        <nav className="hidden flex-1 items-center justify-center md:flex lg:absolute lg:left-1/2 lg:top-3 lg:w-[360px] lg:-translate-x-1/2">
+          <div className="flex items-center justify-center gap-1 rounded-full bg-[#f8fafc] p-1 text-[#6b7280]">
+            <HeaderTab icon="home" label="Home" active={activePage === "home"} />
+            <HeaderTab
+              icon="group"
+              label="Friends"
+              href="/friends"
+              active={activePage === "friends"}
+            />
+            <HeaderTab
+              icon="groups"
+              label="Groups"
+              href="/groups"
+              active={activePage === "groups"}
+            />
+            <div className="relative" ref={messagesRef}>
+              <HeaderTab
+                icon="forum"
+                label="Messages"
+                as="button"
+                active={activePage === "messages"}
+                badge={unreadConversationCount}
+                onClick={handleToggleMessages}
+              />
+              {messagesOpen ? (
+                <MessagesDropdown
+                  conversations={messageConversations}
+                  loading={messagesLoading}
+                  profile={profile}
+                  onOpenMessages={() => navigate("/messages")}
+                  onOpenConversation={openMiniConversation}
+                />
+              ) : null}
+            </div>
+          </div>
         </nav>
 
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-          <div className="relative" ref={messagesRef}>
+          <div className="relative md:hidden" ref={mobileMessagesRef}>
             <IconButton
               icon="forum"
               label="Messages"
@@ -148,7 +179,7 @@ const HomeHeader = ({ profile, activePage = "home" }) => {
                 name={profile?.fullName}
                 size="sm"
               />
-              <span className="hidden max-w-36 truncate text-sm font-semibold text-[#111827] lg:block">
+              <span className="hidden max-w-36 truncate text-sm font-semibold text-[#111827] xl:block">
                 {profile?.fullName || "Hexa Pentania"}
               </span>
               <span className="material-symbols-outlined hidden text-[18px] text-[#111827] sm:inline">
@@ -212,20 +243,62 @@ const HomeHeader = ({ profile, activePage = "home" }) => {
         />
       ) : null}
     </header>
+    <div className="h-[117px] shrink-0 sm:h-[65px]" aria-hidden="true" />
+    </>
   );
 };
 
-const HeaderTab = ({ icon, active = false, href = "/" }) => (
-  <Link
-    to={href}
-    className={`flex h-14 w-20 items-center justify-center border-b-4 ${
+const headerTabClass = (active) =>
+  `relative flex h-10 w-16 items-center justify-center rounded-full transition ${
       active
-        ? "border-[#1877f2] text-[#1877f2]"
-        : "border-transparent hover:text-[#1877f2]"
-    }`}
-  >
-    <span className="material-symbols-outlined text-[24px]">{icon}</span>
-  </Link>
-);
+        ? "bg-white text-[#1877f2] shadow-sm"
+        : "text-[#6b7280] hover:bg-white hover:text-[#1877f2]"
+    }`;
+
+const HeaderTab = ({
+  icon,
+  label,
+  active = false,
+  href = "/",
+  as = "link",
+  badge = 0,
+  onClick,
+}) => {
+  const content = (
+    <>
+      <span className="material-symbols-outlined text-[24px]">{icon}</span>
+      {badge > 0 ? (
+        <span className="absolute right-2 top-1 min-w-4 rounded-full bg-red-500 px-1 text-center text-[10px] font-bold leading-4 text-white">
+          {badge > 9 ? "9+" : badge}
+        </span>
+      ) : null}
+    </>
+  );
+
+  if (as === "button") {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className={headerTabClass(active)}
+        title={label}
+        aria-label={label}
+      >
+        {content}
+      </button>
+    );
+  }
+
+  return (
+    <Link
+      to={href}
+      className={headerTabClass(active)}
+      title={label}
+      aria-label={label}
+    >
+      {content}
+    </Link>
+  );
+};
 
 export default HomeHeader;

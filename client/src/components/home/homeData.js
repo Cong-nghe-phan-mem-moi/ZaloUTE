@@ -14,16 +14,22 @@ export const stories = [
 
 export const newsItems = [
   {
-    title: "News update area",
-    color: "from-blue-300 to-indigo-500",
+    title: "Campus announcements",
+    detail: "Pin school and class notices here.",
+    icon: "campaign",
+    href: "/",
   },
   {
-    title: "You can connect this section later",
-    color: "from-slate-300 to-slate-600",
+    title: "Trending group posts",
+    detail: "Show active discussions from your groups.",
+    icon: "forum",
+    href: "/groups",
   },
   {
-    title: "Prepared for dynamic content",
-    color: "from-emerald-200 to-green-500",
+    title: "Upcoming activities",
+    detail: "Track events, deadlines, and meetups.",
+    icon: "event",
+    href: "/",
   },
 ];
 

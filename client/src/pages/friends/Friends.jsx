@@ -55,7 +55,7 @@ const Friends = () => {
         <main className="grid min-h-[calc(100vh-80px)] grid-cols-1 justify-center bg-[#f2f3f5] lg:grid-cols-[240px_minmax(0,780px)] xl:grid-cols-[260px_minmax(0,820px)_300px] 2xl:grid-cols-[280px_minmax(0,920px)_320px]">
           <LeftSidebar profile={profile} />
 
-          <section className="space-y-5 px-5 py-5">
+          <section className="min-w-0 space-y-4 px-3 py-3 sm:px-4 sm:py-4 lg:space-y-5 lg:px-5 lg:py-5">
             <section className="rounded bg-white p-7 shadow-sm">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
