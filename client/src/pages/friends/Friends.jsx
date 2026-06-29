@@ -4,7 +4,7 @@ import { StatusCard, UserAvatar } from "../../components/common";
 import HomeHeader from "../../components/home/HomeHeader";
 import LeftSidebar from "../../components/home/LeftSidebar";
 import RightSidebar from "../../components/home/RightSidebar";
-import { fallbackContacts } from "../../components/home/homeData";
+import { useHomeSidebar } from "../../hooks";
 import { useAppDispatch, useAppSelector } from "../../redux/hooks";
 import { fetchUserProfile } from "../../redux/slices/userSlice";
 
@@ -14,6 +14,18 @@ const getFriendId = (friend) =>
 const Friends = () => {
   const dispatch = useAppDispatch();
   const { profile, loading, error } = useAppSelector((state) => state.user);
+  const {
+    contacts,
+    friendRequests,
+    groupConversations,
+    groupsLoading,
+    handleAcceptRequest,
+    handleContactClick,
+    handleGroupClick,
+    handleRejectRequest,
+    requestActionId,
+    requestsLoading,
+  } = useHomeSidebar({ dispatch, profile });
 
   useEffect(() => {
     dispatch(fetchUserProfile());
@@ -35,25 +47,12 @@ const Friends = () => {
       .filter((friend) => friend.id);
   }, [profile]);
 
-  const contacts = useMemo(() => {
-    if (!Array.isArray(profile?.friends) || profile.friends.length === 0) {
-      return fallbackContacts;
-    }
-
-    return profile.friends.map((friend) => ({
-      name: friend?.fullName || friend?.name || "Friend",
-      avatar: friend?.avatar || friend?.image || null,
-      status: friend?.isOnline ? "Online" : "View profile",
-      online: friend?.isOnline || false,
-    }));
-  }, [profile]);
-
   return (
     <div className="min-h-screen bg-[#f2f3f5] text-[#111827]">
       <div className="min-h-screen w-full bg-white">
         <HomeHeader profile={profile} activePage="friends" />
 
-        <main className="grid min-h-[calc(100vh-80px)] grid-cols-1 bg-[#f2f3f5] lg:grid-cols-[280px_minmax(0,1fr)_320px]">
+        <main className="grid min-h-[calc(100vh-80px)] grid-cols-1 justify-center bg-[#f2f3f5] lg:grid-cols-[240px_minmax(0,780px)] xl:grid-cols-[260px_minmax(0,820px)_300px] 2xl:grid-cols-[280px_minmax(0,920px)_320px]">
           <LeftSidebar profile={profile} />
 
           <section className="space-y-5 px-5 py-5">
@@ -117,7 +116,18 @@ const Friends = () => {
             ) : null}
           </section>
 
-          <RightSidebar contacts={contacts} profile={profile} />
+          <RightSidebar
+            contacts={contacts}
+            friendRequests={friendRequests}
+            groupConversations={groupConversations}
+            groupsLoading={groupsLoading}
+            requestsLoading={requestsLoading}
+            requestActionId={requestActionId}
+            onAcceptRequest={handleAcceptRequest}
+            onRejectRequest={handleRejectRequest}
+            onContactClick={handleContactClick}
+            onGroupClick={handleGroupClick}
+          />
         </main>
       </div>
     </div>
