@@ -88,6 +88,3 @@ module.exports = {
   sendPasswordResetOTP,
   transporter,
 };
-
-
-
