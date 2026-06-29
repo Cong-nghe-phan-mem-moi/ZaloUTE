@@ -20,7 +20,6 @@ const HomeHeader = ({ profile, activePage = "home" }) => {
   const { isLoggingOut, logout: handleLogout } = useLogout();
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const messagesRef = useRef(null);
-  const mobileMessagesRef = useRef(null);
   const notificationsRef = useRef(null);
   const profileMenuRef = useRef(null);
 
@@ -74,7 +73,6 @@ const HomeHeader = ({ profile, activePage = "home" }) => {
   const closeProfileMenu = useCallback(() => setProfileMenuOpen(false), []);
 
   useClickOutside(messagesRef, closeMessages);
-  useClickOutside(mobileMessagesRef, closeMessages);
   useClickOutside(notificationsRef, closeNotifications);
   useClickOutside(profileMenuRef, closeProfileMenu);
 
@@ -106,35 +104,21 @@ const HomeHeader = ({ profile, activePage = "home" }) => {
               href="/groups"
               active={activePage === "groups"}
             />
-            <div className="relative" ref={messagesRef}>
-              <HeaderTab
-                icon="forum"
-                label="Messages"
-                as="button"
-                active={activePage === "messages"}
-                badge={unreadConversationCount}
-                onClick={handleToggleMessages}
-              />
-              {messagesOpen ? (
-                <MessagesDropdown
-                  conversations={messageConversations}
-                  loading={messagesLoading}
-                  profile={profile}
-                  onOpenMessages={() => navigate("/messages")}
-                  onOpenConversation={openMiniConversation}
-                />
-              ) : null}
-            </div>
           </div>
         </nav>
 
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-          <div className="relative md:hidden" ref={mobileMessagesRef}>
+          <div className="relative" ref={messagesRef}>
             <IconButton
               icon="forum"
               label="Messages"
               onClick={handleToggleMessages}
               badge={unreadConversationCount}
+              className={
+                activePage === "messages"
+                  ? "bg-[#e7f0ff] text-[#1877f2]"
+                  : "bg-[#f1f3f5] text-[#111827] hover:bg-[#e5e7eb]"
+              }
             />
             {messagesOpen ? (
               <MessagesDropdown

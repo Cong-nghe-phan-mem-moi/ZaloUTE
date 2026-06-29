@@ -46,29 +46,32 @@ const SharePostModal = ({ post, isOpen, onClose }) => {
     if (!isOpen) return undefined;
 
     let active = true;
-    setLoadingConversations(true);
-    setConversationError("");
+    const loadTimer = window.setTimeout(() => {
+      setLoadingConversations(true);
+      setConversationError("");
 
-    chatAPI
-      .getConversations()
-      .then((response) => {
-        if (!active) return;
-        setConversations(response.data?.data || []);
-      })
-      .catch((loadError) => {
-        if (!active) return;
-        setConversationError(
-          loadError.response?.data?.message || "Unable to load conversations",
-        );
-      })
-      .finally(() => {
-        if (active) {
-          setLoadingConversations(false);
-        }
-      });
+      chatAPI
+        .getConversations()
+        .then((response) => {
+          if (!active) return;
+          setConversations(response.data?.data || []);
+        })
+        .catch((loadError) => {
+          if (!active) return;
+          setConversationError(
+            loadError.response?.data?.message || "Unable to load conversations",
+          );
+        })
+        .finally(() => {
+          if (active) {
+            setLoadingConversations(false);
+          }
+        });
+    }, 0);
 
     return () => {
       active = false;
+      window.clearTimeout(loadTimer);
     };
   }, [isOpen]);
 

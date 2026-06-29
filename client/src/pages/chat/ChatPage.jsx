@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState } from "react";
+﻿import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { format, formatDistanceToNow } from "date-fns";
 import { enUS } from "date-fns/locale";
@@ -364,9 +364,15 @@ const ChatPage = () => {
     messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const clearPendingImages = useCallback(() => {
+    pendingImagesRef.current.forEach((image) => URL.revokeObjectURL(image.previewUrl));
+    setPendingImages([]);
+  }, []);
+
   useEffect(() => {
-    clearPendingImages();
-  }, [activeConversationId]);
+    const clearTimer = window.setTimeout(clearPendingImages, 0);
+    return () => window.clearTimeout(clearTimer);
+  }, [activeConversationId, clearPendingImages]);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -673,11 +679,6 @@ const ChatPage = () => {
 
       return currentImages.filter((image) => image.id !== imageId);
     });
-  };
-
-  const clearPendingImages = () => {
-    pendingImagesRef.current.forEach((image) => URL.revokeObjectURL(image.previewUrl));
-    setPendingImages([]);
   };
 
   const handleRevokeMessage = (msg) => {
