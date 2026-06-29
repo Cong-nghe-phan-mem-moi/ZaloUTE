@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { StatusCard, UserAvatar } from "../../components/common";
 import HomeHeader from "../../components/home/HomeHeader";
 import LeftSidebar from "../../components/home/LeftSidebar";
 import RightSidebar from "../../components/home/RightSidebar";
+import { useHomeSidebar } from "../../hooks";
 import { useAppDispatch, useAppSelector } from "../../redux/hooks";
 import { fetchUserProfile } from "../../redux/slices/userSlice";
 import { userAPI } from "../../services/user.service";
@@ -10,6 +12,13 @@ import { userAPI } from "../../services/user.service";
 const FriendRequests = () => {
   const dispatch = useAppDispatch();
   const { profile } = useAppSelector((state) => state.user);
+  const {
+    contacts,
+    groupConversations,
+    groupsLoading,
+    handleContactClick,
+    handleGroupClick,
+  } = useHomeSidebar({ dispatch, profile });
   const [incomingRequests, setIncomingRequests] = useState([]);
   const [outgoingRequests, setOutgoingRequests] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -119,29 +128,15 @@ const FriendRequests = () => {
     [incomingRequests.length, outgoingRequests.length],
   );
 
-  const contacts = useMemo(() => {
-    if (!Array.isArray(profile?.friends) || profile.friends.length === 0) {
-      return [];
-    }
-
-    return profile.friends.map((friend) => ({
-      id: friend?.userId || friend?._id || friend?.id || friend,
-      name: friend?.fullName || friend?.name || "Friend",
-      avatar: friend?.avatar || friend?.image || null,
-      status: friend?.isOnline ? "Online" : "View profile",
-      online: friend?.isOnline || false,
-    }));
-  }, [profile]);
-
   return (
     <div className="min-h-screen bg-[#f2f3f5] text-[#111827]">
       <div className="min-h-screen w-full bg-white">
         <HomeHeader profile={profile} activePage="friends" />
 
-        <main className="grid min-h-[calc(100vh-80px)] grid-cols-1 bg-[#f2f3f5] lg:grid-cols-[280px_minmax(0,1fr)_320px]">
+        <main className="grid min-h-[calc(100vh-80px)] grid-cols-1 justify-center bg-[#f2f3f5] lg:grid-cols-[240px_minmax(0,780px)] xl:grid-cols-[260px_minmax(0,820px)_300px] 2xl:grid-cols-[280px_minmax(0,920px)_320px]">
           <LeftSidebar profile={profile} />
 
-          <section className="space-y-5 px-5 py-5">
+          <section className="min-w-0 space-y-4 px-3 py-3 sm:px-4 sm:py-4 lg:space-y-5 lg:px-5 lg:py-5">
             <section className="rounded bg-white p-7 shadow-sm">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
@@ -167,6 +162,13 @@ const FriendRequests = () => {
                     </div>
                   ))}
                 </div>
+
+                <Link
+                  to="/friends"
+                  className="rounded-md bg-[#1877f2] px-5 py-2 text-sm font-semibold text-white shadow-md hover:bg-[#166fe5]"
+                >
+                  Friends list
+                </Link>
               </div>
             </section>
 
@@ -245,10 +247,14 @@ const FriendRequests = () => {
           <RightSidebar
             contacts={contacts}
             friendRequests={incomingRequests}
+            groupConversations={groupConversations}
+            groupsLoading={groupsLoading}
             requestsLoading={loading}
             requestActionId={actionLoadingId}
             onAcceptRequest={handleAccept}
             onRejectRequest={handleReject}
+            onContactClick={handleContactClick}
+            onGroupClick={handleGroupClick}
           />
         </main>
       </div>

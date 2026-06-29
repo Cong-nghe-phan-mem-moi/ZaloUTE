@@ -18,19 +18,27 @@ const RightSidebar = ({
   const [activeTab, setActiveTab] = useState("contacts");
 
   return (
-    <aside className="sticky top-20 hidden h-[calc(100vh-80px)] min-h-0 overflow-y-auto bg-white px-5 py-6 xl:block 2xl:px-6">
-      <PanelTitle title="News Update" action="See All" />
-      <div className="space-y-4">
+    <aside className="sticky top-20 mt-4 hidden h-[calc(100vh-96px)] min-h-0 self-start overflow-y-auto bg-white px-5 py-6 xl:block 2xl:px-6">
+      <PanelTitle title="Campus Highlights" action="See All" />
+      <div className="space-y-2">
         {newsItems.map((item) => (
-          <div key={item.title} className="flex gap-3">
-            <div
-              className={`h-14 w-16 rounded bg-gradient-to-br ${item.color}`}
-            />
-            <div>
-              <h3 className="text-sm font-bold">{item.title}</h3>
-              <p className="text-xs leading-4 text-[#6b7280]">See more</p>
+          <Link
+            key={item.title}
+            to={item.href}
+            className="flex gap-3 rounded-lg p-2 hover:bg-[#f2f3f5]"
+          >
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-[#e7f3ff] text-[#1877f2]">
+              <span className="material-symbols-outlined text-[22px]">
+                {item.icon}
+              </span>
             </div>
-          </div>
+            <div className="min-w-0">
+              <h3 className="truncate text-sm font-bold">{item.title}</h3>
+              <p className="line-clamp-2 text-xs leading-4 text-[#6b7280]">
+                {item.detail}
+              </p>
+            </div>
+          </Link>
         ))}
       </div>
       <div className="mt-8">
@@ -143,6 +151,14 @@ const PanelTitle = ({ title, action, href = "/" }) => (
 
 const getUserId = (user) => user?._id || user?.id || user?.userId || "";
 
+const openMiniChat = (target) => {
+  if (!target) return;
+
+  window.dispatchEvent(
+    new CustomEvent("zalo-open-mini-chat", { detail: target }),
+  );
+};
+
 const FriendRequestCard = ({
   request,
   requestActionId,
@@ -193,7 +209,7 @@ const FriendRequestCard = ({
 const Contact = ({ contact, onClick }) => (
   <button
     type="button"
-    onClick={() => onClick?.(contact)}
+    onClick={() => (onClick ? onClick(contact) : openMiniChat(contact))}
     className="flex w-full items-center gap-3 rounded-md text-left hover:bg-[#f2f3f5]"
   >
     <UserAvatar image={contact.avatar} name={contact.name} />
@@ -213,7 +229,7 @@ const Contact = ({ contact, onClick }) => (
 const GroupConversation = ({ conversation, onClick }) => (
   <button
     type="button"
-    onClick={() => onClick?.(conversation)}
+    onClick={() => (onClick ? onClick(conversation) : openMiniChat(conversation))}
     className="flex w-full items-center gap-3 rounded-md text-left hover:bg-[#f2f3f5]"
   >
     <UserAvatar image={conversation.avatar} name={conversation.name || "Group chat"} />

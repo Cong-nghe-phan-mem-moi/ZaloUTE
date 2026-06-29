@@ -5,6 +5,8 @@
 		font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
 		color: #0f172a;
 		background-color: #f8fafc;
+		overflow-y: scroll;
+		scrollbar-gutter: stable;
 	}
 
 	body {

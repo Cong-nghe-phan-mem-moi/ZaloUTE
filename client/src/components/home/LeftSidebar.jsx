@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { UserAvatar } from "../common";
 import { groupAPI } from "../../services/group.service";
 import getImageUrl from "../../utils/imageUrl";
 import { menuItems } from "./homeData";
@@ -145,7 +146,7 @@ export const QuickAccessSection = ({ compact = false }) => {
   );
 };
 
-const LeftSidebar = () => {
+const LeftSidebar = ({ profile }) => {
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -169,7 +170,7 @@ const LeftSidebar = () => {
   };
 
   return (
-    <aside className="sticky top-20 hidden h-[calc(100vh-80px)] overflow-y-auto bg-white px-5 py-5 lg:block xl:px-8">
+    <aside className="sticky top-20 mt-4 hidden h-[calc(100vh-96px)] self-start overflow-y-auto bg-white px-5 py-5 lg:block xl:px-8">
       <button
         type="button"
         onClick={handleCreatePostClick}
@@ -177,6 +178,20 @@ const LeftSidebar = () => {
       >
         Create New Post
       </button>
+
+      <Link
+        to="/user/profile"
+        className="mb-3 flex min-w-0 items-center gap-3 rounded-lg px-1 py-2.5 text-sm font-semibold hover:bg-[#f2f3f5]"
+      >
+        <UserAvatar
+          image={profile?.avatar}
+          name={profile?.fullName || "Profile"}
+          size="sm"
+        />
+        <span className="truncate">
+          {profile?.fullName || "Your profile"}
+        </span>
+      </Link>
 
       <nav className="space-y-1">
         {menuItems.map((item) => (

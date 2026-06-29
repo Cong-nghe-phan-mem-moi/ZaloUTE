@@ -1,6 +1,5 @@
 const tabs = [
   { key: "introduction", label: "Introduction", icon: "menu_book" },
-  { key: "posts", label: "Posts", icon: "article" },
   { key: "about", label: "About", icon: "info" },
   { key: "media", label: "Photos & Videos", icon: "photo_library" },
   { key: "friends", label: "Friends", icon: "groups" },
@@ -9,7 +8,7 @@ const tabs = [
 export default function ProfileTabs({ activeTab, onChange }) {
   return (
     <div className="rounded-lg bg-white shadow-sm">
-      <div className="grid grid-cols-5 border-b border-[#e5e7eb] px-1 sm:px-2">
+      <div className="grid grid-cols-4 border-b border-[#e5e7eb] px-1 sm:px-2">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.key;
 
