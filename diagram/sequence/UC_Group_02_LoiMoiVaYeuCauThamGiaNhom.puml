@@ -1,0 +1,84 @@
+﻿@startuml
+skinparam shadowing false
+skinparam sequence {
+  ArrowColor #0F172A
+  LifeLineBorderColor #334155
+  LifeLineBackgroundColor #F8FAFC
+  ParticipantBorderColor #334155
+}
+title Sequence - Quản lý lời mời và yêu cầu tham gia nhóm
+actor "Người dùng" as User
+actor "Quản trị viên nhóm" as Admin
+boundary "React UI\n(GroupDetail)" as UI
+participant Hook as "Frontend hook/service"
+participant API as "API Client"
+participant "Express Router\n/groups/:groupId/*" as Route
+participant "AuthMiddleware\nisGroupAdmin" as MW
+control "GroupController" as C
+control "GroupService" as S
+participant "GroupRepository" as Repo
+entity "Group Model" as GroupModel
+database "MongoDB" as DB
+
+alt Quản trị viên mời người dùng
+  Admin -> UI : Chọn người dùng để mời
+  UI -> Hook: Gửi lời mời nhóm
+Hook -> API: Gọi API tương ứng
+API -> Route: Gửi lời mời nhóm
+  Route -> MW : Xác thực + kiểm tra admin nhóm
+  MW -> C : handleInviteToGroup()
+  C -> S : inviteToGroup(adminId, groupId, targetUserIds)
+  S -> Repo : Kiểm tra nhóm, thành viên, lời mời
+  Repo -> GroupModel : findById()/updateOne()
+  GroupModel -> DB : Truy vấn/cập nhật Group
+  S --> C : Mời thành công
+  C --> API: Trả kết quả
+API --> Hook: Trả kết quả
+Hook --> UI: Trả kết quả
+else Người dùng phản hồi lời mời
+  User -> UI : Chấp nhận hoặc từ chối lời mời
+  UI -> Hook: Gửi phản hồi
+Hook -> API: Gọi API tương ứng
+API -> Route: Gửi phản hồi
+  Route -> MW : Xác thực
+  MW -> C : accept/rejectGroupInvitation()
+  C -> S : Xử lý lời mời
+  S -> Repo : Cập nhật lời mời/thành viên
+  Repo -> GroupModel : updateOne()
+  GroupModel -> DB : Lưu Group
+  S --> C : Thành công
+  C --> API: Trả kết quả
+API --> Hook: Trả kết quả
+Hook --> UI: Trả kết quả
+else Người dùng gửi yêu cầu tham gia
+  User -> UI : Chọn tham gia nhóm
+  UI -> Hook: Gửi yêu cầu tham gia
+Hook -> API: Gọi API tương ứng
+API -> Route: Gửi yêu cầu tham gia
+  Route -> MW : Xác thực
+  MW -> C : handleRequestJoinGroup()
+  C -> S : requestJoinGroup(userId, groupId)
+  S -> Repo : Lưu yêu cầu tham gia
+  Repo -> GroupModel : updateOne()
+  GroupModel -> DB : Cập nhật Group
+else Admin duyệt/hủy
+  Admin -> UI : Duyệt yêu cầu hoặc hủy lời mời
+  UI -> Hook: Gửi thao tác quản trị
+Hook -> API: Gọi API tương ứng
+API -> Route: Gửi thao tác quản trị
+  Route -> MW : Xác thực + kiểm tra admin nhóm
+  MW -> C : approve/cancel request
+  C -> S : Xử lý thao tác
+  S -> Repo : Cập nhật Group
+  Repo -> GroupModel : updateOne()
+  GroupModel -> DB : Lưu thay đổi
+end
+C --> API: Kết quả xử lý
+API --> Hook: Kết quả xử lý
+Hook --> UI: Kết quả xử lý
+UI --> User : Cập nhật giao diện nhóm
+@enduml
+
+
+
+

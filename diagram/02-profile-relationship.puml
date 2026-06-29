@@ -1,0 +1,71 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+actor "Nguoi dung" as User
+actor "Nguoi dung khac" as OtherUser
+actor "He thong" as System
+
+rectangle "Ho so ca nhan" {
+  usecase "Xem ho so cua minh" as ViewOwnProfile
+  usecase "Chinh sua thong tin\nca nhan" as EditProfile
+  usecase "Cap nhat anh\ndai dien" as UploadAvatar
+  usecase "Cap nhat anh bia" as UploadCover
+  usecase "Xem ho so\nnguoi dung khac" as ViewOtherProfile
+  usecase "Cap nhat thong tin\nlien he" as UpdateContact
+  usecase "Doi mat khau" as ChangePassword
+  usecase "Thiet lap quyen\nrieng tu" as UpdatePrivacy
+  usecase "Thiet lap thong bao" as UpdateNotifySettings
+  usecase "Quan ly phien\ndang nhap" as ManageSessions
+  usecase "Thu hoi phien\nhien tai/khac" as RevokeSessions
+  usecase "Vo hieu hoa\ntai khoan" as Deactivate
+}
+
+rectangle "Quan he nguoi dung" {
+  usecase "Tim kiem nguoi dung\nva noi dung" as SearchUser
+  usecase "Gui loi moi\nket ban" as SendFriendRequest
+  usecase "Xem loi moi den" as IncomingRequests
+  usecase "Xem loi moi da gui" as OutgoingRequests
+  usecase "Chap nhan loi moi" as AcceptRequest
+  usecase "Tu choi loi moi" as RejectRequest
+  usecase "Huy loi moi" as CancelRequest
+  usecase "Huy ket ban" as Unfriend
+  usecase "Theo doi/bo theo doi\nnguoi dung" as Follow
+  usecase "Chan nguoi dung" as Block
+  usecase "Bo chan nguoi dung" as Unblock
+  usecase "Xem danh sach\nbi chan" as BlockedList
+}
+
+User --> ViewOwnProfile
+User --> EditProfile
+User --> ViewOtherProfile
+User --> UpdateContact
+User --> ChangePassword
+User --> UpdatePrivacy
+User --> UpdateNotifySettings
+User --> ManageSessions
+User --> Deactivate
+User --> SearchUser
+User --> SendFriendRequest
+User --> IncomingRequests
+User --> OutgoingRequests
+User --> AcceptRequest
+User --> RejectRequest
+User --> CancelRequest
+User --> Unfriend
+User --> Follow
+User --> Block
+User --> Unblock
+User --> BlockedList
+
+OtherUser --> ViewOtherProfile
+System --> SearchUser
+
+EditProfile ..> UploadAvatar : <<extend>>
+EditProfile ..> UploadCover : <<extend>>
+SendFriendRequest ..> SearchUser : <<include>>
+Block ..> Unfriend : <<extend>>
+Block ..> Unblock : <<extend>>
+ManageSessions ..> RevokeSessions : <<include>>
+@enduml

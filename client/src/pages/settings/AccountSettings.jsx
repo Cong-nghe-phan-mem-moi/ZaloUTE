@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import HomeHeader from "../../components/home/HomeHeader";
+import LeftSidebar from "../../components/home/LeftSidebar";
 import StatusCard from "../../components/common/StatusCard";
 import { useAppDispatch, useAppSelector } from "../../redux/hooks";
 import { clearProfile, fetchUserProfile } from "../../redux/slices/userSlice";
@@ -274,38 +275,42 @@ export default function AccountSettings() {
     <div className="min-h-screen bg-[#f2f3f5] text-[#111827]">
       <HomeHeader profile={profile} activePage={null} />
 
-      <main className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-5 px-4 py-5 lg:grid-cols-[260px_minmax(0,1fr)]">
-        <aside className="rounded-lg border border-[#dddfe2] bg-white p-2">
-          {sections.map((section) => (
-            <button
-              key={section.id}
-              type="button"
-              onClick={() => setActiveSection(section.id)}
-              className={`flex w-full items-center gap-3 rounded-md px-3 py-3 text-left text-sm font-semibold ${
-                activeSection === section.id
-                  ? "bg-[#e7f3ff] text-[#1877f2]"
-                  : "text-[#050505] hover:bg-[#f2f3f5]"
-              }`}
-            >
-              <span className="material-symbols-outlined text-[21px]">
-                {section.icon}
-              </span>
-              {section.label}
-            </button>
-          ))}
-        </aside>
+      <main className="grid min-h-[calc(100vh-80px)] grid-cols-1 justify-center bg-[#f2f3f5] lg:grid-cols-[240px_minmax(0,960px)] xl:grid-cols-[260px_minmax(0,1040px)] 2xl:grid-cols-[280px_minmax(0,1120px)]">
+        <LeftSidebar profile={profile} />
 
-        <section className="space-y-4">
-          {notice ? <StatusCard icon="check_circle" message={notice} layout="inline" /> : null}
-          {error ? <StatusCard icon="error" tone="error" message={error} layout="inline" /> : null}
+        <section className="min-w-0 px-3 py-3 sm:px-4 sm:py-5 lg:px-5">
+          <div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-5 lg:grid-cols-[260px_minmax(0,1fr)]">
+            <aside className="rounded-lg border border-[#dddfe2] bg-white p-2">
+              {sections.map((section) => (
+                <button
+                  key={section.id}
+                  type="button"
+                  onClick={() => setActiveSection(section.id)}
+                  className={`flex w-full items-center gap-3 rounded-md px-3 py-3 text-left text-sm font-semibold ${
+                    activeSection === section.id
+                      ? "bg-[#e7f3ff] text-[#1877f2]"
+                      : "text-[#050505] hover:bg-[#f2f3f5]"
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[21px]">
+                    {section.icon}
+                  </span>
+                  {section.label}
+                </button>
+              ))}
+            </aside>
 
-          <div className="rounded-lg border border-[#dddfe2] bg-white p-5">
-            {loading ? (
-              <div className="flex min-h-72 items-center justify-center">
-                <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#1877f2] border-t-transparent" />
-              </div>
-            ) : (
-              <>
+            <div className="space-y-4">
+              {notice ? <StatusCard icon="check_circle" message={notice} layout="inline" /> : null}
+              {error ? <StatusCard icon="error" tone="error" message={error} layout="inline" /> : null}
+
+              <div className="rounded-lg border border-[#dddfe2] bg-white p-5">
+                {loading ? (
+                  <div className="flex min-h-72 items-center justify-center">
+                    <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#1877f2] border-t-transparent" />
+                  </div>
+                ) : (
+                  <>
                 {activeSection === "security" ? (
                   <SettingsPanel title="Change password" icon="lock_reset">
                     <form className="grid gap-4" onSubmit={handleChangePassword}>
@@ -514,8 +519,10 @@ export default function AccountSettings() {
                     </form>
                   </SettingsPanel>
                 ) : null}
-              </>
-            )}
+                  </>
+                )}
+              </div>
+            </div>
           </div>
         </section>
       </main>

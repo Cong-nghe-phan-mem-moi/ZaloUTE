@@ -1,0 +1,85 @@
+﻿@startuml
+skinparam shadowing false
+skinparam sequence {
+  ArrowColor #0F172A
+  LifeLineBorderColor #334155
+  LifeLineBackgroundColor #F8FAFC
+  ParticipantBorderColor #334155
+}
+title Sequence - Quản lý lời mời kết bạn
+actor "Người gửi" as Sender
+actor "Người nhận" as Receiver
+boundary "React UI\n(Friends/FriendRequests)" as UI
+participant Hook as "Frontend hook/service"
+participant API as "API Client"
+participant "Express Router\n/users/friend-request" as Route
+participant "AuthMiddleware" as MW
+control "FriendRequestController" as C
+control "FriendRequestService" as S
+participant "FriendRequestRepository" as FRRepo
+participant "UserRepository" as UserRepo
+control "NotificationService" as Noti
+entity "User Model" as UserModel
+entity "FriendRequest Model" as FriendRequestModel
+entity "Notification Model" as NotificationModel
+database "MongoDB" as DB
+
+Sender -> UI : Chọn gửi lời mời kết bạn
+UI -> Hook: Gửi người nhận
+Hook -> API: Gọi API tương ứng
+API -> Route: Gửi người nhận
+Route -> MW : Xác thực phiên
+MW -> C : handleSendFriendRequest()
+C -> S : sendFriendRequest(senderId, receiverId)
+S -> UserRepo : Kiểm tra người nhận, chặn, bạn bè
+UserRepo -> UserModel : findById()
+UserModel -> DB : Truy vấn User
+S -> FRRepo : Kiểm tra lời mời đang chờ
+FRRepo -> FriendRequestModel : findOne()
+FriendRequestModel -> DB : Truy vấn FriendRequest
+alt Có thể gửi
+  S -> FRRepo : createRequest()
+  FRRepo -> FriendRequestModel : create()
+  FriendRequestModel -> DB : Lưu lời mời
+  S -> Noti : createNotification(friend_request)
+  Noti -> NotificationModel : create()
+  NotificationModel -> DB : Lưu thông báo
+  S --> C : Gửi thành công
+  C --> API: Trạng thái đã gửi
+API --> Hook: Trạng thái đã gửi
+Hook --> UI: Trạng thái đã gửi
+else Không thể gửi
+  S --> C : Trả lỗi
+  C --> API: Thông báo lỗi
+API --> Hook: Thông báo lỗi
+Hook --> UI: Thông báo lỗi
+end
+
+Receiver -> UI : Xem lời mời đến và chấp nhận
+UI -> Hook: Gửi phản hồi chấp nhận
+Hook -> API: Gọi API tương ứng
+API -> Route: Gửi phản hồi chấp nhận
+Route -> MW : Xác thực phiên
+MW -> C : handleAcceptFriendRequest()
+C -> S : acceptFriendRequest(senderId, receiverId)
+S -> FRRepo : Tìm request pending
+FRRepo -> FriendRequestModel : findOne()
+FriendRequestModel -> DB : Truy vấn FriendRequest
+S -> FRRepo : updateRequestStatus(accepted)
+FRRepo -> FriendRequestModel : updateOne()
+FriendRequestModel -> DB : Cập nhật request
+S -> UserRepo : addFriend/follow hai chiều
+UserRepo -> UserModel : updateMany/updateOne
+UserModel -> DB : Cập nhật User hai bên
+S -> Noti : createNotification(friend_accept)
+Noti -> NotificationModel : create()
+NotificationModel -> DB : Lưu thông báo
+S --> C : Thành công
+C --> API: Cập nhật danh sách bạn bè
+API --> Hook: Cập nhật danh sách bạn bè
+Hook --> UI: Cập nhật danh sách bạn bè
+@enduml
+
+
+
+

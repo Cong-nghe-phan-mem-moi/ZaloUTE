@@ -1,0 +1,67 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+actor "Nguoi dung" as User
+actor "Quan tri vien he thong" as Admin
+actor "He thong" as System
+
+Admin --|> User
+
+rectangle "Thong bao" {
+  usecase "Tao thong bao khi\nco su kien lien quan" as CreateNotification
+  usecase "Xem danh sach\nthong bao" as ListNotifications
+  usecase "Danh dau thong bao\nda xem" as MarkSeen
+  usecase "Danh dau thong bao\nda doc" as MarkRead
+  usecase "Danh dau da doc\ntat ca thong bao" as MarkAllRead
+  usecase "Xoa thong bao" as DeleteNotification
+}
+
+rectangle "Bao cao noi dung" {
+  usecase "Gui bao cao noi dung" as ReportContent
+}
+
+rectangle "Quan tri he thong" {
+  usecase "Xem thong ke\nhe thong" as Stats
+  usecase "Quan ly nguoi dung" as ManageUsers
+  usecase "Cap nhat trang thai\nnguoi dung" as UpdateUserStatus
+  usecase "Xoa nguoi dung" as DeleteUser
+  usecase "Quan ly bai viet" as ManagePosts
+  usecase "An/xoa bai viet" as ModeratePosts
+  usecase "Quan ly binh luan" as ManageComments
+  usecase "Xoa binh luan" as DeleteComment
+  usecase "Quan ly bao cao" as ManageReports
+  usecase "Xu ly bao cao" as ResolveReport
+  usecase "Xem nhat ky\nhanh dong" as ViewLogs
+  usecase "Quan ly sticker" as ManageStickers
+}
+
+System --> CreateNotification
+User --> ListNotifications
+User --> MarkSeen
+User --> MarkRead
+User --> MarkAllRead
+User --> DeleteNotification
+User --> ReportContent
+
+Admin --> Stats
+Admin --> ManageUsers
+Admin --> ManagePosts
+Admin --> ManageComments
+Admin --> ManageReports
+Admin --> ViewLogs
+Admin --> ManageStickers
+
+CreateNotification ..> ListNotifications : <<extend>>
+MarkSeen ..> ListNotifications : <<include>>
+MarkRead ..> ListNotifications : <<include>>
+MarkAllRead ..> ListNotifications : <<include>>
+DeleteNotification ..> ListNotifications : <<include>>
+UpdateUserStatus ..> ManageUsers : <<extend>>
+DeleteUser ..> ManageUsers : <<extend>>
+ModeratePosts ..> ManagePosts : <<extend>>
+DeleteComment ..> ManageComments : <<extend>>
+ResolveReport ..> ManageReports : <<extend>>
+ReportContent ..> CreateNotification : <<extend>>
+@enduml

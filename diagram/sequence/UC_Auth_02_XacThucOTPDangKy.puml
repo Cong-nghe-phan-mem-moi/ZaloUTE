@@ -1,0 +1,73 @@
+﻿@startuml
+skinparam shadowing false
+skinparam sequence {
+  ArrowColor #0F172A
+  LifeLineBorderColor #334155
+  LifeLineBackgroundColor #F8FAFC
+  ParticipantBorderColor #334155
+}
+title Sequence - Xác thực OTP đăng ký
+actor "Khách" as Guest
+boundary "React UI\n(VerifyOtp)" as UI
+participant Hook as "Frontend hook/service"
+participant API as "API Client"
+participant "Express Router\n/auth/verify-otp" as Route
+participant "Validation" as MW
+control "AuthController\nverifyOTP()" as C
+control "AuthService\nverifyOTP()" as S
+participant "AuthRepository" as AuthRepo
+participant "OtpRepository" as OtpRepo
+entity "Account Model" as AccountModel
+entity "Otp Model" as OtpModel
+database "MongoDB" as DB
+
+note over UI,Route
+  API: POST /api/auth/verify-otp
+end note
+
+Guest -> UI : Nhập email và OTP
+UI -> Hook: Gửi thông tin xác thực
+Hook -> API: Gọi API tương ứng
+API -> Route: Gửi thông tin xác thực
+Route -> MW : Kiểm tra dữ liệu
+MW -> C : Request hợp lệ
+C -> S : verifyOTP(email, otp)
+S -> AuthRepo : findAccountByEmail(email)
+AuthRepo -> AccountModel : findOne(email)
+AccountModel -> DB : Tìm Account
+DB --> AccountModel : Account
+AccountModel --> AuthRepo : Account
+S -> OtpRepo : findLatestPendingOtp(email, verify_email)
+OtpRepo -> OtpModel : findOne(...)
+OtpModel -> DB : Tìm OTP pending mới nhất
+DB --> OtpModel : OTP
+OtpModel --> OtpRepo : OTP
+alt OTP hợp lệ và Account pending
+  S -> OtpRepo : markOtpUsed()
+  OtpRepo -> OtpModel : updateOne()
+  OtpModel -> DB : Cập nhật OTP
+  S -> AuthRepo : updateAccountStatus(active)
+  AuthRepo -> AccountModel : findByIdAndUpdate()
+  AccountModel -> DB : Kích hoạt Account
+  S --> C : Xác thực thành công
+  C --> API: Trả kết quả thành công
+API --> Hook: Trả kết quả thành công
+Hook --> UI: Trả kết quả thành công
+  UI --> Guest : Thông báo tài khoản đã kích hoạt
+else OTP sai/hết hạn/vượt số lần hoặc Account không hợp lệ
+  opt OTP sai
+    S -> OtpRepo : incrementAttempts()
+    OtpRepo -> OtpModel : updateOne($inc attempts)
+    OtpModel -> DB : Tăng số lần thử
+  end
+  S --> C : Trả lỗi xác thực
+  C --> API: Thông báo lỗi
+API --> Hook: Thông báo lỗi
+Hook --> UI: Thông báo lỗi
+  UI --> Guest : Yêu cầu nhập lại
+end
+@enduml
+
+
+
+

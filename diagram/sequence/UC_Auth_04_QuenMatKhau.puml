@@ -1,0 +1,94 @@
+﻿@startuml
+skinparam shadowing false
+skinparam sequence {
+  ArrowColor #0F172A
+  LifeLineBorderColor #334155
+  LifeLineBackgroundColor #F8FAFC
+  ParticipantBorderColor #334155
+}
+title Sequence - Quên mật khẩu và đặt lại mật khẩu
+actor "Khách" as Guest
+boundary "React UI\n(ForgotPassword)" as UI
+participant Hook as "Frontend hook/service"
+participant API as "API Client"
+participant "Express Router\n/auth/forgot-password/*" as Route
+participant "Validation + RateLimiter" as MW
+control "AuthController" as C
+control "AuthService" as S
+participant "AuthRepository" as AuthRepo
+participant "OtpRepository" as OtpRepo
+entity "Account Model" as AccountModel
+entity "Otp Model" as OtpModel
+database "MongoDB" as DB
+participant "Mailer\nsendPasswordResetOTP()" as Mail
+participant "ResetPasswordSession\nMiddleware" as ResetMW
+
+Guest -> UI : Nhập email quên mật khẩu
+UI -> Hook: Yêu cầu gửi OTP reset
+Hook -> API: Gọi API tương ứng
+API -> Route: Yêu cầu gửi OTP reset
+Route -> MW : Kiểm tra dữ liệu và giới hạn
+MW -> C : requestPasswordResetOTP()
+C -> S : requestPasswordResetOTP(email)
+S -> AuthRepo : findAccountByEmail(email)
+AuthRepo -> AccountModel : findOne(email)
+AccountModel -> DB : Tìm Account
+S -> OtpRepo : createOtp(reset_password)
+OtpRepo -> OtpModel : create()
+OtpModel -> DB : Lưu OTP reset
+S -> Mail : Gửi OTP reset
+Mail --> S : Kết quả gửi
+S --> C : Thành công
+C --> API: Yêu cầu nhập OTP
+API --> Hook: Yêu cầu nhập OTP
+Hook --> UI: Yêu cầu nhập OTP
+
+Guest -> UI : Nhập OTP reset
+UI -> Hook: Gửi OTP xác minh
+Hook -> API: Gọi API tương ứng
+API -> Route: Gửi OTP xác minh
+Route -> MW : Kiểm tra dữ liệu
+MW -> C : verifyPasswordResetOTP()
+C -> S : verifyPasswordResetOTP(email, otp)
+S -> OtpRepo : findLatestPendingOtp(reset_password)
+OtpRepo -> OtpModel : findOne(...)
+OtpModel -> DB : Lấy OTP
+alt OTP hợp lệ
+  S -> OtpRepo : markOtpUsed()
+  OtpRepo -> OtpModel : updateOne()
+  OtpModel -> DB : Cập nhật OTP
+  S --> C : resetToken + email
+  C -> C : Lưu reset session
+  C --> API: Cho phép đặt mật khẩu mới
+API --> Hook: Cho phép đặt mật khẩu mới
+Hook --> UI: Cho phép đặt mật khẩu mới
+  Guest -> UI : Nhập mật khẩu mới
+  UI -> Hook: Gửi mật khẩu mới
+Hook -> API: Gọi API tương ứng
+API -> Route: Gửi mật khẩu mới
+  Route -> ResetMW : Kiểm tra reset session/token
+  ResetMW -> C : resetPassword()
+  C -> S : resetPassword(email, newPassword)
+  S -> AuthRepo : updatePasswordHash()
+  AuthRepo -> AccountModel : findByIdAndUpdate()
+  AccountModel -> DB : Cập nhật mật khẩu
+  S -> OtpRepo : markPendingOtpsUsed()
+  OtpRepo -> OtpModel : updateMany()
+  OtpModel -> DB : Vô hiệu OTP reset còn lại
+  C -> C : Xóa reset session
+  C --> API: Đặt lại mật khẩu thành công
+API --> Hook: Đặt lại mật khẩu thành công
+Hook --> UI: Đặt lại mật khẩu thành công
+  UI --> Guest : Hiển thị thành công
+else OTP/session không hợp lệ
+  S --> C : Trả lỗi
+  C --> API: Thông báo lỗi
+API --> Hook: Thông báo lỗi
+Hook --> UI: Thông báo lỗi
+  UI --> Guest : Yêu cầu thực hiện lại
+end
+@enduml
+
+
+
+

@@ -18,7 +18,9 @@ const PostDetail = ({
   onClose,
 }) => {
   const dispatch = useDispatch();
-  const { currentPost, loading, error } = useSelector((state) => state.posts);
+  const { currentPost, currentPostLoading, currentPostError } = useSelector(
+    (state) => state.posts,
+  );
   const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
   const [isShareOpen, setIsShareOpen] = useState(false);
 
@@ -58,8 +60,10 @@ const PostDetail = ({
     return null;
   }
 
+  const isCurrentPost = String(currentPost?._id || "") === String(postId);
+
   const renderBody = () => {
-    if (loading && (!currentPost || currentPost._id !== postId)) {
+    if (currentPostLoading && !isCurrentPost) {
       return (
         <div className="flex min-h-[360px] items-center justify-center">
           <LoadingSpinner />
@@ -67,15 +71,15 @@ const PostDetail = ({
       );
     }
 
-    if (error) {
+    if (currentPostError) {
       return (
         <div className="p-4">
-          <ErrorMessage message={error} onClose={() => {}} />
+          <ErrorMessage message={currentPostError} onClose={() => {}} />
         </div>
       );
     }
 
-    if (!currentPost || currentPost._id !== postId) {
+    if (!isCurrentPost) {
       return (
         <div className="p-8 text-center text-gray-500">Post not found</div>
       );
@@ -139,7 +143,7 @@ const PostDetail = ({
           focusedCommentId={focusedCommentId}
           focusedParentCommentId={focusedParentCommentId}
           onCommentAdded={() => {
-            dispatch(getPost(postId));
+            dispatch(getPost({ postId, force: true }));
           }}
         />
 

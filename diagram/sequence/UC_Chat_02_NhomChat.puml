@@ -1,0 +1,83 @@
+﻿@startuml
+skinparam shadowing false
+skinparam sequence {
+  ArrowColor #0F172A
+  LifeLineBorderColor #334155
+  LifeLineBackgroundColor #F8FAFC
+  ParticipantBorderColor #334155
+}
+title Sequence - Quản lý nhóm chat
+actor "Người dùng" as User
+boundary "React UI\n(ChatPage/GroupModal)" as UI
+participant Hook as "Frontend hook/service"
+participant API as "API Client"
+participant "Express Router\n/chats/groups" as Route
+participant "AuthMiddleware" as MW
+control "ChatController" as C
+control "ChatService" as S
+participant "ChatRepository" as Repo
+entity "Conversation Model" as ConversationModel
+entity "Message Model" as MessageModel
+database "MongoDB" as DB
+
+User -> UI : Chọn tạo/quản lý nhóm chat
+alt Tạo nhóm chat
+  User -> UI : Nhập tên nhóm và chọn thành viên
+  UI -> Hook: Gửi thông tin nhóm chat
+Hook -> API: Gọi API tương ứng
+API -> Route: Gửi thông tin nhóm chat
+  Route -> MW : Xác thực phiên
+  MW -> C : createGroup()
+  C -> S : createGroup(userId, name, participantIds)
+  S -> Repo : Tạo Conversation nhóm
+  Repo -> ConversationModel : create()
+  ConversationModel -> DB : Lưu Conversation
+  S --> C : Nhóm chat mới
+  C --> API: Tạo thành công
+API --> Hook: Tạo thành công
+Hook --> UI: Tạo thành công
+else Thêm thành viên
+  User -> UI : Chọn thành viên thêm
+  UI -> Hook: Gửi danh sách thành viên
+Hook -> API: Gọi API tương ứng
+API -> Route: Gửi danh sách thành viên
+  Route -> MW : Xác thực
+  MW -> C : addMembers()
+  C -> S : addGroupMembers(userId, conversationId, participantIds)
+  S -> Repo : Kiểm tra quyền và cập nhật thành viên
+  Repo -> ConversationModel : findByIdAndUpdate()
+  ConversationModel -> DB : Cập nhật Conversation
+  S --> C : Thành công
+else Xóa thành viên/rời nhóm
+  User -> UI : Chọn xóa thành viên hoặc rời nhóm
+  UI -> Hook: Gửi thao tác
+Hook -> API: Gọi API tương ứng
+API -> Route: Gửi thao tác
+  Route -> MW : Xác thực
+  MW -> C : removeMember()/leaveGroup()
+  C -> S : removeGroupMember()/leaveGroup()
+  S -> Repo : Cập nhật danh sách thành viên
+  Repo -> ConversationModel : updateOne()
+  ConversationModel -> DB : Lưu Conversation
+  S --> C : Thành công
+else Tắt thông báo/chặn/xóa hội thoại
+  User -> UI : Chọn thao tác hội thoại
+  UI -> Hook: Gửi thao tác
+Hook -> API: Gọi API tương ứng
+API -> Route: Gửi thao tác
+  Route -> MW : Xác thực
+  MW -> C : mute/block/delete conversation
+  C -> S : Cập nhật trạng thái hội thoại
+  S -> Repo : Lưu trạng thái
+  Repo -> ConversationModel : updateOne()
+  ConversationModel -> DB : Cập nhật Conversation
+end
+C --> API: Trả kết quả
+API --> Hook: Trả kết quả
+Hook --> UI: Trả kết quả
+UI --> User : Hiển thị trạng thái mới
+@enduml
+
+
+
+

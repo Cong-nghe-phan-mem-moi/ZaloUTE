@@ -1,0 +1,78 @@
+﻿@startuml
+skinparam shadowing false
+skinparam sequence {
+  ArrowColor #0F172A
+  LifeLineBorderColor #334155
+  LifeLineBackgroundColor #F8FAFC
+  ParticipantBorderColor #334155
+}
+title Sequence - Quản lý hồ sơ cá nhân
+actor "Người dùng" as User
+boundary "React UI\n(ProfilePage/EditProfileModal)" as UI
+participant Hook as "Frontend hook/service"
+participant API as "API Client"
+participant "Express Router\n/profile" as Route
+participant "AuthMiddleware\nUploadMiddleware" as MW
+control "UserController" as C
+control "UserService" as S
+participant "UserRepository" as Repo
+entity "User Model" as UserModel
+database "MongoDB" as DB
+participant "Storage\n/uploads" as Storage
+
+User -> UI : Mở trang hồ sơ
+UI -> Hook: Yêu cầu hồ sơ cá nhân
+Hook -> API: Gọi API tương ứng
+API -> Route: Yêu cầu hồ sơ cá nhân
+Route -> MW : Xác thực phiên
+MW -> C : getMyProfile()
+C -> S : getMyProfile(userId)
+S -> Repo : getUserById(userId)
+Repo -> UserModel : findById(userId)
+UserModel -> DB : Truy vấn User
+DB --> UserModel : User
+UserModel --> Repo : User
+S --> C : Hồ sơ
+C --> API: Trả dữ liệu hồ sơ
+API --> Hook: Trả dữ liệu hồ sơ
+Hook --> UI: Trả dữ liệu hồ sơ
+UI --> User : Hiển thị hồ sơ
+
+alt Chỉnh sửa thông tin
+  User -> UI : Cập nhật thông tin cá nhân
+  UI -> Hook: Gửi dữ liệu chỉnh sửa
+Hook -> API: Gọi API tương ứng
+API -> Route: Gửi dữ liệu chỉnh sửa
+  Route -> MW : Xác thực + validate dữ liệu
+  MW -> C : editProfile()
+  C -> C : Loại bỏ trường rỗng
+  C -> S : editProfile(userId, updateData)
+  S -> Repo : updateProfile()
+  Repo -> UserModel : findByIdAndUpdate()
+  UserModel -> DB : Cập nhật User
+  S --> C : Hồ sơ mới
+  C --> API: Cập nhật thành công
+API --> Hook: Cập nhật thành công
+Hook --> UI: Cập nhật thành công
+else Cập nhật avatar/ảnh bìa
+  User -> UI : Chọn file ảnh
+  UI -> Hook: Gửi file ảnh
+Hook -> API: Gọi API tương ứng
+API -> Route: Gửi file ảnh
+  Route -> MW : Xác thực + xử lý upload
+  MW -> Storage : Lưu file vào uploads
+  MW -> C : uploadAvatar()/uploadCoverImage()
+  C -> S : updateProfileImage()
+  S -> Repo : updateProfile()
+  Repo -> UserModel : findByIdAndUpdate()
+  UserModel -> DB : Lưu đường dẫn ảnh
+  S --> C : Hồ sơ mới
+  C --> API: Cập nhật ảnh thành công
+API --> Hook: Cập nhật ảnh thành công
+Hook --> UI: Cập nhật ảnh thành công
+end
+@enduml
+
+
+
+

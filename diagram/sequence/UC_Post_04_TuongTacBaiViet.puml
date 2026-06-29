@@ -1,0 +1,66 @@
+﻿@startuml
+skinparam shadowing false
+skinparam sequence {
+  ArrowColor #0F172A
+  LifeLineBorderColor #334155
+  LifeLineBackgroundColor #F8FAFC
+  ParticipantBorderColor #334155
+}
+title Sequence - Tương tác bài viết
+actor "Người dùng" as User
+boundary "React UI\n(PostCard/CommentSection)" as UI
+participant Hook as "Frontend hook/service"
+participant API as "API Client"
+participant "Express Router\n/posts, /comments" as Route
+participant "AuthMiddleware" as MW
+control "PostController\nCommentController" as C
+control "PostService\nCommentService" as S
+participant "PostRepository\nCommentRepository" as Repo
+control "NotificationService" as Noti
+entity "Post Model" as PostModel
+entity "Comment Model" as CommentModel
+entity "Notification Model" as NotificationModel
+database "MongoDB" as DB
+
+User -> UI : Chọn like/comment/share/save/hide
+UI -> Hook: Gửi thao tác tương tác
+Hook -> API: Gọi API tương ứng
+API -> Route: Gửi thao tác tương tác
+Route -> MW : Xác thực phiên
+MW -> C : Gọi controller tương ứng
+alt Like/Unlike bài viết
+  C -> S : toggleLike(postId, userId, reactionType)
+else Bình luận hoặc trả lời
+  C -> S : createComment(postId, userId, content, replyTo)
+else Sửa/xóa/thích bình luận
+  C -> S : update/delete/toggleLikeComment()
+else Chia sẻ bài viết
+  C -> S : sharePost(postId, userId, caption, target)
+else Lưu hoặc ẩn bài viết
+  C -> S : toggleSavePost()/hidePost()
+end
+S -> Repo : Kiểm tra bài viết/bình luận và quyền thao tác
+Repo -> PostModel : findById nếu thao tác trên bài viết
+PostModel -> DB : Truy vấn Post
+Repo -> CommentModel : findById nếu thao tác trên bình luận
+CommentModel -> DB : Truy vấn Comment
+S -> Repo : Cập nhật tương tác
+Repo -> PostModel : update like/share/save/hide nếu cần
+PostModel -> DB : Lưu thay đổi Post
+Repo -> CommentModel : create/update/delete/like nếu cần
+CommentModel -> DB : Lưu thay đổi Comment
+opt Tương tác cần thông báo
+  S -> Noti : createNotification()
+  Noti -> NotificationModel : create()
+  NotificationModel -> DB : Lưu Notification
+end
+S --> C : Trạng thái tương tác mới
+C --> API: Trả kết quả
+API --> Hook: Trả kết quả
+Hook --> UI: Trả kết quả
+UI --> User : Cập nhật giao diện bài viết
+@enduml
+
+
+
+

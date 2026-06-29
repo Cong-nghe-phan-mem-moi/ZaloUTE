@@ -6,6 +6,9 @@ const initialState = {
   posts: [],
   suggestedPosts: [],
   currentPost: null,
+  currentPostLoading: false,
+  currentPostError: null,
+  currentPostRequestId: null,
   likes: [],
   comments: [],
   loading: false,
@@ -107,7 +110,9 @@ export const getNewsFeed = createAsyncThunk(
 // Get single post
 export const getPost = createAsyncThunk(
   'posts/getPost',
-  async (postId, { rejectWithValue }) => {
+  async (payload, { rejectWithValue }) => {
+    const postId = typeof payload === 'object' ? payload.postId : payload
+
     try {
       const response = await postAPI.getPost(postId)
       return response.data.data
@@ -116,6 +121,28 @@ export const getPost = createAsyncThunk(
         error.response?.data?.message || 'Unable to load post',
       )
     }
+  },
+  {
+    condition: (payload, { getState }) => {
+      const postId = typeof payload === 'object' ? payload.postId : payload
+      const force = typeof payload === 'object' ? payload.force : false
+
+      if (force || !postId) {
+        return true
+      }
+
+      const { posts } = getState()
+      const requestedPostId = String(postId)
+
+      if (
+        posts.currentPostLoading &&
+        String(posts.currentPostRequestId || '') === requestedPostId
+      ) {
+        return false
+      }
+
+      return String(posts.currentPost?._id || '') !== requestedPostId
+    },
   },
 )
 
@@ -395,12 +422,22 @@ const postSlice = createSlice({
       })
 
       // Get Single Post
-      .addCase(getPost.pending, (state) => {
+      .addCase(getPost.pending, (state, action) => {
+        const postId =
+          typeof action.meta.arg === 'object'
+            ? action.meta.arg.postId
+            : action.meta.arg
+
         state.loading = true
+        state.currentPostLoading = true
+        state.currentPostRequestId = postId
         state.error = null
+        state.currentPostError = null
       })
       .addCase(getPost.fulfilled, (state, action) => {
         state.loading = false
+        state.currentPostLoading = false
+        state.currentPostRequestId = null
         state.currentPost = action.payload
         const index = state.posts.findIndex((p) => p._id === action.payload._id)
         if (index !== -1) {
@@ -409,6 +446,9 @@ const postSlice = createSlice({
       })
       .addCase(getPost.rejected, (state, action) => {
         state.loading = false
+        state.currentPostLoading = false
+        state.currentPostRequestId = null
+        state.currentPostError = action.payload
         state.error = action.payload
       })
 

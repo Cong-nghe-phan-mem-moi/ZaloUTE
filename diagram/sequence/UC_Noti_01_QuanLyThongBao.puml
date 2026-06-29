@@ -1,0 +1,79 @@
+﻿@startuml
+skinparam shadowing false
+skinparam sequence {
+  ArrowColor #0F172A
+  LifeLineBorderColor #334155
+  LifeLineBackgroundColor #F8FAFC
+  ParticipantBorderColor #334155
+}
+title Sequence - Quản lý thông báo
+actor "Người dùng" as User
+participant "Sự kiện nghiệp vụ\n(Kết bạn, tương tác,...)" as Event
+control "NotificationService\ncreateNotification()" as CreateS
+database "MongoDB" as DB
+boundary "React UI\n(Notifications)" as UI
+participant Hook as "Frontend hook/service"
+participant API as "API Client"
+participant "Express Router\n/notifications" as Route
+participant "AuthMiddleware" as MW
+control "NotificationController" as C
+control "NotificationService" as S
+participant "NotificationModel" as Repo
+entity "Notification Model" as NotificationModel
+
+Event -> CreateS : Phát sinh sự kiện cần thông báo
+CreateS -> Repo : Tạo Notification
+Repo -> NotificationModel : create()
+NotificationModel -> DB : Lưu thông báo
+
+User -> UI : Mở danh sách thông báo
+UI -> Hook: Yêu cầu thông báo
+Hook -> API: Gọi API tương ứng
+API -> Route: Yêu cầu thông báo
+Route -> MW : Xác thực phiên
+MW -> C : getNotifications()
+C -> S : getNotifications(userId, page, limit)
+S -> Repo : Tìm thông báo của user
+Repo -> NotificationModel : find()
+NotificationModel -> DB : Truy vấn Notification
+DB --> NotificationModel : Danh sách thông báo
+NotificationModel --> Repo : Danh sách thông báo
+S --> C : Dữ liệu thông báo
+C --> API: Trả danh sách
+API --> Hook: Trả danh sách
+Hook --> UI: Trả danh sách
+UI --> User : Hiển thị thông báo
+
+alt Đánh dấu đã xem/đã đọc
+  User -> UI : Chọn đánh dấu
+  UI -> Hook: Gửi trạng thái mới
+Hook -> API: Gọi API tương ứng
+API -> Route: Gửi trạng thái mới
+  Route -> MW : Xác thực
+  MW -> C : markAsSeen()/markAsRead()/markAllAsRead()
+  C -> S : Cập nhật trạng thái
+  S -> Repo : Cập nhật Notification
+  Repo -> NotificationModel : update...
+  NotificationModel -> DB : Lưu trạng thái
+  S --> C : Kết quả
+else Xóa thông báo
+  User -> UI : Chọn xóa
+  UI -> Hook: Gửi yêu cầu xóa
+Hook -> API: Gọi API tương ứng
+API -> Route: Gửi yêu cầu xóa
+  Route -> MW : Xác thực
+  MW -> C : deleteNotification()
+  C -> S : deleteNotification(notificationId, userId)
+  S -> Repo : Xóa thông báo thuộc user
+  Repo -> NotificationModel : delete/update
+  NotificationModel -> DB : Cập nhật/xóa Notification
+end
+C --> API: Trả kết quả
+API --> Hook: Trả kết quả
+Hook --> UI: Trả kết quả
+UI --> User : Cập nhật danh sách thông báo
+@enduml
+
+
+
+

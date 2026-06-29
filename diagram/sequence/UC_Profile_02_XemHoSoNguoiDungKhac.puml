@@ -1,0 +1,59 @@
+﻿@startuml
+skinparam shadowing false
+skinparam sequence {
+  ArrowColor #0F172A
+  LifeLineBorderColor #334155
+  LifeLineBackgroundColor #F8FAFC
+  ParticipantBorderColor #334155
+}
+title Sequence - Xem hồ sơ người dùng khác
+actor "Người dùng" as User
+boundary "React UI\n(ProfilePage)" as UI
+participant Hook as "Frontend hook/service"
+participant API as "API Client"
+participant "Express Router\n/users/profile/:id" as Route
+participant "AuthMiddleware" as MW
+control "UserController\ngetOtherUserProfile()" as C
+control "UserService" as S
+control "FriendRequestService" as FRS
+participant "UserRepository" as UserRepo
+participant "FriendRequestRepository" as FRRepo
+entity "User Model" as UserModel
+entity "FriendRequest Model" as FriendRequestModel
+database "MongoDB" as DB
+
+note over UI,Route
+  API: GET /api/users/profile/:id
+end note
+
+User -> UI : Chọn hồ sơ người dùng khác
+UI -> Hook: Yêu cầu hồ sơ
+Hook -> API: Gọi API tương ứng
+API -> Route: Yêu cầu hồ sơ
+Route -> MW : Xác thực phiên
+MW -> C : Chuyển request
+C -> C : Kiểm tra không xem chính mình
+C -> S : getOtherUserProfile(targetId, myId)
+S -> UserRepo : Lấy hồ sơ và quan hệ
+UserRepo -> UserModel : findById(targetId)
+UserModel -> DB : Truy vấn User
+DB --> UserModel : Dữ liệu hồ sơ
+UserModel --> UserRepo : User
+alt Chưa phải bạn bè
+  C -> FRS : checkFriendRequest(targetId, myId)
+  FRS -> FRRepo : findPendingRequestBetweenUsers()
+  FRRepo -> FriendRequestModel : findOne()
+  FriendRequestModel -> DB : Truy vấn lời mời
+  DB --> FriendRequestModel : Trạng thái lời mời
+  FriendRequestModel --> FRRepo : FriendRequest/null
+  FRS --> C : relation
+end
+C --> API: Trả hồ sơ và trạng thái quan hệ
+API --> Hook: Trả hồ sơ và trạng thái quan hệ
+Hook --> UI: Trả hồ sơ và trạng thái quan hệ
+UI --> User : Hiển thị hồ sơ người dùng khác
+@enduml
+
+
+
+

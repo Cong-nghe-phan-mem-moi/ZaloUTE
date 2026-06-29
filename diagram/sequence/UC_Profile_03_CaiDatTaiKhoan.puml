@@ -1,0 +1,75 @@
+﻿@startuml
+skinparam shadowing false
+skinparam sequence {
+  ArrowColor #0F172A
+  LifeLineBorderColor #334155
+  LifeLineBackgroundColor #F8FAFC
+  ParticipantBorderColor #334155
+}
+title Sequence - Cập nhật cài đặt tài khoản
+actor "Người dùng" as User
+boundary "React UI\n(AccountSettings)" as UI
+participant Hook as "Frontend hook/service"
+participant API as "API Client"
+participant "Express Router\n/users/account-settings" as Route
+participant "AuthMiddleware" as MW
+control "UserController" as C
+control "UserService" as S
+participant "User/Auth Repository" as Repo
+entity "User Model" as UserModel
+entity "Account Model" as AccountModel
+database "MongoDB" as DB
+
+User -> UI : Mở cài đặt tài khoản
+UI -> Hook: Yêu cầu dữ liệu cài đặt
+Hook -> API: Gọi API tương ứng
+API -> Route: Yêu cầu dữ liệu cài đặt
+Route -> MW : Xác thực token và session
+MW -> C : getAccountSettings()
+C -> S : getAccountSettings(userId, sessionId)
+S -> Repo : Lấy tài khoản, hồ sơ, phiên
+Repo -> UserModel : findById(userId)
+UserModel -> DB : Truy vấn User
+Repo -> AccountModel : findOne(user)
+AccountModel -> DB : Truy vấn Account/session
+DB --> UserModel : Dữ liệu User
+DB --> AccountModel : Dữ liệu Account
+UserModel --> Repo : User
+AccountModel --> Repo : Account
+S --> C : Dữ liệu cài đặt
+C --> API: Trả dữ liệu
+API --> Hook: Trả dữ liệu
+Hook --> UI: Trả dữ liệu
+UI --> User : Hiển thị cài đặt
+
+User -> UI : Chọn đổi mật khẩu/liên hệ/quyền riêng tư/thông báo/phiên
+UI -> Hook: Gửi thay đổi
+Hook -> API: Gọi API tương ứng
+API -> Route: Gửi thay đổi
+Route -> MW : Xác thực phiên
+MW -> C : Gọi action tương ứng
+C -> S : changePassword()/updateContactInfo()/updatePrivacySettings()/...
+S -> S : Kiểm tra dữ liệu và mật khẩu hiện tại nếu cần
+alt Hợp lệ
+  S -> Repo : Cập nhật dữ liệu
+  Repo -> UserModel : update nếu đổi hồ sơ/cài đặt
+  UserModel -> DB : Lưu thay đổi User
+  Repo -> AccountModel : update nếu đổi mật khẩu/contact/session
+  AccountModel -> DB : Lưu thay đổi Account
+  S --> C : Thành công
+  C --> API: Trả trạng thái mới
+API --> Hook: Trả trạng thái mới
+Hook --> UI: Trả trạng thái mới
+  UI --> User : Hiển thị cập nhật thành công
+else Không hợp lệ
+  S --> C : Trả lỗi
+  C --> API: Thông báo lỗi
+API --> Hook: Thông báo lỗi
+Hook --> UI: Thông báo lỗi
+  UI --> User : Hiển thị lỗi
+end
+@enduml
+
+
+
+

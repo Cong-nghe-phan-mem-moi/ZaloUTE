@@ -1,0 +1,69 @@
+﻿@startuml
+skinparam shadowing false
+skinparam sequence {
+  ArrowColor #0F172A
+  LifeLineBorderColor #334155
+  LifeLineBackgroundColor #F8FAFC
+  ParticipantBorderColor #334155
+}
+title Sequence - Tạo bài viết
+actor "Người dùng" as User
+boundary "React UI\n(Composer/CreatePost)" as UI
+participant Hook as "Frontend hook/service"
+participant API as "API Client"
+participant "Express Router\n/posts" as Route
+participant "AuthMiddleware\nUploadMiddleware" as MW
+control "PostController\ncreatePost()" as C
+control "PostService\ncreatePost()" as S
+participant "PostRepository" as PostRepo
+participant "GroupRepository" as GroupRepo
+entity "Post Model" as PostModel
+entity "Media Model" as MediaModel
+entity "Group Model" as GroupModel
+database "MongoDB" as DB
+participant "Storage\n/uploads" as Storage
+
+note over UI,Route
+  API: POST /api/posts
+end note
+
+User -> UI : Nhập nội dung và chọn media/nhóm nếu có
+UI -> Hook: Gửi bài viết
+Hook -> API: Gọi API tương ứng
+API -> Route: Gửi bài viết
+Route -> MW : Xác thực người dùng
+MW -> Storage : Lưu media upload nếu có
+MW -> C : Chuyển request đã xử lý file
+C -> C : Chuyển file thành danh sách media
+C -> S : createPost(userId, content, media, options)
+S -> GroupRepo : Kiểm tra nhóm/quyền đăng nếu có groupId
+GroupRepo -> GroupModel : findById()
+GroupModel -> DB : Truy vấn Group
+alt Hợp lệ
+  S -> PostRepo : Tạo bài viết
+  PostRepo -> PostModel : create()
+  PostModel -> DB : Lưu Post
+  opt Có media
+    PostRepo -> MediaModel : create()
+    MediaModel -> DB : Lưu Media
+  end
+  DB --> PostModel : Bài viết mới
+  PostModel --> PostRepo : Bài viết mới
+  PostRepo --> S : Bài viết
+  S --> C : Bài viết và trạng thái duyệt
+  C --> API: Tạo bài thành công/chờ duyệt
+API --> Hook: Tạo bài thành công/chờ duyệt
+Hook --> UI: Tạo bài thành công/chờ duyệt
+  UI --> User : Hiển thị kết quả
+else Không hợp lệ
+  S --> C : Trả lỗi
+  C --> API: Thông báo lỗi
+API --> Hook: Thông báo lỗi
+Hook --> UI: Thông báo lỗi
+  UI --> User : Hiển thị lỗi
+end
+@enduml
+
+
+
+

@@ -15,7 +15,7 @@ import {
 } from "../../components/groups/GroupDetailComponents";
 import StatusCard from "../../components/common/StatusCard";
 import { PostList } from "../../components/post";
-import { useProfileFriends } from "../../hooks";
+import { useHomeSidebar } from "../../hooks";
 import { groupAPI } from "../../services/api";
 import { postAPI } from "../../services/post.service";
 import { useAppDispatch, useAppSelector } from "../../redux/hooks";
@@ -50,7 +50,18 @@ const GroupDetail = () => {
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
 
-  const { contacts: friends } = useProfileFriends(profile);
+  const {
+    contacts,
+    friendRequests,
+    groupConversations,
+    groupsLoading,
+    handleAcceptRequest,
+    handleContactClick,
+    handleGroupClick,
+    handleRejectRequest,
+    requestActionId,
+    requestsLoading,
+  } = useHomeSidebar({ dispatch, profile });
 
   const loadGroup = useCallback(async () => {
     if (!groupId) return;
@@ -546,7 +557,18 @@ const GroupDetail = () => {
             ) : null}
           </section>
 
-          <RightSidebar contacts={friends} />
+          <RightSidebar
+            contacts={contacts}
+            friendRequests={friendRequests}
+            groupConversations={groupConversations}
+            groupsLoading={groupsLoading}
+            requestsLoading={requestsLoading}
+            requestActionId={requestActionId}
+            onAcceptRequest={handleAcceptRequest}
+            onRejectRequest={handleRejectRequest}
+            onContactClick={handleContactClick}
+            onGroupClick={handleGroupClick}
+          />
         </main>
       </div>
 

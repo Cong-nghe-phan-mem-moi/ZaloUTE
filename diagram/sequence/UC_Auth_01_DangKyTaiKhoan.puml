@@ -1,0 +1,78 @@
+﻿@startuml
+skinparam shadowing false
+skinparam sequence {
+  ArrowColor #0F172A
+  LifeLineBorderColor #334155
+  LifeLineBackgroundColor #F8FAFC
+  ParticipantBorderColor #334155
+}
+title Sequence - Đăng ký tài khoản
+actor "Khách" as Guest
+boundary "React UI\n(Register)" as UI
+participant Hook as "Frontend hook/service"
+participant API as "API Client"
+participant "Express Router\n/auth/register" as Route
+participant "Validation + RateLimiter" as MW
+control "AuthController\nregister()" as C
+control "AuthService\nregister()" as S
+participant "AuthRepository" as AuthRepo
+participant "UserRepository" as UserRepo
+participant "OtpRepository" as OtpRepo
+entity "Account Model" as AccountModel
+entity "User Model" as UserModel
+entity "Otp Model" as OtpModel
+database "MongoDB" as DB
+participant "Mailer\nsendOTPEmail()" as Mail
+
+note over UI,Route
+  API: POST /api/auth/register
+end note
+
+Guest -> UI : Nhập họ tên, email, mật khẩu
+UI -> Hook: Gửi form đăng ký
+Hook -> API: Gọi API tương ứng
+API -> Route: Gửi form đăng ký
+Route -> MW : Kiểm tra dữ liệu và giới hạn request
+MW -> C : Chuyển request hợp lệ
+C -> S : register(fullName, email, password)
+S -> S : Chuẩn hóa email\nMã hóa mật khẩu
+S -> AuthRepo : findAccountByEmail(email)
+AuthRepo -> AccountModel : findOne(email)
+AccountModel -> DB : Truy vấn Account
+DB --> AccountModel : Kết quả
+AccountModel --> AuthRepo : Account/null
+alt Email chưa tồn tại
+  S -> UserRepo : createUser(fullName)
+  UserRepo -> UserModel : create()
+  UserModel -> DB : Lưu User
+  S -> AuthRepo : createAccount(status = pending)
+  AuthRepo -> AccountModel : create()
+  AccountModel -> DB : Lưu Account
+  S -> UserRepo : linkAccountToUser()
+  UserRepo -> UserModel : findByIdAndUpdate()
+  UserModel -> DB : Cập nhật User
+  S -> OtpRepo : markPendingOtpsUsed()
+  OtpRepo -> OtpModel : updateMany()
+  OtpModel -> DB : Cập nhật OTP cũ
+  S -> OtpRepo : createOtp(type = verify_email)
+  OtpRepo -> OtpModel : create()
+  OtpModel -> DB : Lưu OTP mới
+  S -> Mail : Gửi OTP xác thực
+  Mail --> S : Kết quả gửi
+  S --> C : Trả email và trạng thái pending
+  C --> API: Đăng ký thành công
+API --> Hook: Đăng ký thành công
+Hook --> UI: Đăng ký thành công
+  UI --> Guest : Chuyển sang màn hình nhập OTP
+else Email đã tồn tại hoặc gửi OTP thất bại
+  S --> C : Trả lỗi
+  C --> API: Thông báo lỗi
+API --> Hook: Thông báo lỗi
+Hook --> UI: Thông báo lỗi
+  UI --> Guest : Hiển thị lỗi
+end
+@enduml
+
+
+
+

@@ -171,7 +171,7 @@ const createLoginResult = async (account, sessionMeta = {}) => {
   });
 
   const redirectUrl =
-    account.role === "admin" ? "/admin/dashboard" : "/user/profile";
+    account.role === "admin" ? "/admin/dashboard" : "/";
 
   return {
     token,

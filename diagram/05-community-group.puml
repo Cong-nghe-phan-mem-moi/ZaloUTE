@@ -1,0 +1,64 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+actor "Nguoi dung" as User
+actor "Thanh vien nhom" as GroupMember
+actor "Quan tri vien nhom" as GroupAdmin
+actor "He thong" as System
+
+GroupMember --|> User
+GroupAdmin --|> GroupMember
+
+rectangle "Quan ly nhom cong dong" {
+  usecase "Tao nhom moi" as CreateGroup
+  usecase "Xem danh sach\nnhom cua toi" as MyGroups
+  usecase "Xem chi tiet nhom" as GroupDetail
+  usecase "Chinh sua thong tin\nnhom" as UpdateGroup
+  usecase "Moi nguoi dung\ntham gia nhom" as Invite
+  usecase "Huy loi moi nhom" as CancelInvite
+  usecase "Xem loi moi\ntham gia nhom" as ListInvitations
+  usecase "Chap nhan loi moi\ntham gia nhom" as AcceptInvite
+  usecase "Tu choi loi moi\ntham gia nhom" as RejectInvite
+  usecase "Gui yeu cau\ntham gia nhom" as RequestJoin
+  usecase "Duyet yeu cau\ntham gia" as ApproveJoin
+  usecase "Gan quyen quan tri\nvien nhom" as AssignAdmin
+  usecase "Loai thanh vien\nkhoi nhom" as RemoveMember
+  usecase "Xem bai viet\ntrong nhom" as ViewGroupPosts
+  usecase "Xem bai viet cho duyet\ntrong nhom" as PendingPosts
+  usecase "Duyet bai viet\ntrong nhom" as ApprovePost
+  usecase "Tu choi bai viet\ntrong nhom" as RejectPost
+}
+
+User --> CreateGroup
+User --> MyGroups
+User --> GroupDetail
+User --> ListInvitations
+User --> AcceptInvite
+User --> RejectInvite
+User --> RequestJoin
+User --> ViewGroupPosts
+
+GroupMember --> ViewGroupPosts
+GroupAdmin --> UpdateGroup
+GroupAdmin --> Invite
+GroupAdmin --> CancelInvite
+GroupAdmin --> ApproveJoin
+GroupAdmin --> AssignAdmin
+GroupAdmin --> RemoveMember
+GroupAdmin --> PendingPosts
+GroupAdmin --> ApprovePost
+GroupAdmin --> RejectPost
+
+System --> ListInvitations
+System --> PendingPosts
+
+CreateGroup ..> MyGroups : <<include>>
+Invite ..> GroupDetail : <<include>>
+RequestJoin ..> GroupDetail : <<include>>
+ApproveJoin ..> RequestJoin : <<include>>
+PendingPosts ..> ViewGroupPosts : <<extend>>
+ApprovePost ..> PendingPosts : <<include>>
+RejectPost ..> PendingPosts : <<include>>
+@enduml

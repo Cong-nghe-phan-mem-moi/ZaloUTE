@@ -1,0 +1,76 @@
+﻿@startuml
+skinparam shadowing false
+skinparam sequence {
+  ArrowColor #0F172A
+  LifeLineBorderColor #334155
+  LifeLineBackgroundColor #F8FAFC
+  ParticipantBorderColor #334155
+}
+title Sequence - Xem và tìm kiếm bài viết
+actor "Người dùng" as User
+boundary "React UI\n(Home/Search/Profile)" as UI
+participant Hook as "Frontend hook/service"
+participant API as "API Client"
+participant "Express Router\n/posts/*" as Route
+participant "AuthMiddleware" as MW
+control "PostController" as C
+control "PostService" as S
+participant "PostRepository" as PostRepo
+participant "UserRepository" as UserRepo
+entity "Post Model" as PostModel
+entity "User Model" as UserModel
+entity "Media Model" as MediaModel
+entity "Comment Model" as CommentModel
+database "MongoDB" as DB
+
+note over UI,Route
+  API:
+  GET /api/posts/feed
+  GET /api/posts/suggested
+  GET /api/posts/search
+  GET /api/posts/author/:authorId
+  GET /api/posts/:postId
+end note
+
+User -> UI : Mở feed/tìm kiếm/xem bài theo tác giả
+UI -> Hook: Gửi yêu cầu lấy bài viết
+Hook -> API: Gọi API tương ứng
+API -> Route: Gửi yêu cầu lấy bài viết
+Route -> MW : Xác thực phiên
+MW -> C : Gọi action tương ứng
+alt Xem news feed
+  C -> S : getNewsFeed(page, limit, userId, sortBy)
+else Tìm kiếm bài viết
+  C -> S : searchPosts(keyword, page, limit, userId)
+else Xem bài theo tác giả
+  C -> S : getPostsByAuthor(authorId, page, limit, userId)
+else Xem chi tiết bài viết
+  C -> S : getPost(postId, userId)
+end
+S -> UserRepo : Lấy quan hệ/quyền xem nếu cần
+UserRepo -> UserModel : findById()
+UserModel -> DB : Truy vấn User
+S -> PostRepo : Lấy bài viết phù hợp
+PostRepo -> PostModel : find()/aggregate()
+PostModel -> DB : Truy vấn Post và Like
+PostRepo -> MediaModel : find theo post nếu cần
+MediaModel -> DB : Truy vấn Media
+PostRepo -> CommentModel : count/find comment nếu cần
+CommentModel -> DB : Truy vấn Comment
+DB --> PostModel : Post[]
+DB --> MediaModel : Media[]
+DB --> CommentModel : Comment[]
+PostModel --> PostRepo : Kết quả Post
+MediaModel --> PostRepo : Kết quả Media
+CommentModel --> PostRepo : Kết quả Comment
+PostRepo --> S : Dữ liệu bài viết
+S --> C : Kết quả đã xử lý
+C --> API: Trả bài viết
+API --> Hook: Trả bài viết
+Hook --> UI: Trả bài viết
+UI --> User : Hiển thị bài viết
+@enduml
+
+
+
+

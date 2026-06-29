@@ -1,0 +1,52 @@
+﻿@startuml
+skinparam shadowing false
+skinparam sequence {
+  ArrowColor #0F172A
+  LifeLineBorderColor #334155
+  LifeLineBackgroundColor #F8FAFC
+  ParticipantBorderColor #334155
+}
+title Sequence - Đăng xuất
+actor "Người dùng" as User
+boundary "React UI\n(ProfileMenu)" as UI
+participant Hook as "Frontend hook/service"
+participant API as "API Client"
+participant "Express Router\n/users/logout" as Route
+participant "AuthMiddleware" as MW
+control "UserController\nlogout()" as C
+control "UserService\nlogout()" as S
+participant "User/Auth Repository" as Repo
+entity "Account Model" as AccountModel
+database "MongoDB" as DB
+
+note over UI,Route
+  API: POST /api/users/logout
+end note
+
+User -> UI : Chọn đăng xuất
+UI -> Hook: Gửi yêu cầu đăng xuất
+Hook -> API: Gọi API tương ứng
+API -> Route: Gửi yêu cầu đăng xuất
+Route -> MW : Kiểm tra token, Account, session
+alt Phiên hợp lệ
+  MW -> C : Chuyển request
+  C -> S : logout(userId, sessionId)
+  S -> Repo : Thu hồi/kết thúc session
+  Repo -> AccountModel : updateOne(loginSessions)
+  AccountModel -> DB : Cập nhật phiên đăng nhập
+  S --> C : Thành công
+  C --> API: Đăng xuất thành công
+API --> Hook: Đăng xuất thành công
+Hook --> UI: Đăng xuất thành công
+  UI --> User : Xóa trạng thái đăng nhập và về trang Login
+else Phiên không hợp lệ
+  MW --> API: Từ chối phiên
+API --> Hook: Từ chối phiên
+Hook --> UI: Từ chối phiên
+  UI --> User : Yêu cầu đăng nhập lại
+end
+@enduml
+
+
+
+

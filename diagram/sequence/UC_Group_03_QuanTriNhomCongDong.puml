@@ -1,0 +1,87 @@
+﻿@startuml
+skinparam shadowing false
+skinparam sequence {
+  ArrowColor #0F172A
+  LifeLineBorderColor #334155
+  LifeLineBackgroundColor #F8FAFC
+  ParticipantBorderColor #334155
+}
+title Sequence - Quản trị nhóm cộng đồng
+actor "Quản trị viên nhóm" as Admin
+boundary "React UI\n(GroupDetail/AdminPanel)" as UI
+participant Hook as "Frontend hook/service"
+participant API as "API Client"
+participant "Express Router\n/groups, /posts/group" as Route
+participant "AuthMiddleware\nisGroupAdmin" as MW
+control "GroupController\nPostController" as C
+control "GroupService\nPostService" as S
+participant "GroupRepository\nPostRepository" as Repo
+entity "Group Model" as GroupModel
+entity "Post Model" as PostModel
+database "MongoDB" as DB
+participant "Storage\n/uploads" as Storage
+
+Admin -> UI : Mở trang quản trị nhóm
+UI -> Hook: Yêu cầu dữ liệu quản trị
+Hook -> API: Gọi API tương ứng
+API -> Route: Yêu cầu dữ liệu quản trị
+Route -> MW : Xác thực và kiểm tra quyền nhóm
+MW -> C : getGroupDetail()/getPendingGroupPosts()
+C -> S : Lấy thông tin nhóm và bài chờ duyệt
+S -> Repo : Truy vấn Group/Post
+Repo -> GroupModel : findById()
+GroupModel -> DB : Lấy dữ liệu Group
+Repo -> PostModel : find({ group })
+PostModel -> DB : Lấy bài viết nhóm
+S --> C : Dữ liệu quản trị
+C --> API: Trả dữ liệu
+API --> Hook: Trả dữ liệu
+Hook --> UI: Trả dữ liệu
+UI --> Admin : Hiển thị trang quản trị
+
+alt Cập nhật thông tin nhóm
+  Admin -> UI : Sửa tên, mô tả, avatar, quyền riêng tư
+  UI -> Hook: Gửi cập nhật nhóm
+Hook -> API: Gọi API tương ứng
+API -> Route: Gửi cập nhật nhóm
+  Route -> MW : Xác thực + kiểm tra admin + upload avatar
+  opt Có avatar mới
+    MW -> Storage : Lưu avatar
+  end
+  MW -> C : handleUpdateGroupInfo()
+  C -> S : updateGroupInfo(adminId, groupId, updateData)
+  S -> Repo : Cập nhật Group
+  Repo -> GroupModel : findByIdAndUpdate()
+  GroupModel -> DB : Lưu thay đổi
+else Quản lý thành viên/quyền
+  Admin -> UI : Gán admin hoặc loại thành viên
+  UI -> Hook: Gửi thao tác
+Hook -> API: Gọi API tương ứng
+API -> Route: Gửi thao tác
+  Route -> MW : Xác thực + kiểm tra admin
+  MW -> C : assignAdmin()/removeMember()
+  C -> S : Cập nhật thành viên/quyền
+  S -> Repo : Lưu Group
+  Repo -> GroupModel : updateOne()
+  GroupModel -> DB : Cập nhật Group
+else Duyệt bài viết nhóm
+  Admin -> UI : Duyệt hoặc từ chối bài viết
+  UI -> Hook: Gửi quyết định
+Hook -> API: Gọi API tương ứng
+API -> Route: Gửi quyết định
+  Route -> MW : Xác thực
+  MW -> C : approveGroupPost()/rejectGroupPost()
+  C -> S : Cập nhật trạng thái bài viết
+  S -> Repo : Lưu Post
+  Repo -> PostModel : findByIdAndUpdate()
+  PostModel -> DB : Cập nhật Post
+end
+C --> API: Trả kết quả
+API --> Hook: Trả kết quả
+Hook --> UI: Trả kết quả
+UI --> Admin : Hiển thị trạng thái mới
+@enduml
+
+
+
+

@@ -1,0 +1,62 @@
+﻿@startuml
+skinparam shadowing false
+skinparam sequence {
+  ArrowColor #0F172A
+  LifeLineBorderColor #334155
+  LifeLineBackgroundColor #F8FAFC
+  ParticipantBorderColor #334155
+}
+title Sequence - Theo dõi, chặn và hủy kết bạn
+actor "Người dùng" as User
+boundary "React UI\n(Profile/FriendCard)" as UI
+participant Hook as "Frontend hook/service"
+participant API as "API Client"
+participant "Express Router\n/users/*" as Route
+participant "AuthMiddleware" as MW
+control "UserController / FollowController" as C
+control "UserService / FriendRequestService" as S
+participant "UserRepository" as UserRepo
+participant "FriendRequestRepository" as FRRepo
+entity "User Model" as UserModel
+entity "FriendRequest Model" as FriendRequestModel
+database "MongoDB" as DB
+
+User -> UI : Chọn theo dõi/chặn/bỏ chặn/hủy kết bạn
+UI -> Hook: Gửi thao tác quan hệ
+Hook -> API: Gọi API tương ứng
+API -> Route: Gửi thao tác quan hệ
+Route -> MW : Xác thực phiên
+MW -> C : Gọi controller tương ứng
+C -> S : Xử lý thao tác quan hệ
+S -> UserRepo : Kiểm tra người dùng mục tiêu
+UserRepo -> UserModel : findById()
+UserModel -> DB : Truy vấn User
+alt Theo dõi hoặc bỏ theo dõi
+  S -> UserRepo : Cập nhật following/followers
+  UserRepo -> UserModel : updateOne()
+  UserModel -> DB : Lưu quan hệ theo dõi
+else Chặn hoặc bỏ chặn
+  S -> UserRepo : Cập nhật blockedUsers
+  UserRepo -> UserModel : updateOne()
+  UserModel -> DB : Lưu danh sách chặn
+else Hủy kết bạn
+  S -> UserRepo : Kiểm tra quan hệ bạn bè
+  UserRepo -> UserModel : findById()
+  UserModel -> DB : Truy vấn bạn bè
+  S -> UserRepo : Xóa bạn bè hai chiều
+  UserRepo -> UserModel : updateMany()
+  UserModel -> DB : Cập nhật User
+  S -> FRRepo : Xóa request giữa hai người
+  FRRepo -> FriendRequestModel : deleteMany()
+  FriendRequestModel -> DB : Cập nhật FriendRequest
+end
+S --> C : Trạng thái mới
+C --> API: Trả kết quả
+API --> Hook: Trả kết quả
+Hook --> UI: Trả kết quả
+UI --> User : Hiển thị trạng thái quan hệ mới
+@enduml
+
+
+
+
