@@ -7,6 +7,14 @@ const getErrorMessage = (error) =>
   error.message ||
   "Unable to log in. Please try again.";
 
+const getLoginRedirectUrl = (redirectUrl) => {
+  if (redirectUrl === "/home" || redirectUrl === "/user/profile") {
+    return "/";
+  }
+
+  return redirectUrl || "/";
+};
+
 function LoginPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
@@ -22,7 +30,7 @@ function LoginPage() {
     const { token, redirectUrl } = response.data.data;
 
     localStorage.setItem("token", token);
-    navigate(redirectUrl === "/home" ? "/" : redirectUrl || "/", {
+    navigate(getLoginRedirectUrl(redirectUrl), {
       replace: true,
     });
   }, [navigate]);
