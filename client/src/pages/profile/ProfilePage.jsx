@@ -544,20 +544,6 @@ const ProfilePage = ({ userId }) => {
               </div>
             ) : null}
 
-            {activeTab === "posts" ? (
-              <div className="space-y-5">
-                {isOwnProfile ? <Composer profile={profile} /> : null}
-                {postAuthorId ? (
-                  <PostList
-                    authorId={postAuthorId}
-                    emptyMessage="No posts yet"
-                    emptyDetail="Posts from this account will appear here."
-                    onPostsLoaded={setProfilePosts}
-                  />
-                ) : null}
-              </div>
-            ) : null}
-
             {activeTab === "about" ? (
               <ProfileAboutTab profile={currentProfile} />
             ) : null}

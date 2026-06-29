@@ -151,6 +151,14 @@ const PanelTitle = ({ title, action, href = "/" }) => (
 
 const getUserId = (user) => user?._id || user?.id || user?.userId || "";
 
+const openMiniChat = (target) => {
+  if (!target) return;
+
+  window.dispatchEvent(
+    new CustomEvent("zalo-open-mini-chat", { detail: target }),
+  );
+};
+
 const FriendRequestCard = ({
   request,
   requestActionId,
@@ -201,7 +209,7 @@ const FriendRequestCard = ({
 const Contact = ({ contact, onClick }) => (
   <button
     type="button"
-    onClick={() => onClick?.(contact)}
+    onClick={() => (onClick ? onClick(contact) : openMiniChat(contact))}
     className="flex w-full items-center gap-3 rounded-md text-left hover:bg-[#f2f3f5]"
   >
     <UserAvatar image={contact.avatar} name={contact.name} />
@@ -221,7 +229,7 @@ const Contact = ({ contact, onClick }) => (
 const GroupConversation = ({ conversation, onClick }) => (
   <button
     type="button"
-    onClick={() => onClick?.(conversation)}
+    onClick={() => (onClick ? onClick(conversation) : openMiniChat(conversation))}
     className="flex w-full items-center gap-3 rounded-md text-left hover:bg-[#f2f3f5]"
   >
     <UserAvatar image={conversation.avatar} name={conversation.name || "Group chat"} />

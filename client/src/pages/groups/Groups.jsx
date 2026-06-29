@@ -8,7 +8,7 @@ import {
   InvitationPanel,
   StatusCard,
 } from "../../components/groups/GroupListComponents";
-import { useProfileFriends } from "../../hooks";
+import { useHomeSidebar, useProfileFriends } from "../../hooks";
 import { groupAPI } from "../../services/api";
 import { useAppDispatch, useAppSelector } from "../../redux/hooks";
 import { fetchUserProfile } from "../../redux/slices/userSlice";
@@ -40,7 +40,19 @@ const Groups = () => {
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
 
-  const { friends, contacts } = useProfileFriends(profile, "Friends");
+  const { friends } = useProfileFriends(profile, "Friends");
+  const {
+    contacts,
+    friendRequests,
+    groupConversations,
+    groupsLoading,
+    handleAcceptRequest,
+    handleContactClick,
+    handleGroupClick,
+    handleRejectRequest,
+    requestActionId,
+    requestsLoading,
+  } = useHomeSidebar({ dispatch, profile });
 
   const loadGroups = useCallback(async () => {
     setLoading(true);
@@ -369,7 +381,18 @@ const Groups = () => {
             ) : null}
           </section>
 
-          <RightSidebar contacts={contacts} />
+          <RightSidebar
+            contacts={contacts}
+            friendRequests={friendRequests}
+            groupConversations={groupConversations}
+            groupsLoading={groupsLoading}
+            requestsLoading={requestsLoading}
+            requestActionId={requestActionId}
+            onAcceptRequest={handleAcceptRequest}
+            onRejectRequest={handleRejectRequest}
+            onContactClick={handleContactClick}
+            onGroupClick={handleGroupClick}
+          />
         </main>
       </div>
 

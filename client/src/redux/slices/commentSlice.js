@@ -5,6 +5,8 @@ const initialState = {
   comments: [],
   currentComment: null,
   loading: false,
+  loadingKey: null,
+  loadedKey: null,
   error: null,
   message: null,
   pagination: {
@@ -42,6 +44,18 @@ export const getPostComments = createAsyncThunk(
         error.response?.data?.message || "Unable to load comments",
       );
     }
+  },
+  {
+    condition: ({ postId, page = 1, limit = 20 }, { getState }) => {
+      if (!postId) {
+        return true;
+      }
+
+      const key = `${postId}:${page}:${limit}`;
+      const { comments } = getState();
+
+      return comments.loadingKey !== key && comments.loadedKey !== key;
+    },
   },
 );
 
@@ -139,17 +153,23 @@ const commentSlice = createSlice({
 
     // Get post comments
     builder
-      .addCase(getPostComments.pending, (state) => {
+      .addCase(getPostComments.pending, (state, action) => {
         state.loading = true;
+        state.loadingKey = `${action.meta.arg.postId}:${action.meta.arg.page || 1}:${
+          action.meta.arg.limit || 20
+        }`;
         state.error = null;
       })
       .addCase(getPostComments.fulfilled, (state, action) => {
         state.loading = false;
+        state.loadedKey = state.loadingKey;
+        state.loadingKey = null;
         state.comments = action.payload.comments || [];
         state.pagination = action.payload.pagination || initialState.pagination;
       })
       .addCase(getPostComments.rejected, (state, action) => {
         state.loading = false;
+        state.loadingKey = null;
         state.error = action.payload;
       });
 
