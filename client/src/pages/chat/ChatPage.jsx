@@ -599,7 +599,7 @@ const ChatPage = () => {
   };
 
   const handleSendImage = (event) => {
-    const files = event.target.files;
+    const files = Array.from(event.target.files || []);
     event.target.value = "";
     addPendingImageFiles(files);
   };
