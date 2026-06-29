@@ -299,22 +299,25 @@ export const useHeaderChat = (profile) => {
       };
     };
 
-    loadUnreadConversations()
-      .then((conversations) => {
-        conversationsCache = conversations;
-        setMessageConversations(conversationsCache);
+    const initialLoadTimer = window.setTimeout(() => {
+      loadUnreadConversations()
+        .then((conversations) => {
+          conversationsCache = conversations;
+          setMessageConversations(conversationsCache);
 
-        if (shouldReconnect) {
-          connect();
-        }
-      })
-      .catch((error) => {
-        shouldReconnect = false;
-        console.error("Unable to start chat badge websocket:", error);
-      });
+          if (shouldReconnect) {
+            connect();
+          }
+        })
+        .catch((error) => {
+          shouldReconnect = false;
+          console.error("Unable to start chat badge websocket:", error);
+        });
+    }, 0);
 
     return () => {
       shouldReconnect = false;
+      window.clearTimeout(initialLoadTimer);
       if (reconnectTimer) {
         window.clearTimeout(reconnectTimer);
       }
