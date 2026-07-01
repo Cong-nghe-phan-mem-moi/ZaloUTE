@@ -4,6 +4,7 @@ const Message = require("../models/message.model");
 const Conversation = require("../models/conversation.model");
 const User = require("../models/user.model");
 const googleDriveService = require("./googleDrive.service");
+const DeepSeekService = require("./deepseek.service");
 const jwt = require("jsonwebtoken");
 const { WebSocketServer, WebSocket } = require("ws");
 
@@ -52,6 +53,13 @@ const sendToUser = (userId, payload) => {
   if (userClients.size === 0) {
     clients.delete(userId.toString());
   }
+};
+
+const broadcastToConversation = (conversation, payload) => {
+  conversation.participants.forEach((participant) => {
+    const participantId = (participant._id || participant).toString();
+    sendToUser(participantId, payload);
+  });
 };
 
 // Register chat sendToUser helper with onlineTracker
@@ -749,17 +757,62 @@ class ChatService {
               const conversationForThisId = updatedConversation.find(
                 (c) => c._id.toString() === conversationId.toString()
               );
-              conversation.participants.forEach((participant) => {
-                const participantIdStr = participant._id.toString();
-                sendToUser(participantIdStr, {
+              broadcastToConversation(conversation, {
                   type: "message",
                   data: savedMessage,
-                });
-                sendToUser(participantIdStr, {
+              });
+              broadcastToConversation(conversation, {
                   type: "conversation_update",
                   data: conversationForThisId || conversation,
-                });
               });
+
+              const aiQuestion =
+                normalizedMessageType === "text"
+                  ? DeepSeekService.extractAiQuestion(normalizedContent)
+                  : null;
+
+              if (aiQuestion) {
+                let aiAnswer;
+                try {
+                  const recentMessages = await chatRepository.getMessagesByConversationId(
+                    conversationId,
+                    0,
+                    30,
+                  );
+                  aiAnswer = await DeepSeekService.answerFromConversation({
+                    question: aiQuestion,
+                    messages: recentMessages.reverse(),
+                    conversation,
+                  });
+                } catch (error) {
+                  console.error("DeepSeek chat answer error:", error);
+                  aiAnswer = "ZaloUTE AI đang gặp lỗi khi tạo câu trả lời. Vui lòng thử lại sau.";
+                }
+
+                const aiMessage = await chatRepository.saveMessage({
+                  conversationId,
+                  senderId: null,
+                  content: aiAnswer,
+                  messageType: "ai",
+                  readBy: [ws.userId],
+                  replyTo: savedMessage._id,
+                });
+
+                await chatRepository.updateConversationLastMessage(conversationId, aiMessage._id);
+                const aiUpdatedConversation = await chatRepository.getConversationsByUserId(ws.userId);
+                const aiConversationForThisId = aiUpdatedConversation.find(
+                  (c) => c._id.toString() === conversationId.toString()
+                );
+
+                broadcastToConversation(conversation, {
+                  type: "message",
+                  data: aiMessage,
+                });
+                broadcastToConversation(conversation, {
+                  type: "conversation_update",
+                  data: aiConversationForThisId || conversation,
+                });
+              }
 
             } else if (type === "revoke_message") {
               const { messageId } = payload;

@@ -141,6 +141,11 @@ EMAIL_USE_MOCK=false
 
 RATE_LIMIT_WINDOW_MS=900000
 RATE_LIMIT_MAX_REQUESTS=100
+
+DEEPSEEK_API_KEY=
+DEEPSEEK_MODEL=deepseek-chat
+DEEPSEEK_BASE_URL=https://api.deepseek.com
+
 CORS_ORIGIN=http://localhost:5173
 
 GOOGLE_CLIENT_ID=your_google_oauth_web_client_id.apps.googleusercontent.com
@@ -160,6 +165,7 @@ Gợi ý cho môi trường phát triển:
 - `MONGODB_URI` có thể trỏ đến MongoDB local hoặc Atlas.
 - `JWT_SECRET` và `SESSION_SECRET` phải đổi khi deploy production.
 - `CORS_ORIGIN` nên chứa URL frontend, ví dụ `http://localhost:5173`.
+- Để dùng ZaloUTE AI trong chat, điền `DEEPSEEK_API_KEY`. Sau khi thêm hoặc đổi key, cần restart backend để `process.env` nạp lại `.env`.
 
 ### Client `.env`
 
@@ -587,7 +593,7 @@ Các endpoint quản trị nhóm dùng middleware `isGroupAdmin`.
 
 File liên quan:
 
-- Backend: `chat.route.js`, `chat.controller.js`, `chat.service.js`, `chat.repository.js`, `conversation.model.js`, `message.model.js`.
+- Backend: `chat.route.js`, `chat.controller.js`, `chat.service.js`, `deepseek.service.js`, `chat.repository.js`, `conversation.model.js`, `message.model.js`.
 - Frontend: `chat.service.js`, `chatSlice.js`, `ChatPage.jsx`, `components/chat/*`, `MiniChatWindow.jsx`, `MessagesDropdown.jsx`.
 
 Chức năng:
@@ -597,6 +603,7 @@ Chức năng:
 - Lấy danh sách hội thoại.
 - Lấy tin nhắn theo hội thoại.
 - Gửi tin nhắn realtime qua WebSocket.
+- Gọi ZaloUTE AI bằng cú pháp `@AI <câu hỏi>` trong khung chat.
 - Upload ảnh trong hội thoại.
 - Chia sẻ bài viết/story qua tin nhắn.
 - Đánh dấu hội thoại đã xem.
@@ -606,6 +613,14 @@ Chức năng:
 - Tắt/bật thông báo hội thoại.
 - Chặn/bỏ chặn hội thoại.
 - Xóa hội thoại.
+
+ZaloUTE AI trong chat:
+
+- Người dùng nhập `@AI` kèm câu hỏi, ví dụ `@AI tóm tắt đoạn chat này`.
+- Backend lưu tin nhắn người dùng, gọi DeepSeek API, sau đó lưu và broadcast thêm một tin nhắn `ZaloUTE AI` vào cùng hội thoại.
+- AI được phép trả lời về nội dung đoạn chat, các chủ đề đã được nhắc trong đoạn chat, tóm tắt/giải thích/gợi ý liên quan đến chủ đề đó, và metadata cơ bản của hội thoại như tên nhóm, số lượng thành viên, tên thành viên.
+- Nếu câu hỏi hoàn toàn ngoài ngữ cảnh đoạn chat hoặc metadata hội thoại, AI sẽ từ chối thay vì trả lời lan man.
+- Cần cấu hình `DEEPSEEK_API_KEY` trong `server/.env` và restart backend sau khi thay đổi key.
 
 Endpoint chính:
 
@@ -950,6 +965,8 @@ Nếu cần state toàn cục:
 4. Cập nhật `Conversation.lastMessage`.
 5. Broadcast tin nhắn đến participants.
 6. Frontend cập nhật `chatSlice` và UI hội thoại hiện tại.
+
+Với tin nhắn AI, backend nhận diện nội dung có `@AI`, lấy câu hỏi phía sau mention, gọi `DeepSeekService.answerFromConversation()`, rồi lưu phản hồi với `messageType: "ai"`. Frontend render loại tin nhắn này bằng bubble và avatar riêng của `ZaloUTE AI`.
 
 ## Kiểm thử
 

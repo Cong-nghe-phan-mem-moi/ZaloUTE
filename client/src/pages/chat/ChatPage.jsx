@@ -40,6 +40,7 @@ import { stickerAPI } from "../../services/sticker.service";
 import { getConversationPreview } from "../../utils/chatUtils";
 
 const MESSAGE_REACTIONS = ["👍", "❤️", "😂", "😮", "😢", "😡"];
+const AI_ASSISTANT_NAME = "ZaloUTE AI";
 
 const getChatWsUrl = (token) => {
   const encodedToken = encodeURIComponent(token);
@@ -833,11 +834,19 @@ const ChatPage = () => {
   const getMessagePreviewText = (message) => {
     if (!message) return "";
     if (message.isRevoked) return "Message has been unsent";
+    if (message.messageType === "ai") return message.content || `${AI_ASSISTANT_NAME} replied`;
     if (message.messageType === "image") return "Sent an image";
     if (message.messageType === "sticker") return "Sent a sticker";
     if (message.messageType === "post_share") return "Shared a post";
     if (message.messageType === "story_reply") return "Replied to a story";
     return message.content || "Message";
+  };
+
+  const getMessageSenderLabel = (message) => {
+    if (!message) return "User";
+    if (message.messageType === "ai") return AI_ASSISTANT_NAME;
+    if (message.senderId?._id === (profile?.id || profile?.userId)) return "You";
+    return message.senderId?.fullName || "User";
   };
 
   const getReactionUserId = (reaction) =>
@@ -875,19 +884,33 @@ const ChatPage = () => {
   };
 
   const filteredMembersForTag = (() => {
-    if (!activeConversation || !activeConversation.isGroup || !showTagDropdown) return [];
+    if (!activeConversation || !showTagDropdown) return [];
+
+    const aiOption = {
+      _id: "ai",
+      type: "ai",
+      fullName: AI_ASSISTANT_NAME,
+      tagText: "@AI",
+    };
 
     const currentUserId = (profile?.id || profile?.userId || "").toString();
-    const otherParticipants = (activeConversation.participants || []).filter(
-      (p) => p._id.toString() !== currentUserId
-    );
+    const otherParticipants = activeConversation.isGroup
+      ? (activeConversation.participants || []).filter(
+        (p) => p._id.toString() !== currentUserId
+      )
+      : [];
 
     const allOption = { _id: "all", type: "all", fullName: "Notify everyone", tagText: "@All" };
-    let result = [allOption, ...otherParticipants];
+    let result = activeConversation.isGroup
+      ? [aiOption, allOption, ...otherParticipants]
+      : [aiOption];
 
     if (tagSearchQuery.trim() !== "") {
       const query = tagSearchQuery.toLowerCase();
       result = result.filter((item) => {
+        if (item.type === "ai") {
+          return "ai".includes(query) || "zaloute ai".includes(query);
+        }
         if (item.type === "all") {
           return "all".includes(query) || "notify everyone".includes(query);
         }
@@ -902,7 +925,7 @@ const ChatPage = () => {
     const value = e.target.value;
     setMessageText(value);
 
-    if (!activeConversation || !activeConversation.isGroup) {
+    if (!activeConversation) {
       if (showTagDropdown) setShowTagDropdown(false);
       return;
     }
@@ -931,13 +954,14 @@ const ChatPage = () => {
     const textBeforeAt = messageText.slice(0, tagTriggerIndex);
     const textAfterQuery = messageText.slice(tagTriggerIndex + 1 + tagSearchQuery.length);
 
-    const tagText = member.type === "all" ? "@All" : `@${member.fullName}`;
+    const tagText =
+      member.type === "all" ? "@All" : member.type === "ai" ? "@AI" : `@${member.fullName}`;
     const mentionString = `${tagText} `;
     const newText = `${textBeforeAt}${mentionString}${textAfterQuery}`;
 
     setMessageText(newText);
 
-    if (member.type !== "all") {
+    if (member.type !== "all" && member.type !== "ai") {
       if (!mentionedUsers.some((u) => u.id === member._id)) {
         setMentionedUsers((prev) => [...prev, { id: member._id, fullName: member.fullName }]);
       }
@@ -1347,6 +1371,7 @@ const ChatPage = () => {
                         profile &&
                         msg.senderId &&
                         (msg.senderId._id || msg.senderId) === (profile.id || profile.userId);
+                      const isAiMessage = msg.messageType === "ai";
                       const reactionSummary = getReactionSummary(msg);
                       const currentUserReaction = getCurrentUserReaction(msg);
 
@@ -1356,14 +1381,24 @@ const ChatPage = () => {
                           className={`flex items-end gap-2 ${isMe ? "justify-end" : "justify-start"}`}
                         >
                           {!isMe ? (
+                            isAiMessage ? (
+                              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#1877f2] via-[#7c3aed] to-[#00a884] text-[11px] font-black text-white shadow-sm">
+                                AI
+                              </div>
+                            ) : (
                             <UserAvatar
                               image={msg.senderId?.avatar}
                               name={msg.senderId?.fullName}
                               size="sm"
                             />
+                            )
                           ) : null}
                           <div className="flex flex-col max-w-[70%]">
-                            {activeConversation?.isGroup && !isMe && msg.senderId && (
+                            {isAiMessage ? (
+                              <span className="text-[11px] text-[#1877f2] font-bold mb-1 ml-1">
+                                {AI_ASSISTANT_NAME}
+                              </span>
+                            ) : activeConversation?.isGroup && !isMe && msg.senderId && (
                               <span className="text-[11px] text-gray-500 font-semibold mb-1 ml-1">
                                 {msg.senderId.fullName}
                               </span>
@@ -1400,9 +1435,7 @@ const ChatPage = () => {
                                         : "bg-white border-gray-200 text-gray-700 shadow-sm"
                                       }`}>
                                       <span className="font-bold text-gray-800 truncate">
-                                        {msg.replyTo.senderId?._id === (profile?.id || profile?.userId)
-                                          ? "You"
-                                          : msg.replyTo.senderId?.fullName || "User"}
+                                        {getMessageSenderLabel(msg.replyTo)}
                                       </span>
                                       <span className="truncate text-gray-500">
                                         {getMessagePreviewText(msg.replyTo)}
@@ -1460,6 +1493,22 @@ const ChatPage = () => {
                                     onOpen={(storyId) => navigate(`/?storyId=${storyId}`)}
                                   />
                                 </div>
+                              ) : isAiMessage ? (
+                                <div className="max-w-md rounded-2xl rounded-bl-none border border-blue-100 bg-white px-4 py-3 text-sm leading-relaxed text-gray-800 shadow-sm">
+                                  {msg.replyTo && (
+                                    <div className="mb-2 rounded-lg border-l-[3px] border-[#1877f2]/50 bg-blue-50 p-2 text-xs">
+                                      <span className="block truncate font-bold text-gray-800">
+                                        {getMessageSenderLabel(msg.replyTo)}
+                                      </span>
+                                      <span className="block truncate text-gray-500">
+                                        {msg.replyTo.isRevoked ? "Message has been unsent" : getMessagePreviewText(msg.replyTo)}
+                                      </span>
+                                    </div>
+                                  )}
+                                  <div className="whitespace-pre-wrap break-words">
+                                    {msg.content}
+                                  </div>
+                                </div>
                               ) : (
                                 <div
                                   className={`px-4 py-2.5 rounded-2xl shadow-sm text-sm break-all ${isMe
@@ -1474,9 +1523,7 @@ const ChatPage = () => {
                                         : "bg-black/5 border-black/20 text-gray-800/90"
                                       }`}>
                                       <span className={`font-bold ${isMe ? "text-white" : "text-gray-800"} truncate`}>
-                                        {msg.replyTo.senderId?._id === (profile?.id || profile?.userId)
-                                          ? "You"
-                                          : msg.replyTo.senderId?.fullName || "User"}
+                                        {getMessageSenderLabel(msg.replyTo)}
                                       </span>
                                       <span className={`truncate ${isMe ? "text-white/80" : "text-gray-500"}`}>
                                         {msg.replyTo.isRevoked ? "Message has been unsent" : getMessagePreviewText(msg.replyTo)}
@@ -1611,9 +1658,11 @@ const ChatPage = () => {
                     <div className="flex items-center gap-2 border-l-[3px] border-[#1877f2] pl-3 min-w-0">
                       <div className="flex flex-col min-w-0">
                         <span className="text-xs font-bold text-[#1877f2]">
-                          Replying to {replyingMessage.senderId?._id === (profile?.id || profile?.userId)
-                            ? "yourself"
-                            : replyingMessage.senderId?.fullName || "user"}
+                          Replying to {replyingMessage.messageType === "ai"
+                            ? AI_ASSISTANT_NAME
+                            : replyingMessage.senderId?._id === (profile?.id || profile?.userId)
+                              ? "yourself"
+                              : replyingMessage.senderId?.fullName || "user"}
                         </span>
                         <span className="text-xs text-gray-500 truncate max-w-[500px]">
                           {getMessagePreviewText(replyingMessage)}
@@ -1656,6 +1705,7 @@ const ChatPage = () => {
                       {filteredMembersForTag.map((member, idx) => {
                         const isSelected = idx === selectedTagIndex;
                         const isAll = member.type === "all";
+                        const isAi = member.type === "ai";
 
                         return (
                           <button
@@ -1666,9 +1716,15 @@ const ChatPage = () => {
                               isSelected ? "bg-gray-100 text-[#1877f2]" : "hover:bg-gray-50 text-gray-700"
                             }`}
                           >
-                            {isAll ? (
-                              <div className="w-8 h-8 rounded-full bg-[#1877f2] text-white flex items-center justify-center shrink-0 font-bold text-sm">
-                                @
+                            {isAll || isAi ? (
+                              <div
+                                className={`w-8 h-8 rounded-full text-white flex items-center justify-center shrink-0 font-bold text-xs ${
+                                  isAi
+                                    ? "bg-gradient-to-br from-[#1877f2] via-[#7c3aed] to-[#00a884]"
+                                    : "bg-[#1877f2]"
+                                }`}
+                              >
+                                {isAi ? "AI" : "@"}
                               </div>
                             ) : (
                               <UserAvatar image={member.avatar} name={member.fullName} size="sm" />
@@ -1678,9 +1734,9 @@ const ChatPage = () => {
                               <span className={`text-sm truncate ${isSelected ? "font-bold" : "font-medium"}`}>
                                 {member.fullName}
                               </span>
-                              {isAll && (
+                              {(isAll || isAi) && (
                                 <span className="text-xs text-blue-600 font-semibold shrink-0">
-- @All
+- {isAi ? "@AI" : "@All"}
                                 </span>
                               )}
                             </div>
