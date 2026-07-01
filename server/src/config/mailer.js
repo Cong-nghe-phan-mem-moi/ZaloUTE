@@ -54,10 +54,10 @@ const sendOTPEmail = async (email, otp) => {
 
 const sendPasswordResetOTP = async (email, otp) => {
   try {
-    if (process.env.NODE_ENV !== "production") {
-      console.log(`[MOCK EMAIL] Password reset OTP for ${email}: ${otp}`);
-      return { success: true };
-    }
+    // if (process.env.NODE_ENV !== "production") {
+    //   console.log(`[MOCK EMAIL] Password reset OTP for ${email}: ${otp}`);
+    //   return { success: true };
+    // }
 
     const mailOptions = {
       from:
@@ -88,6 +88,3 @@ module.exports = {
   sendPasswordResetOTP,
   transporter,
 };
-
-
-

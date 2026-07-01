@@ -10,11 +10,14 @@ const messageSchema = new mongoose.Schema({
     senderId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
-        required: true
+        required() {
+            return this.messageType !== 'ai';
+        },
+        default: null
     },
     messageType: {
         type: String,
-        enum: ['text', 'image', 'sticker', 'system', 'video', 'post_share', 'story_reply'],
+        enum: ['text', 'image', 'sticker', 'system', 'video', 'post_share', 'story_reply', 'ai'],
         default: 'text'
     },
     content: {

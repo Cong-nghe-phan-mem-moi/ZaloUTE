@@ -1,5 +1,6 @@
 ﻿import { useCallback, useEffect, useMemo, useState } from "react";
 import StatusCard from "../common/StatusCard";
+import Toast from "../common/Toast";
 import { postAPI } from "../../services/post.service";
 import AlbumEditorModal from "./AlbumEditorModal";
 import MediaLightbox from "./MediaLightbox";
@@ -25,7 +26,11 @@ const UserMediaGallery = ({ userId, isOwnProfile = false }) => {
   const [loading, setLoading] = useState(true);
   const [savingAlbum, setSavingAlbum] = useState(false);
   const [albumModalOpen, setAlbumModalOpen] = useState(false);
-  const [lightbox, setLightbox] = useState({ open: false, items: [], index: 0 });
+  const [lightbox, setLightbox] = useState({
+    open: false,
+    items: [],
+    index: 0,
+  });
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
 
@@ -107,7 +112,9 @@ const UserMediaGallery = ({ userId, isOwnProfile = false }) => {
       <div className="rounded-lg bg-white p-4 shadow-sm sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0">
-            <h2 className="text-lg font-bold text-[#111827]">Photos and videos</h2>
+            <h2 className="text-lg font-bold text-[#111827]">
+              Photos and videos
+            </h2>
             <p className="mt-1 text-sm text-[#65676b]">
               {mediaItems.length} media items - {albums.length} albums
             </p>
@@ -118,7 +125,9 @@ const UserMediaGallery = ({ userId, isOwnProfile = false }) => {
               onClick={() => setAlbumModalOpen(true)}
               className="flex h-10 w-full items-center justify-center gap-2 rounded-md bg-[#1877f2] px-4 text-sm font-semibold text-white hover:bg-[#166fe5] sm:w-auto"
             >
-              <span className="material-symbols-outlined text-[19px]">add_photo_alternate</span>
+              <span className="material-symbols-outlined text-[19px]">
+                add_photo_alternate
+              </span>
               Create album
             </button>
           ) : null}
@@ -136,15 +145,18 @@ const UserMediaGallery = ({ userId, isOwnProfile = false }) => {
                   : "bg-[#f2f3f5] text-[#050505] hover:bg-[#e5e7eb]"
               }`}
             >
-              <span className="material-symbols-outlined text-[19px]">{filter.icon}</span>
+              <span className="material-symbols-outlined text-[19px]">
+                {filter.icon}
+              </span>
               {filter.label}
             </button>
           ))}
         </div>
       </div>
 
-      {notice ? <StatusCard icon="check_circle" message={notice} layout="inline" /> : null}
-      {error ? <StatusCard icon="error" tone="error" message={error} layout="inline" /> : null}
+      {error ? (
+        <StatusCard icon="error" tone="error" message={error} layout="inline" />
+      ) : null}
 
       {loading ? (
         <StatusCard icon="sync" message="Loading media..." loading />
@@ -171,6 +183,8 @@ const UserMediaGallery = ({ userId, isOwnProfile = false }) => {
           onMove={moveLightbox}
         />
       ) : null}
+
+      <Toast message={notice} type="success" onClose={() => setNotice("")} />
     </section>
   );
 };
@@ -222,7 +236,11 @@ const AlbumGrid = ({ albums, onOpen }) => {
           >
             <div className="relative aspect-[4/3] bg-[#f2f3f5]">
               {album.coverUrl ? (
-                <img src={album.coverUrl} alt="" className="h-full w-full object-cover" />
+                <img
+                  src={album.coverUrl}
+                  alt=""
+                  className="h-full w-full object-cover"
+                />
               ) : (
                 <div className="flex h-full items-center justify-center text-[#1877f2]">
                   <span className="material-symbols-outlined text-[42px]">
@@ -254,7 +272,11 @@ const MediaTile = ({ item, onClick }) => (
     className="group relative aspect-square overflow-hidden rounded-md bg-[#f2f3f5]"
   >
     {item.type === "video" ? (
-      <video src={item.url} className="h-full w-full object-cover" preload="metadata" />
+      <video
+        src={item.url}
+        className="h-full w-full object-cover"
+        preload="metadata"
+      />
     ) : (
       <img
         src={item.url}

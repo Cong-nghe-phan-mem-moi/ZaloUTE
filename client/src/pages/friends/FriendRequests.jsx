@@ -4,6 +4,7 @@ import { StatusCard, UserAvatar } from "../../components/common";
 import HomeHeader from "../../components/home/HomeHeader";
 import LeftSidebar from "../../components/home/LeftSidebar";
 import RightSidebar from "../../components/home/RightSidebar";
+import Toast from "../../components/common/Toast";
 import { useHomeSidebar } from "../../hooks";
 import { useAppDispatch, useAppSelector } from "../../redux/hooks";
 import { fetchUserProfile } from "../../redux/slices/userSlice";
@@ -133,7 +134,7 @@ const FriendRequests = () => {
       <div className="min-h-screen w-full bg-white">
         <HomeHeader profile={profile} activePage="friends" />
 
-        <main className="grid min-h-[calc(100vh-80px)] grid-cols-1 justify-center bg-[#f2f3f5] lg:grid-cols-[240px_minmax(0,780px)] xl:grid-cols-[260px_minmax(0,820px)_300px] 2xl:grid-cols-[280px_minmax(0,920px)_320px]">
+        <main className="grid min-h-[calc(100vh-80px)] grid-cols-1 justify-center bg-[#f2f3f5] lg:grid-cols-[240px_minmax(0,680px)] xl:grid-cols-[260px_minmax(0,680px)_300px] 2xl:grid-cols-[280px_minmax(0,760px)_320px]">
           <LeftSidebar profile={profile} />
 
           <section className="min-w-0 space-y-4 px-3 py-3 sm:px-4 sm:py-4 lg:space-y-5 lg:px-5 lg:py-5">
@@ -171,10 +172,6 @@ const FriendRequests = () => {
                 </Link>
               </div>
             </section>
-
-            {notice ? (
-              <StatusCard icon="info" message={notice} />
-            ) : null}
 
             {error ? (
               <StatusCard icon="error" message={error} tone="error" />
@@ -258,6 +255,8 @@ const FriendRequests = () => {
           />
         </main>
       </div>
+
+      <Toast message={notice} type="success" onClose={() => setNotice("")} />
     </div>
   );
 };

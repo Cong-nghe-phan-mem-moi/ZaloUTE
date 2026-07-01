@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from '../../redux/hooks'
 import {
   clearStatus,
@@ -56,6 +57,7 @@ const AlertMessage = ({ type, message }) => {
 
 function ForgotPassword() {
   const dispatch = useAppDispatch()
+  const navigate = useNavigate()
   const {
     step,
     email,
@@ -107,6 +109,7 @@ function ForgotPassword() {
   }
 
   const handleRestart = () => dispatch(resetState())
+  const handleLoginRedirect = () => navigate('/login')
 
   const currentStepIndex = steps.findIndex((item) => item.id === step)
 
@@ -286,10 +289,10 @@ function ForgotPassword() {
                   </div>
                   <button
                     type="button"
-                    onClick={handleRestart}
+                    onClick={handleLoginRedirect}
                     className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-600 transition hover:border-indigo-300 hover:text-slate-800"
                   >
-                    Start over
+                    Login
                   </button>
                 </div>
               )}
