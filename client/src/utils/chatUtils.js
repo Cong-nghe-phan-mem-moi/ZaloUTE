@@ -90,6 +90,10 @@ export const getConversationPreview = (conversation, profile) => {
   const senderId = String(getId(lastMessage.senderId));
   const prefix = senderId === profileId ? "You: " : "";
 
+  if (lastMessage.messageType === "ai") {
+    return `ZaloUTE AI: ${lastMessage.content || "Replied"}`;
+  }
+
   if (lastMessage.messageType === "post_share") {
     return `${prefix}Shared a post`;
   }
@@ -120,5 +124,6 @@ export const getMiniMessageContent = (message) => {
   if (message.messageType === "sticker") return "Sent a sticker";
   if (message.messageType === "image") return "Sent an image";
   if (message.messageType === "system") return message.content || "System message";
+  if (message.messageType === "ai") return message.content || "ZaloUTE AI replied";
   return message.content || "Message";
 };

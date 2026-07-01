@@ -152,6 +152,7 @@ const MiniChatWindow = ({
 
         {messages.map((message) => {
           const isMe = String(getId(message.senderId)) === profileId;
+          const isAiMessage = message.messageType === "ai";
           const content = getMiniMessageContent(message);
           const reactionSummary = getReactionSummary(message);
 
@@ -186,6 +187,16 @@ const MiniChatWindow = ({
                       }}
                     />
                   </a>
+                ) : isAiMessage ? (
+                  <div className="max-w-[78%] rounded-2xl rounded-bl-sm border border-blue-100 bg-white px-3 py-2 text-sm leading-5 text-[#111827] shadow-sm">
+                    <div className="mb-1 flex items-center gap-1.5 text-[11px] font-bold text-[#1877f2]">
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-[#1877f2] via-[#7c3aed] to-[#00a884] text-[9px] text-white">
+                        AI
+                      </span>
+                      ZaloUTE AI
+                    </div>
+                    <div className="whitespace-pre-wrap break-words">{content}</div>
+                  </div>
                 ) : (
                   <div
                     className={`max-w-[78%] rounded-2xl px-3 py-2 text-sm leading-5 ${
