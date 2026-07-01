@@ -25,6 +25,12 @@ import ReportModal from "../report/ReportModal";
 
 const getUserId = (user) => user?.userId || user?._id || user?.id;
 
+const getPostAuthorId = (post) =>
+  post?.author?._id || post?.author?.id || post?.author?.userId || post?.author;
+
+const getPostGroupId = (post) =>
+  post?.group?._id || post?.group?.id || post?.group;
+
 const getMediaGridClass = (count) => {
   if (count === 2) {
     return "grid-cols-2";
@@ -203,14 +209,25 @@ const PostList = ({
   }, [allowedAuthorIds]);
 
   const visiblePosts = useMemo(() => {
-    if (!allowedAuthorIdSet) {
-      return posts;
-    }
+    return posts.filter((post) => {
+      if (authorId && String(getPostAuthorId(post)) !== String(authorId)) {
+        return false;
+      }
 
-    return posts.filter((post) =>
-      allowedAuthorIdSet.has(String(post.author?._id)),
-    );
-  }, [allowedAuthorIdSet, posts]);
+      if (groupId && String(getPostGroupId(post)) !== String(groupId)) {
+        return false;
+      }
+
+      if (
+        allowedAuthorIdSet &&
+        !allowedAuthorIdSet.has(String(getPostAuthorId(post)))
+      ) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [allowedAuthorIdSet, authorId, groupId, posts]);
 
   useEffect(() => {
     onPostsLoaded?.(visiblePosts);
