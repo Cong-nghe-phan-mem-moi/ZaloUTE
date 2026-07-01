@@ -13,6 +13,15 @@ Ngoài ra repo có tài liệu nghiệp vụ và kiểm thử:
 - `tests/api/`: Postman collections cho các nhóm API.
 - `server/tests/`: unit test backend bằng `node:test`.
 
+## Sinh viên thực hiện:
+
+| MSSV | Họ và tên |
+| --- | --- |
+| 23110259 | Châu Kim Lương |
+| 23110265 | Nguyễn Nhật Minh |
+| 23110325 | Võ An Thái |
+| 23110342 | Mai Hồng Tín |
+
 ## Công nghệ sử dụng
 
 **Frontend**
@@ -288,7 +297,7 @@ Các route frontend chính:
 | `/admin/dashboard` | Trang quản trị |
 | `/profile` | Hồ sơ cá nhân |
 | `/users/profile/:userId` | Hồ sơ người dùng khác |
-| `/profile/media` | Media của tôi |
+| `/profile/media` | Media |
 | `/users/media/:userId` | Media của người dùng khác |
 
 ## Các module chức năng
