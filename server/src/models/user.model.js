@@ -15,7 +15,7 @@ const userSchema = new mongoose.Schema({
   },
   phone: {
     type: String,
-    match: [/^\\d{10}$/, 'Invalid phone number']
+    match: [/^\d{10}$/, 'Invalid phone number']
   },
   avatar: {
     type: String,
@@ -190,6 +190,7 @@ userSchema.pre("findOneAndUpdate", async function () {
 });
 
 module.exports = mongoose.model('User', userSchema);
+
 
 
 
