@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import HomeHeader from "../../components/home/HomeHeader";
 import LeftSidebar from "../../components/home/LeftSidebar";
 import StatusCard from "../../components/common/StatusCard";
+import Toast from "../../components/common/Toast";
 import { useAppDispatch, useAppSelector } from "../../redux/hooks";
 import { clearProfile, fetchUserProfile } from "../../redux/slices/userSlice";
 import { userAPI } from "../../services/user.service";
@@ -272,8 +273,9 @@ export default function AccountSettings() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f2f3f5] text-[#111827]">
-      <HomeHeader profile={profile} activePage={null} />
+    <>
+      <div className="min-h-screen bg-[#f2f3f5] text-[#111827]">
+        <HomeHeader profile={profile} activePage={null} />
 
       <main className="grid min-h-[calc(100vh-80px)] grid-cols-1 justify-center bg-[#f2f3f5] lg:grid-cols-[240px_minmax(0,960px)] xl:grid-cols-[260px_minmax(0,1040px)] 2xl:grid-cols-[280px_minmax(0,1120px)]">
         <LeftSidebar profile={profile} />
@@ -301,7 +303,6 @@ export default function AccountSettings() {
             </aside>
 
             <div className="space-y-4">
-              {notice ? <StatusCard icon="check_circle" message={notice} layout="inline" /> : null}
               {error ? <StatusCard icon="error" tone="error" message={error} layout="inline" /> : null}
 
               <div className="rounded-lg border border-[#dddfe2] bg-white p-5">
@@ -525,8 +526,10 @@ export default function AccountSettings() {
             </div>
           </div>
         </section>
-      </main>
-    </div>
+        </main>
+      </div>
+      <Toast message={notice} type="success" onClose={() => setNotice("")} />
+    </>
   );
 }
 

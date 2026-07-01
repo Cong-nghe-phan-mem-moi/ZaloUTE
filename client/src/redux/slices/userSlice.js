@@ -45,8 +45,14 @@ export const updateUserProfile = createAsyncThunk(
       const response = await api.put('/profile', formData)
       return response.data.data
     } catch (error) {
+      const responseData = error.response?.data
       return rejectWithValue(
-        error.response?.data?.message || 'Failed to update profile',
+        responseData?.errors?.length
+          ? {
+              message: responseData.message || 'Validation failed',
+              errors: responseData.errors,
+            }
+          : responseData?.message || 'Failed to update profile',
       )
     }
   },

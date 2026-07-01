@@ -4,6 +4,7 @@ import { StatusCard, UserAvatar } from "../../components/common";
 import HomeHeader from "../../components/home/HomeHeader";
 import LeftSidebar from "../../components/home/LeftSidebar";
 import RightSidebar from "../../components/home/RightSidebar";
+import Toast from "../../components/common/Toast";
 import { useHomeSidebar } from "../../hooks";
 import { useAppDispatch, useAppSelector } from "../../redux/hooks";
 import { fetchUserProfile } from "../../redux/slices/userSlice";
@@ -172,10 +173,6 @@ const FriendRequests = () => {
               </div>
             </section>
 
-            {notice ? (
-              <StatusCard icon="info" message={notice} />
-            ) : null}
-
             {error ? (
               <StatusCard icon="error" message={error} tone="error" />
             ) : null}
@@ -258,6 +255,8 @@ const FriendRequests = () => {
           />
         </main>
       </div>
+
+      <Toast message={notice} type="success" onClose={() => setNotice("")} />
     </div>
   );
 };

@@ -114,8 +114,10 @@ const ProfilePage = ({ userId }) => {
     try {
       await dispatch(updateUserProfile(formData)).unwrap();
       setIsEditModalOpen(false);
+      setNotice("Profile updated successfully.");
     } catch (err) {
       console.error("Failed to update profile:", err);
+      throw err;
     }
   };
 

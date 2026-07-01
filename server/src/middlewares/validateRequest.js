@@ -1,5 +1,15 @@
 const validateEditProfile = (req, res, next) => {
-  const { fullName, email, phone, bio, dateOfBirth, gender, address, avatar } = req.body;
+  const {
+    fullName,
+    email,
+    phone,
+    bio,
+    dateOfBirth,
+    gender,
+    address,
+    avatar,
+    socialLinks,
+  } = req.body;
 
 
 
@@ -26,7 +36,7 @@ const validateEditProfile = (req, res, next) => {
 
   if (phone !== undefined) {
     if (phone.trim().length > 0) {
-      const phoneRegex = /^(\+\d{1,3}[- ]?)?\d{10}$/;
+      const phoneRegex = /^\d{10}$/;
       if (!phoneRegex.test(phone)) {
         errors.push('Invalid phone number format');
       }
@@ -65,6 +75,35 @@ const validateEditProfile = (req, res, next) => {
   if (avatar !== undefined) {
     if (typeof avatar !== 'string' && avatar !== null) {
       errors.push('Avatar must be a string or null');
+    }
+  }
+
+  if (socialLinks !== undefined) {
+    if (
+      socialLinks === null ||
+      Array.isArray(socialLinks) ||
+      typeof socialLinks !== 'object'
+    ) {
+      errors.push('Social links must be an object');
+    } else {
+      const allowedKeys = ['facebook', 'instagram', 'tiktok', 'youtube', 'website'];
+
+      Object.keys(socialLinks).forEach((key) => {
+        if (!allowedKeys.includes(key)) {
+          errors.push(`Social link field '${key}' is not supported`);
+          return;
+        }
+
+        const value = socialLinks[key];
+        if (typeof value !== 'string') {
+          errors.push(`Social link '${key}' must be a string`);
+          return;
+        }
+
+        if (value.length > 255) {
+          errors.push(`Social link '${key}' must not exceed 255 characters`);
+        }
+      });
     }
   }
 
