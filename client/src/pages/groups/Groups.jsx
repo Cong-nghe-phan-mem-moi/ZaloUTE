@@ -1,4 +1,5 @@
 ﻿import { useCallback, useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import HomeHeader from "../../components/home/HomeHeader";
 import LeftSidebar from "../../components/home/LeftSidebar";
 import RightSidebar from "../../components/home/RightSidebar";
@@ -27,6 +28,9 @@ const emptyGroupForm = {
 };
 
 const Groups = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const initialNotice = location.state?.notice || "";
   const dispatch = useAppDispatch();
   const { profile } = useAppSelector((state) => state.user);
   const [groups, setGroups] = useState([]);
@@ -37,7 +41,7 @@ const Groups = () => {
   const [activeModal, setActiveModal] = useState(null);
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [form, setForm] = useState(emptyGroupForm);
-  const [notice, setNotice] = useState("");
+  const [notice, setNotice] = useState(() => initialNotice);
   const [error, setError] = useState("");
 
   const { friends } = useProfileFriends(profile, "Friends");
@@ -53,6 +57,7 @@ const Groups = () => {
     requestActionId,
     requestsLoading,
   } = useHomeSidebar({ dispatch, profile });
+  const navigationNotice = location.state?.notice;
 
   const loadGroups = useCallback(async () => {
     setLoading(true);
@@ -83,6 +88,12 @@ const Groups = () => {
 
     return () => window.clearTimeout(timer);
   }, [dispatch, loadGroups]);
+
+  useEffect(() => {
+    if (!navigationNotice) return;
+
+    navigate(location.pathname, { replace: true, state: null });
+  }, [location.pathname, navigate, navigationNotice]);
 
   const openCreateModal = () => {
     setSelectedGroup(null);

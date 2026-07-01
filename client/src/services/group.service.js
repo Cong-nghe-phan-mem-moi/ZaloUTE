@@ -27,6 +27,7 @@ export const groupAPI = {
   getGroupDetail: (groupId) => apiClient.get(`/groups/${groupId}`),
   updateGroupInfo: (groupId, payload) =>
     apiClient.put(`/groups/${groupId}`, buildGroupFormData(payload)),
+  deleteGroup: (groupId) => apiClient.delete(`/groups/${groupId}`),
   inviteToGroup: (groupId, invitedUserIds) =>
     apiClient.post(`/groups/${groupId}/invite`, { targetUserIds: invitedUserIds }),
   cancelInvitation: (groupId, targetUserId) =>

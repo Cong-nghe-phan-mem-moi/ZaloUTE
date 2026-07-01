@@ -42,9 +42,11 @@ export const GroupHero = ({
   group,
   accepting,
   requesting,
+  deleting,
   onAcceptInvite,
   onRequestJoin,
   onEdit,
+  onDelete,
 }) => (
   <section className="overflow-hidden rounded-lg bg-white shadow-sm">
     <div className="relative h-40 bg-gradient-to-br from-[#e8f1ff] via-[#cfe1ff] to-[#9fc5ff] sm:h-52 lg:h-60">
@@ -141,16 +143,29 @@ export const GroupHero = ({
           ) : null}
 
           {group.isCurrentUserAdmin ? (
-            <button
-              type="button"
-              onClick={onEdit}
-              className="flex items-center justify-center gap-2 rounded-md bg-[#e7f3ff] px-5 py-2 text-sm font-semibold text-[#1877f2] hover:bg-[#dbeafe]"
-            >
-              <span className="material-symbols-outlined text-[18px]">
-                edit
-              </span>
-              Edit group
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={onEdit}
+                className="flex items-center justify-center gap-2 rounded-md bg-[#e7f3ff] px-5 py-2 text-sm font-semibold text-[#1877f2] hover:bg-[#dbeafe]"
+              >
+                <span className="material-symbols-outlined text-[18px]">
+                  edit
+                </span>
+                Edit group
+              </button>
+              <button
+                type="button"
+                onClick={onDelete}
+                disabled={deleting}
+                className="flex items-center justify-center gap-2 rounded-md bg-[#fee2e2] px-5 py-2 text-sm font-semibold text-[#b91c1c] hover:bg-[#fecaca] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <span className="material-symbols-outlined text-[18px]">
+                  delete
+                </span>
+                {deleting ? "Deleting..." : "Delete group"}
+              </button>
+            </>
           ) : null}
         </div>
       </div>

@@ -135,6 +135,24 @@ async function handleUpdateGroupInfo(req, res) {
   }
 }
 
+async function handleDeleteGroup(req, res) {
+  try {
+    const adminId = getAuthUserId(req);
+    const { groupId } = req.params;
+
+    await GroupService.deleteGroup(adminId, groupId);
+
+    return res.status(200).json({
+      success: true,
+      code: 'DELETE_GROUP_SUCCESS',
+      message: 'Group deleted successfully',
+    });
+  } catch (error) {
+    console.error('Error deleting group:', error);
+    return sendError(res, error, 'DELETE_GROUP_ERROR', 'An error occurred while deleting the group');
+  }
+}
+
 async function handleInviteToGroup(req, res) {
   try {
     const userId = getAuthUserId(req);
@@ -302,6 +320,7 @@ module.exports = {
   getGroupInvitations,
   getGroupDetail,
   handleUpdateGroupInfo,
+  handleDeleteGroup,
   handleInviteToGroup,
   handleAcceptGroupInvitation,
   handleRejectGroupInvitation,

@@ -1,4 +1,6 @@
-﻿const GroupRepository = require('../repositories/group.repository');
+const GroupRepository = require('../repositories/group.repository');
+const Comment = require('../models/comment.model');
+const Post = require('../models/post.model');
 
 function throwCustomError(statusCode, message, code) {
   const error = new Error(message);
@@ -108,6 +110,25 @@ async function updateGroupInfo(userId, groupId, updateData) {
   });
 
   return await GroupRepository.updateGroupInfo(groupId, safeUpdateData);
+}
+
+async function deleteGroup(adminId, groupId) {
+  await getAdminGroup(adminId, groupId);
+
+  const groupPosts = await Post.find({ group: groupId }).select('_id').lean();
+  const postIds = groupPosts.map((post) => post._id);
+
+  if (postIds.length > 0) {
+    await Comment.deleteMany({ post: { $in: postIds } });
+    await Post.deleteMany({ _id: { $in: postIds } });
+  }
+
+  const deletedGroup = await GroupRepository.deleteGroup(groupId);
+  if (!deletedGroup) {
+    throwCustomError(404, 'Group not found', 'GROUP_NOT_FOUND');
+  }
+
+  return deletedGroup;
 }
 
 async function inviteToGroup(userId, groupId, targetUserIds) {
@@ -299,6 +320,7 @@ module.exports = {
   getGroupInvitations,
   getGroupDetail,
   updateGroupInfo,
+  deleteGroup,
   inviteToGroup,
   acceptGroupInvitation,
   rejectGroupInvitation,

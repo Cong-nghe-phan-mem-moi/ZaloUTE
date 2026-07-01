@@ -1,5 +1,5 @@
 ﻿import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import Composer from "../../components/home/Composer";
 import HomeHeader from "../../components/home/HomeHeader";
 import LeftSidebar from "../../components/home/LeftSidebar";
@@ -27,6 +27,7 @@ const shouldShowLegacyInfoPanel = false;
 
 const GroupDetail = () => {
   const { groupId } = useParams();
+  const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { profile } = useAppSelector((state) => state.user);
   const [group, setGroup] = useState(null);
@@ -47,6 +48,7 @@ const GroupDetail = () => {
   const [pendingPosts, setPendingPosts] = useState([]);
   const [pendingPostsLoading, setPendingPostsLoading] = useState(false);
   const [savingGroup, setSavingGroup] = useState(false);
+  const [deletingGroup, setDeletingGroup] = useState(false);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
 
@@ -288,6 +290,31 @@ const GroupDetail = () => {
     }
   };
 
+  const handleDeleteGroup = async () => {
+    if (!group || deletingGroup) return;
+
+    const confirmed = window.confirm(
+      "Delete this group? All group posts and comments will be removed.",
+    );
+    if (!confirmed) return;
+
+    setDeletingGroup(true);
+    setNotice("");
+    setError("");
+
+    try {
+      await groupAPI.deleteGroup(getId(group));
+      navigate("/groups", {
+        replace: true,
+        state: { notice: "Group deleted successfully." },
+      });
+    } catch (err) {
+      setError(err.response?.data?.message || "Unable to delete group.");
+    } finally {
+      setDeletingGroup(false);
+    }
+  };
+
   const handleApproveRequest = async (person) => {
     const personId = getId(person);
     if (!group || !personId || actionKey) return;
@@ -486,9 +513,11 @@ const GroupDetail = () => {
                   group={group}
                   accepting={actionKey === "accept-invite"}
                   requesting={actionKey === "request-join"}
+                  deleting={deletingGroup}
                   onAcceptInvite={handleAcceptInvitation}
                   onRequestJoin={handleRequestJoinGroup}
                   onEdit={openEditModal}
+                  onDelete={handleDeleteGroup}
                 />
 
                 <section className="space-y-4 lg:space-y-5">

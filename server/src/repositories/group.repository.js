@@ -68,6 +68,10 @@ async function updateGroupInfo(groupId, updateData) {
     ).lean();
 }
 
+async function deleteGroup(groupId) {
+    return await Group.findByIdAndDelete(groupId).lean();
+}
+
 async function addPendingInvites(groupId, targetUserIds) {
     return await Group.updateOne(
         { _id: groupId },
@@ -182,6 +186,7 @@ module.exports = {
     getGroupsByUserId,
     getInvitationsByUserId,
     updateGroupInfo,
+    deleteGroup,
     addPendingInvites,
     addPendingRequest,
     removeInviteAndAddMember,

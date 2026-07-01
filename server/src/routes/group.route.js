@@ -23,6 +23,7 @@ router.put(
   upload.handleUploadError,
   GroupController.handleUpdateGroupInfo,
 );
+router.delete('/:groupId', isGroupAdmin, GroupController.handleDeleteGroup);
 router.post('/:groupId/invite', isGroupAdmin, GroupController.handleInviteToGroup);
 router.post('/:groupId/cancel-invite', isGroupAdmin, GroupController.handleCancelGroupInvitation);
 router.post('/:groupId/accept-invite', GroupController.handleAcceptGroupInvitation);
