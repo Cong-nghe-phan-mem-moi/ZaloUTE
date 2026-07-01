@@ -1026,7 +1026,7 @@ diagram/usecase-specs/
 
 Có thể mở bằng extension PlantUML trong VS Code hoặc render bằng PlantUML CLI.
 
-## Gợi ý quy trình làm việc nhóm
+## Quy trình làm việc nhóm
 
 1. Tạo branch theo chức năng, ví dụ `feature/group-invite`.
 2. Đọc use case trong `diagram/usecase-specs` trước khi code.
@@ -1043,80 +1043,3 @@ npm run build
 cd ../server
 npm test
 ```
-
-7. Cập nhật README hoặc tài liệu use case nếu thay đổi nghiệp vụ.
-
-## Lỗi thường gặp
-
-### Frontend gọi API bị 404 hoặc không kết nối
-
-- Kiểm tra backend có chạy ở port `5000`.
-- Kiểm tra `client/vite.config.js` proxy `/api`.
-- Kiểm tra request có đúng prefix `/api`.
-
-### Bị lỗi CORS
-
-- Thêm origin frontend vào `server/.env`:
-
-```env
-CORS_ORIGIN=http://localhost:5173
-```
-
-- Restart backend sau khi đổi `.env`.
-
-### Không đăng nhập được do token
-
-- Kiểm tra `JWT_SECRET` tồn tại trong server `.env`.
-- Xóa token cũ trong browser localStorage.
-- Kiểm tra account có trạng thái `active`.
-
-### Không gửi được OTP email
-
-- Kiểm tra `SMTP_USER` và `SMTP_PASS`.
-- Với Gmail cần dùng App Password.
-- Trong môi trường dev có thể đặt `EMAIL_USE_MOCK=true`.
-
-### Upload ảnh/video lỗi
-
-- Kiểm tra file dưới 10MB.
-- Kiểm tra mimetype thuộc danh sách hỗ trợ.
-- Với post dùng field `media`, `files`, `images`, `image`, `videos` hoặc `video`.
-- Với avatar/cover/group avatar dùng đúng field backend yêu cầu.
-
-### Không thấy ảnh upload
-
-- Kiểm tra file có tồn tại trong `server/storage/uploads`.
-- Kiểm tra backend serve `/uploads`.
-- Nếu chạy qua Vite, kiểm tra proxy `/uploads`.
-
-### Admin không vào được dashboard
-
-- Token phải thuộc account có `role: "admin"`.
-- Endpoint `/api/admin/*` dùng cả `authMiddleware` và `authorize("admin")`.
-
-## Ghi chú bảo mật khi deploy
-
-- Không commit file `.env`.
-- Đổi `JWT_SECRET` và `SESSION_SECRET`.
-- Dùng HTTPS.
-- Cấu hình `CORS_ORIGIN` đúng domain production.
-- Không bật endpoint dev OTP trong production.
-- Kiểm soát quyền truy cập thư mục upload.
-- Cân nhắc lưu media trên Google Drive/S3 thay vì local disk.
-- Bật rate limit cho auth, forgot password, edit profile.
-- Kiểm tra role admin trước mọi API quản trị.
-
-## Checklist trước khi bàn giao
-
-- Backend chạy được `npm run dev`.
-- Frontend chạy được `npm run dev`.
-- `GET /api/health` trả về server running.
-- Đăng ký và xác thực OTP được.
-- Đăng nhập nhận token.
-- Tạo bài viết, bình luận, like được.
-- Upload avatar/media được.
-- Chat và thông báo realtime hoạt động.
-- Trang admin chỉ truy cập được bằng admin.
-- Postman collection quan trọng chạy pass.
-- `client npm run build` không lỗi.
-- `server npm test` pass.
